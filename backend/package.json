@@ -1,0 +1,9 @@
+{
+  "name": "product-feedback-app-backend",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "1.3.8",
+    "typescript": "5.9.3"
+  }
+}
