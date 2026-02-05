@@ -4,6 +4,12 @@ node_modules
 # dotenv environment variable files
 .env*
 
+# Omit the generated Prisma client
+/src/db/generated/*
+
+# Exclude the local SQLite database files
+dev.db
+
 # output
 out
 dist
