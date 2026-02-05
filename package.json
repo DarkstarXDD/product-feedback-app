@@ -1,0 +1,10 @@
+{
+  "name": "product-feedback-app",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "prepare": "husky",
+    "lint": "cd backend && bun run lint",
+    "type-check": "cd backend && bun run type-check"
+  }
+}
