@@ -6,7 +6,8 @@
     "prepare": "husky",
     "lint": "cd backend && bun run lint",
     "type-check": "cd backend && bun run type-check",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "format": "prettier --write ."
   },
   "devDependencies": {
     "husky": "9.1.7",
