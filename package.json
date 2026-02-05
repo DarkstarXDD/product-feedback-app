@@ -5,6 +5,11 @@
   "scripts": {
     "prepare": "husky",
     "lint": "cd backend && bun run lint",
-    "type-check": "cd backend && bun run type-check"
+    "type-check": "cd backend && bun run type-check",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "husky": "9.1.7",
+    "prettier": "3.8.1"
   }
 }
