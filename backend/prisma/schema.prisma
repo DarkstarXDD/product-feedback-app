@@ -9,9 +9,14 @@ datasource db {
 }
 
 model User {
-  id    Int     @id @default(autoincrement())
-  email String  @unique
-  name  String?
+  id          String       @id @default(cuid())
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  email       String       @unique
+  name        String
+  password    String
+  comments    Comment[]
+  suggestions Suggestion[]
 }
 
 model Category {
@@ -24,13 +29,26 @@ model Category {
 }
 
 model Suggestion {
-  id          String   @id @default(cuid())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  title       String   @unique
+  id          String    @id @default(cuid())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  title       String    @unique
   description String
+  user        User?     @relation(fields: [userId], references: [id])
+  userId      String?
+  category    Category  @relation(fields: [categoryId], references: [id])
   categoryId  String
-  category    Category @relation(fields: [categoryId], references: [id])
+  comments    Comment[]
+  // Has  upvotes, and status
+}
 
-  // Has category, upvotes, comments, and status
+model Comment {
+  id           String     @id @default(cuid())
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  content      String
+  user         User       @relation(fields: [userId], references: [id])
+  userId       String
+  suggestion   Suggestion @relation(fields: [suggestionId], references: [id])
+  suggestionId String
 }
