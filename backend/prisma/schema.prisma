@@ -17,6 +17,7 @@ model User {
   password    String
   comments    Comment[]
   suggestions Suggestion[]
+  upvotes     Upvote[]
 }
 
 model Category {
@@ -39,7 +40,9 @@ model Suggestion {
   category    Category  @relation(fields: [categoryId], references: [id])
   categoryId  String
   comments    Comment[]
-  // Has  upvotes, and status
+  upvotes     Upvote[]
+
+  // Has status: Planned, InProgress, Live
 }
 
 model Comment {
@@ -51,4 +54,13 @@ model Comment {
   userId       String
   suggestion   Suggestion @relation(fields: [suggestionId], references: [id])
   suggestionId String
+}
+
+model Upvote {
+  id           String      @id @default(cuid())
+  createdAt    DateTime    @default(now())
+  user         User?       @relation(fields: [userId], references: [id])
+  userId       String?
+  suggestion   Suggestion? @relation(fields: [suggestionId], references: [id])
+  suggestionId String?
 }
