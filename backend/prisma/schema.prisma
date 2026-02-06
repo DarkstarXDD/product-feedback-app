@@ -35,12 +35,12 @@ model Suggestion {
   updatedAt   DateTime  @updatedAt
   title       String    @unique
   description String
-  user        User?     @relation(fields: [userId], references: [id])
-  userId      String?
+  user        User      @relation(fields: [userId], references: [id])
+  userId      String
   category    Category  @relation(fields: [categoryId], references: [id])
   categoryId  String
-  status      Status?   @relation(fields: [statusId], references: [id])
-  statusId    String?
+  status      Status    @relation(fields: [statusId], references: [id])
+  statusId    String
   comments    Comment[]
   upvotes     Upvote[]
 }
@@ -57,12 +57,12 @@ model Comment {
 }
 
 model Upvote {
-  id           String      @id @default(cuid())
-  createdAt    DateTime    @default(now())
-  user         User?       @relation(fields: [userId], references: [id])
-  userId       String?
-  suggestion   Suggestion? @relation(fields: [suggestionId], references: [id])
-  suggestionId String?
+  id           String     @id @default(cuid())
+  createdAt    DateTime   @default(now())
+  user         User       @relation(fields: [userId], references: [id])
+  userId       String
+  suggestion   Suggestion @relation(fields: [suggestionId], references: [id])
+  suggestionId String
 }
 
 model Status {
