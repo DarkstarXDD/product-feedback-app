@@ -9,7 +9,70 @@ datasource db {
 }
 
 model User {
-  id    Int     @id @default(autoincrement())
-  email String  @unique
-  name  String?
+  id          String       @id @default(cuid())
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  email       String       @unique
+  name        String
+  password    String
+  comments    Comment[]
+  suggestions Suggestion[]
+  upvotes     Upvote[]
+}
+
+model Category {
+  id          String       @id @default(cuid())
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  name        String       @unique
+  slug        String       @unique
+  suggestions Suggestion[]
+}
+
+model Suggestion {
+  id          String    @id @default(cuid())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  title       String
+  slug        String    @unique
+  description String
+  user        User      @relation(fields: [userId], references: [id])
+  userId      String
+  category    Category  @relation(fields: [categoryId], references: [id])
+  categoryId  String
+  status      Status    @relation(fields: [statusId], references: [id])
+  statusId    String
+  comments    Comment[]
+  upvotes     Upvote[]
+}
+
+model Comment {
+  id           String     @id @default(cuid())
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  content      String
+  user         User       @relation(fields: [userId], references: [id])
+  userId       String
+  suggestion   Suggestion @relation(fields: [suggestionId], references: [id])
+  suggestionId String
+}
+
+model Upvote {
+  id           String     @id @default(cuid())
+  createdAt    DateTime   @default(now())
+  user         User       @relation(fields: [userId], references: [id])
+  userId       String
+  suggestion   Suggestion @relation(fields: [suggestionId], references: [id])
+  suggestionId String
+
+  @@unique([userId, suggestionId])
+}
+
+model Status {
+  id          String       @id @default(cuid())
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  name        String       @unique
+  slug        String       @unique
+  suggestions Suggestion[]
 }
