@@ -8,6 +8,9 @@
     "db:seed": "bunx --bun prisma db seed",
     "db:studio": "bunx --bun prisma studio",
     "db:generate": "bunx --bun prisma generate",
+    "db:push": "bunx --bun prisma db push",
+    "db:migrate:dev": "bunx --bun prisma migrate dev",
+    "db:migrate:deploy": "bunx --bun prisma migrate deploy",
     "dev": "bun --watch main.ts"
   },
   "dependencies": {
