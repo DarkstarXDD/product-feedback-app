@@ -39,10 +39,10 @@ model Suggestion {
   userId      String?
   category    Category  @relation(fields: [categoryId], references: [id])
   categoryId  String
+  status      Status?   @relation(fields: [statusId], references: [id])
+  statusId    String?
   comments    Comment[]
   upvotes     Upvote[]
-
-  // Has status: Planned, InProgress, Live
 }
 
 model Comment {
@@ -63,4 +63,13 @@ model Upvote {
   userId       String?
   suggestion   Suggestion? @relation(fields: [suggestionId], references: [id])
   suggestionId String?
+}
+
+model Status {
+  id          String       @id @default(cuid())
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  name        String       @unique
+  slug        String       @unique
+  suggestions Suggestion[]
 }
