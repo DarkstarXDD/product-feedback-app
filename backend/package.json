@@ -6,6 +6,8 @@
     "lint": "eslint .",
     "type-check": "tsc --noEmit",
     "db:seed": "bunx --bun prisma db seed",
+    "db:studio": "bunx --bun prisma studio",
+    "db:generate": "bunx --bun prisma generate",
     "dev": "bun --watch main.ts"
   },
   "dependencies": {
