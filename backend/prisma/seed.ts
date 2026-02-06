@@ -1,6 +1,7 @@
 import { PrismaLibSql } from "@prisma/adapter-libsql"
 
-import { PrismaClient, Prisma } from "../src/db/generated/prisma/client"
+import { PrismaClient } from "../src/db/generated/prisma/client"
+import { categories, statuses } from "../src/lib/data"
 
 const url = process.env.DATABASE_URL
 if (!url) {
@@ -12,13 +13,8 @@ const adapter = new PrismaLibSql({ url })
 const prisma = new PrismaClient({ adapter })
 
 async function main() {
-  const data: Prisma.UserCreateInput[] = [
-    { email: "harry@email.com", name: "Harry" },
-    { email: "ron@email.com", name: "Ron" },
-    { email: "hermione@email.com", name: "Hermione" },
-  ]
-
-  await prisma.user.createMany({ data })
+  await prisma.status.createMany({ data: statuses })
+  await prisma.category.createMany({ data: categories })
 }
 
 main()
