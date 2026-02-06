@@ -13,3 +13,24 @@ model User {
   email String  @unique
   name  String?
 }
+
+model Category {
+  id          String       @id @default(cuid())
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  name        String       @unique
+  slug        String       @unique
+  suggestions Suggestion[]
+}
+
+model Suggestion {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  title       String   @unique
+  description String
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id])
+
+  // Has category, upvotes, comments, and status
+}
