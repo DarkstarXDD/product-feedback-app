@@ -63,6 +63,8 @@ model Upvote {
   userId       String
   suggestion   Suggestion @relation(fields: [suggestionId], references: [id])
   suggestionId String
+
+  @@unique([userId, suggestionId])
 }
 
 model Status {
