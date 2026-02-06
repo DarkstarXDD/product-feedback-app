@@ -33,7 +33,8 @@ model Suggestion {
   id          String    @id @default(cuid())
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-  title       String    @unique
+  title       String
+  slug        String    @unique
   description String
   user        User      @relation(fields: [userId], references: [id])
   userId      String
