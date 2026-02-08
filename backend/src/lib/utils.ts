@@ -16,6 +16,17 @@ type JsonSuccessOptions<
   meta?: M
 }
 
+/**
+ * Returns a JSON response with a consistent success shape: `{ data, meta? }`.
+ * Use for successful route handlers.
+ *
+ * @example
+ * // In a Hono route handler:
+ * app.get("/users/:id", async (c) => {
+ *   const user = await db.getUser(c.req.param("id"))
+ *   return jsonSuccess(c, user, { status: 200 })
+ * })
+ */
 export function jsonSuccess<
   T,
   M extends Record<string, unknown> | undefined = undefined,
@@ -44,6 +55,16 @@ type JsonErrorOptions = {
   status: ClientErrorStatusCode | ServerErrorStatusCode
 }
 
+/**
+ * Throws an HTTPException with a JSON body shaped as `{ code, message, fieldErrors? }`.
+ * Use in route handlers to return a consistent error response and stop execution.
+ *
+ * @example
+ * // In a Hono route handler:
+ * if (!user) {
+ *   jsonError(c, { code: "NOT_FOUND", message: "User not found" }, { status: 404 })
+ * }
+ */
 export function jsonError(
   c: Context,
   body: JsonErrorBody,
