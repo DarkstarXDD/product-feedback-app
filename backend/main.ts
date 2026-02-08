@@ -1,7 +1,7 @@
 import { poweredBy } from "hono/powered-by"
 import { Hono } from "hono"
 
-import { prisma } from "./src/db/client"
+import { authRoutes } from "@/routes/auth.routes"
 
 const app = new Hono()
 
@@ -9,7 +9,6 @@ app.use(poweredBy())
 
 app.get("/api/v1", (c) => c.json({ message: "Hello, from my REST API!" }))
 
-export default app
+app.route("/api/v1/auth", authRoutes)
 
-const users = await prisma.user.findMany()
-console.log(users)
+export default app
