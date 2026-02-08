@@ -30,8 +30,8 @@ type JsonSuccessOptions<
 export function jsonSuccess<
   T,
   M extends Record<string, unknown> | undefined = undefined,
->(c: Context, data: T, options: JsonSuccessOptions<M>) {
-  return c.json({ meta: options.meta, data }, options.status)
+>(c: Context, data: T, options?: JsonSuccessOptions<M>) {
+  return c.json({ meta: options?.meta, data }, options?.status)
 }
 
 // Error Shape
