@@ -2,8 +2,11 @@ import * as z from "zod"
 
 export const createUserSchema = z
   .object({
+    email: z
+      .email("Invalid email")
+      .min(1, "Email cannot be empty")
+      .toLowerCase(),
     password: z.string().min(8, "Password must be at least 8 characters long"),
-    email: z.email("Invalid email").min(1, "Email cannot be empty"),
     username: z.string().min(1, "Username cannot be empty"),
     name: z.string().min(1, "Username cannot be empty"),
     confirmPassword: z.string(),
@@ -14,11 +17,11 @@ export const createUserSchema = z
   })
 
 // const data = {
-//   email: "harry@email.com",
-//   password: "harry123i",
-//   confirmPassword: "",
+//   confirmPassword: "harry123",
+//   email: "HarRy@email.com",
+//   username: "harrypotter1",
+//   password: "harry123",
 //   name: "Harry",
-//   username: "",
 // }
 
 // const parsed = createUserSchema.safeParse(data)
@@ -26,4 +29,8 @@ export const createUserSchema = z
 // if (!parsed.success) {
 //   const errors = z.flattenError(parsed.error)
 //   console.log(errors)
+// }
+
+// if (parsed.success) {
+//   console.log(parsed.data)
 // }
