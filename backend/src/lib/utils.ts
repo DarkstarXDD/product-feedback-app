@@ -46,7 +46,7 @@ type ErrorCodes =
   | "CONFLICT"
 
 type JsonErrorBody = {
-  fieldErrors?: Record<string, string[]>
+  errors?: { fieldErrors: Record<string, string[]>; formErrors: string[] }
   code: ErrorCodes
   message: string
 }
@@ -56,13 +56,13 @@ type JsonErrorOptions = {
 }
 
 /**
- * Throws an HTTPException with a JSON body shaped as `{ code, message, fieldErrors? }`.
+ * Throws an HTTPException with a JSON body shaped as `{ code, message, errors? }`.
  * Use in route handlers to return a consistent error response and stop execution.
  *
  * @example
  * // In a Hono route handler:
- * if (!user) {
- *   jsonError(c, { code: "NOT_FOUND", message: "User not found" }, { status: 404 })
+ * if (!parsed.success) {
+ *   jsonError(c, { code: "VALIDATION_ERROR", message: "Server validation fails", errors: z.flattenError(parsed.error) }, { status: 404 })
  * }
  */
 export function jsonError(
