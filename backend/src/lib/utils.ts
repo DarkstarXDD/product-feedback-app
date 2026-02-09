@@ -68,7 +68,9 @@ type JsonErrorOptions = {
 export function jsonError(
   c: Context,
   body: JsonErrorBody,
-  options: JsonErrorOptions
+  options?: JsonErrorOptions
 ) {
-  throw new HTTPException(options.status, { res: c.json(body, options.status) })
+  throw new HTTPException(options?.status, {
+    res: c.json(body, options?.status),
+  })
 }
