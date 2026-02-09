@@ -4,6 +4,9 @@ node_modules
 # dotenv environment variable files
 .env*
 
+# Omit the generated Prisma client
+backend/src/db/generated/*
+
 # output
 out
 dist
