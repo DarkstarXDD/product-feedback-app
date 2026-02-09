@@ -47,7 +47,7 @@ type ErrorCodes =
   | "CONFLICT"
 
 type JsonErrorBody = {
-  errors?: { fieldErrors: Record<string, string[]>; formErrors: string[] }
+  errors?: { fieldErrors: Record<string, string[]>; formErrors?: string[] }
   code: ErrorCodes
   message: string
 }
@@ -70,7 +70,7 @@ export function jsonError(
   c: Context,
   body: JsonErrorBody,
   options?: JsonErrorOptions
-) {
+): never {
   throw new HTTPException(options?.status, {
     res: c.json(body, options?.status),
   })

@@ -10,10 +10,10 @@ app.use(poweredBy())
 
 app.onError((err, c) => {
   if (err instanceof HTTPException) {
-    console.log(err)
+    // console.log(err)
     return err.getResponse()
   }
-  console.log(err)
+  // console.log(err)
   return c.json({ message: "Someting went wrong." }, 500)
 })
 

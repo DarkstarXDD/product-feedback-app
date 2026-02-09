@@ -2,14 +2,12 @@ import { Hono } from "hono"
 
 import { formatZodErrors, jsonSuccess, jsonError } from "@/lib/utils"
 import { createUserSchema } from "@/schemas/auth.schema"
+import { prisma } from "@/db/client"
 
 const auth = new Hono()
 
 auth.post("/signup", async (c) => {
   /**
-   * 1. Grab the data from the JSON body. Client should send JSON, not formData.
-   * 2. Validate using Zod. If validation fails call jsonError and return flattened errors.
-   * 3. If validation pass, lowercase email, hash passsword, call Prisma and send data to database.
    * 4. If Prisma doesn't throw, create JWT using userId as payload.
    * 5. Send id, email and name to client in jsonSuccess. Don't send password.
    * 5. When sending jsonSuccess, attach the JWT as a httpOnly cookie in Set-Cookie header.
@@ -28,10 +26,52 @@ auth.post("/signup", async (c) => {
       { status: 400 }
     )
 
-  console.log(data)
-  console.log(parsed)
+  const hashedPassword = await Bun.password.hash(parsed.data.password, "bcrypt")
 
-  return jsonSuccess(c, { message: "Success" })
+  const { username, email, name } = parsed.data
+
+  /**
+   * Prisma doesn't provide a way to retreive the exact field name that violates the unique constraint.
+   * So we need to manually check whether there are existing entries for the given unique fields.
+   */
+  const existingUser = await prisma.user.findFirst({
+    where: { OR: [{ username }, { email }] },
+    select: { username: true, email: true },
+  })
+
+  if (existingUser) {
+    const fieldErrors: Record<string, string[]> = {}
+
+    if (existingUser.email === email) {
+      fieldErrors.email = ["Email already exists"]
+    }
+
+    if (existingUser.username === username) {
+      fieldErrors.username = ["Username already exists"]
+    }
+
+    return jsonError(
+      c,
+      {
+        message: "Unique constraint violation",
+        errors: { fieldErrors },
+        code: "CONFLICT",
+      },
+      { status: 409 }
+    )
+  }
+
+  const user = await prisma.user.create({
+    select: {
+      createdAt: true,
+      username: true,
+      email: true,
+      name: true,
+      id: true,
+    },
+    data: { password: hashedPassword, username, email, name },
+  })
+  return jsonSuccess(c, { user }, { status: 201 })
 })
 
 auth.post("/signin", (c) => jsonSuccess(c, { message: "Success" }))
