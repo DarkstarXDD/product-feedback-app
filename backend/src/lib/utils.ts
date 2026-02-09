@@ -7,6 +7,7 @@ import type {
 import type { Context } from "hono"
 
 import { HTTPException } from "hono/http-exception"
+import * as z from "zod"
 
 // Success Shape
 type JsonSuccessOptions<
@@ -62,7 +63,7 @@ type JsonErrorOptions = {
  * @example
  * // In a Hono route handler:
  * if (!parsed.success) {
- *   jsonError(c, { code: "VALIDATION_ERROR", message: "Server validation fails", errors: z.flattenError(parsed.error) }, { status: 404 })
+ *   jsonError(c, { code: "VALIDATION_ERROR", message: "Server validation fails", errors: z.flattenError(parsed.error) }, { status: 400 })
  * }
  */
 export function jsonError(
@@ -73,4 +74,8 @@ export function jsonError(
   throw new HTTPException(options?.status, {
     res: c.json(body, options?.status),
   })
+}
+
+export function formatZodErrors(errorObj: z.ZodError) {
+  return z.flattenError(errorObj)
 }
