@@ -7,8 +7,9 @@ import type {
 import type { Context } from "hono"
 
 import { HTTPException } from "hono/http-exception"
+import * as z from "zod"
 
-// Success Shape
+// ------------------------- Success Response ----------------------------
 type JsonSuccessOptions<
   M extends Record<string, unknown> | undefined = undefined,
 > = {
@@ -28,13 +29,13 @@ type JsonSuccessOptions<
  * })
  */
 export function jsonSuccess<
-  T,
+  T extends object,
   M extends Record<string, unknown> | undefined = undefined,
 >(c: Context, data: T, options?: JsonSuccessOptions<M>) {
   return c.json({ meta: options?.meta, data }, options?.status)
 }
 
-// Error Shape
+// ------------------------- Error Response ----------------------------
 type ErrorCodes =
   | "VALIDATION_ERROR"
   | "INTERNAL_ERROR"
@@ -46,7 +47,7 @@ type ErrorCodes =
   | "CONFLICT"
 
 type JsonErrorBody = {
-  fieldErrors?: Record<string, string[]>
+  errors?: { fieldErrors: Record<string, string[]>; formErrors?: string[] }
   code: ErrorCodes
   message: string
 }
@@ -56,19 +57,25 @@ type JsonErrorOptions = {
 }
 
 /**
- * Throws an HTTPException with a JSON body shaped as `{ code, message, fieldErrors? }`.
+ * Throws an HTTPException with a JSON body shaped as `{ code, message, errors? }`.
  * Use in route handlers to return a consistent error response and stop execution.
  *
  * @example
  * // In a Hono route handler:
- * if (!user) {
- *   jsonError(c, { code: "NOT_FOUND", message: "User not found" }, { status: 404 })
+ * if (!parsed.success) {
+ *   jsonError(c, { code: "VALIDATION_ERROR", message: "Server validation fails", errors: z.flattenError(parsed.error) }, { status: 400 })
  * }
  */
 export function jsonError(
   c: Context,
   body: JsonErrorBody,
-  options: JsonErrorOptions
-) {
-  throw new HTTPException(options.status, { res: c.json(body, options.status) })
+  options?: JsonErrorOptions
+): never {
+  throw new HTTPException(options?.status, {
+    res: c.json(body, options?.status),
+  })
+}
+
+export function formatZodErrors(errorObj: z.ZodError) {
+  return z.flattenError(errorObj)
 }

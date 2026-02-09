@@ -1,4 +1,4 @@
-import { Prisma } from "../db/client"
+import { Prisma } from "@/db/client"
 
 export const statuses: Prisma.StatusCreateInput[] = [
   { name: "Planned", slug: "planned" },
