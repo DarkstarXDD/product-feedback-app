@@ -9,7 +9,7 @@ import type { Context } from "hono"
 import { HTTPException } from "hono/http-exception"
 import * as z from "zod"
 
-// Success Shape
+// ------------------------- Success Response ----------------------------
 type JsonSuccessOptions<
   M extends Record<string, unknown> | undefined = undefined,
 > = {
@@ -29,13 +29,13 @@ type JsonSuccessOptions<
  * })
  */
 export function jsonSuccess<
-  T,
+  T extends object,
   M extends Record<string, unknown> | undefined = undefined,
 >(c: Context, data: T, options?: JsonSuccessOptions<M>) {
   return c.json({ meta: options?.meta, data }, options?.status)
 }
 
-// Error Shape
+// ------------------------- Error Response ----------------------------
 type ErrorCodes =
   | "VALIDATION_ERROR"
   | "INTERNAL_ERROR"

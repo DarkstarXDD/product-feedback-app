@@ -1,17 +1,17 @@
+import { setCookie } from "hono/cookie"
+import { sign } from "hono/jwt"
 import { Hono } from "hono"
 
 import { formatZodErrors, jsonSuccess, jsonError } from "@/lib/utils"
 import { createUserSchema } from "@/schemas/auth.schema"
 import { prisma } from "@/db/client"
 
+const JWT_SECRET = process.env.JWT_SECRET
+if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined.")
+
 const auth = new Hono()
 
 auth.post("/signup", async (c) => {
-  /**
-   * 4. If Prisma doesn't throw, create JWT using userId as payload.
-   * 5. Send id, email and name to client in jsonSuccess. Don't send password.
-   * 5. When sending jsonSuccess, attach the JWT as a httpOnly cookie in Set-Cookie header.
-   */
   const data = (await c.req.json()) as unknown
   const parsed = createUserSchema.safeParse(data)
 
@@ -71,6 +71,10 @@ auth.post("/signup", async (c) => {
     },
     data: { password: hashedPassword, username, email, name },
   })
+
+  const token = await sign({ userId: user.id }, JWT_SECRET, "HS256")
+  setCookie(c, "token", token)
+
   return jsonSuccess(c, { user }, { status: 201 })
 })
 
