@@ -10,29 +10,43 @@ import { HTTPException } from "hono/http-exception"
 import * as z from "zod"
 
 // ------------------------- Success Response ----------------------------
-type JsonSuccessOptions<
-  M extends Record<string, unknown> | undefined = undefined,
-> = {
+interface JsonSuccessBody<T> {
+  meta?: Record<string, unknown>
+  data: T
+}
+
+type JsonSuccessOptions = {
   status: Exclude<SuccessStatusCode, ContentlessStatusCode>
-  meta?: M
 }
 
 /**
- * Returns a JSON response with a consistent success shape: `{ data, meta? }`.
- * Use for successful route handlers.
+ * Sends a standardized JSON success response with a consistent envelope.
+ *
+ * Wraps the response in a `{ data, meta? }` shape so all routes return
+ * the same structure. If no status is provided, Hono defaults to 200.
+ *
+ * @typeParam T - Type of the response data payload.
+ * @param c - Hono context.
+ * @param body - Response body containing `data` and optional `meta`.
+ * @param options - Optional HTTP status configuration.
  *
  * @example
- * // In a Hono route handler:
- * app.get("/users/:id", async (c) => {
- *   const user = await db.getUser(c.req.param("id"))
- *   return jsonSuccess(c, user, { status: 200 })
+ * return jsonSuccess(c, {
+ *   data: user
  * })
+ *
+ * @example
+ * return jsonSuccess(c, {
+ *   data: users,
+ *   meta: { total: 42, page: 1 }
+ * }, { status: 200 })
  */
-export function jsonSuccess<
-  T extends object,
-  M extends Record<string, unknown> | undefined = undefined,
->(c: Context, data: T, options?: JsonSuccessOptions<M>) {
-  return c.json({ meta: options?.meta, data }, options?.status)
+export function jsonSuccess<T>(
+  c: Context,
+  body: JsonSuccessBody<T>,
+  options?: JsonSuccessOptions
+) {
+  return c.json(body, options?.status)
 }
 
 // ------------------------- Error Response ----------------------------

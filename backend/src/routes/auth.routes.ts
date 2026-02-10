@@ -75,10 +75,10 @@ auth.post("/signup", async (c) => {
   const token = await sign({ userId: user.id }, JWT_SECRET, "HS256")
   setCookie(c, "token", token)
 
-  return jsonSuccess(c, { user }, { status: 201 })
+  return jsonSuccess(c, { data: user }, { status: 201 })
 })
 
-auth.post("/signin", (c) => jsonSuccess(c, { message: "Success" }))
-auth.post("/signout", (c) => jsonSuccess(c, { message: "Success" }))
+auth.post("/signin", (c) => jsonSuccess(c, { data: "Success" }))
+auth.post("/signout", (c) => jsonSuccess(c, { data: "Success" }))
 
 export { auth as authRoutes }

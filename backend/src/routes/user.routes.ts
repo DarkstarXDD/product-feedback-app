@@ -10,7 +10,7 @@ userRoutes.get("/", async (c) => {
     include: { suggestions: true, comments: true, upvotes: true, _count: true },
     omit: { updatedAt: true, password: true },
   })
-  return jsonSuccess(c, { users })
+  return jsonSuccess(c, { data: users })
 })
 
 userRoutes.get("/:username", async (c) => {
@@ -29,7 +29,7 @@ userRoutes.get("/:username", async (c) => {
     )
   }
 
-  return jsonSuccess(c, { user })
+  return jsonSuccess(c, { data: user })
 })
 
 export default userRoutes
