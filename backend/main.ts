@@ -29,10 +29,12 @@ app.onError((err, c) => {
   return c.json({ message: "Someting went wrong." }, 500)
 })
 
-publicRoutes.route("/api/v1/auth", authRoutes)
-protectedRoutes.route("/api/v1/users", userRoutes)
+publicRoutes.get("/", (c) => c.json({ message: "Success" }))
+publicRoutes.route("/auth", authRoutes)
 
-app.route("/", publicRoutes)
-app.route("/", protectedRoutes)
+protectedRoutes.route("/users", userRoutes)
+
+app.route("/api/v1", publicRoutes)
+app.route("/api/v1", protectedRoutes)
 
 export default app

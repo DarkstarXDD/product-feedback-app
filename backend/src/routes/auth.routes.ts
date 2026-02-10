@@ -139,4 +139,6 @@ authRoutes.post("/signin", async (c) => {
 // ------------------------------- Sign Out --------------------------------
 authRoutes.post("/signout", (c) => jsonSuccess(c, { data: "Success" }))
 
+authRoutes.get("/signin", (c) => c.json({ message: "Success" }))
+
 export default authRoutes
