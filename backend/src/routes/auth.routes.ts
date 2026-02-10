@@ -2,8 +2,8 @@ import { setCookie } from "hono/cookie"
 import { sign } from "hono/jwt"
 import { Hono } from "hono"
 
-import { createUserSchema, signInSchema } from "@/schemas/auth.schema"
 import { formatZodErrors, jsonSuccess, jsonError } from "@/lib/utils"
+import { signUpSchema, signInSchema } from "@/schemas/auth.schema"
 import { prisma } from "@/db/client"
 
 const JWT_SECRET = process.env.JWT_SECRET
@@ -14,7 +14,7 @@ const auth = new Hono()
 // ------------------------------- Sign Up --------------------------------
 auth.post("/signup", async (c) => {
   const data = (await c.req.json()) as unknown
-  const parsed = createUserSchema.safeParse(data)
+  const parsed = signUpSchema.safeParse(data)
 
   if (!parsed.success)
     jsonError(

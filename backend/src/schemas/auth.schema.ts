@@ -1,7 +1,7 @@
 import * as z from "zod"
 
 // --------------------- SignUp Schema -----------------------
-export const createUserSchema = z
+export const signUpSchema = z
   .object({
     email: z
       .email("Invalid email")
