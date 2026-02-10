@@ -1,6 +1,7 @@
 import * as z from "zod"
 
-export const createUserSchema = z
+// --------------------- SignUp Schema -----------------------
+export const signUpSchema = z
   .object({
     email: z
       .email("Invalid email")
@@ -15,6 +16,12 @@ export const createUserSchema = z
     error: "Passwords don't match",
     path: ["confirmPassword"],
   })
+
+// ------------------------ SignIn Schema ---------------------
+export const signInSchema = z.object({
+  email: z.email("Invalid email").min(1, "Email cannot be empty").toLowerCase(),
+  password: z.string().min(8, "Password must be at least 8 characters long"),
+})
 
 // const data = {
 //   confirmPassword: "harry123",

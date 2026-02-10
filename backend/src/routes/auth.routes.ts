@@ -3,17 +3,18 @@ import { sign } from "hono/jwt"
 import { Hono } from "hono"
 
 import { formatZodErrors, jsonSuccess, jsonError } from "@/lib/utils"
-import { createUserSchema } from "@/schemas/auth.schema"
+import { signUpSchema, signInSchema } from "@/schemas/auth.schema"
 import { prisma } from "@/db/client"
 
 const JWT_SECRET = process.env.JWT_SECRET
 if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined.")
 
-const auth = new Hono()
+const authRoutes = new Hono()
 
-auth.post("/signup", async (c) => {
+// ------------------------------- Sign Up --------------------------------
+authRoutes.post("/signup", async (c) => {
   const data = (await c.req.json()) as unknown
-  const parsed = createUserSchema.safeParse(data)
+  const parsed = signUpSchema.safeParse(data)
 
   if (!parsed.success)
     jsonError(
@@ -75,10 +76,69 @@ auth.post("/signup", async (c) => {
   const token = await sign({ userId: user.id }, JWT_SECRET, "HS256")
   setCookie(c, "token", token)
 
-  return jsonSuccess(c, { user }, { status: 201 })
+  return jsonSuccess(c, { data: user }, { status: 201 })
 })
 
-auth.post("/signin", (c) => jsonSuccess(c, { message: "Success" }))
-auth.post("/signout", (c) => jsonSuccess(c, { message: "Success" }))
+// ------------------------------- Sign In --------------------------------
+authRoutes.post("/signin", async (c) => {
+  const data = (await c.req.json()) as unknown
+  const parsed = signInSchema.safeParse(data)
 
-export { auth as authRoutes }
+  if (!parsed.success) {
+    jsonError(
+      c,
+      {
+        errors: formatZodErrors(parsed.error),
+        message: "Server validation fails",
+        code: "VALIDATION_ERROR",
+      },
+      { status: 400 }
+    )
+  }
+
+  const user = await prisma.user.findUnique({
+    select: { password: true, id: true },
+    where: { email: parsed.data.email },
+  })
+
+  if (!user)
+    return jsonError(
+      c,
+      {
+        errors: {
+          formErrors: ["Invalid email or password"],
+        },
+        message: "Invalid email or password",
+        code: "UNAUTHORIZED",
+      },
+      { status: 401 }
+    )
+
+  const isPasswordValid = await Bun.password.verify(
+    parsed.data.password,
+    user.password
+  )
+
+  if (!isPasswordValid)
+    return jsonError(
+      c,
+      {
+        errors: { formErrors: ["Invalid email or password"] },
+        message: "Invalid email or password",
+        code: "UNAUTHORIZED",
+      },
+      { status: 401 }
+    )
+
+  const token = await sign({ userId: user.id }, JWT_SECRET, "HS256")
+  setCookie(c, "token", token)
+
+  return jsonSuccess(c, { data: { success: true } })
+})
+
+// ------------------------------- Sign Out --------------------------------
+authRoutes.post("/signout", (c) => jsonSuccess(c, { data: "Success" }))
+
+authRoutes.get("/signin", (c) => c.json({ message: "Success" }))
+
+export default authRoutes
