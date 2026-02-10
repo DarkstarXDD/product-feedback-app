@@ -3,7 +3,7 @@ import { poweredBy } from "hono/powered-by"
 import { jwt } from "hono/jwt"
 import { Hono } from "hono"
 
-import { authRoutes } from "@/routes/auth.routes"
+import authRoutes from "@/routes/auth.routes"
 import userRoutes from "@/routes/user.routes"
 
 const JWT_SECRET = process.env.JWT_SECRET

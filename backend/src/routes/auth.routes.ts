@@ -9,10 +9,10 @@ import { prisma } from "@/db/client"
 const JWT_SECRET = process.env.JWT_SECRET
 if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined.")
 
-const auth = new Hono()
+const authRoutes = new Hono()
 
 // ------------------------------- Sign Up --------------------------------
-auth.post("/signup", async (c) => {
+authRoutes.post("/signup", async (c) => {
   const data = (await c.req.json()) as unknown
   const parsed = signUpSchema.safeParse(data)
 
@@ -80,7 +80,7 @@ auth.post("/signup", async (c) => {
 })
 
 // ------------------------------- Sign In --------------------------------
-auth.post("/signin", async (c) => {
+authRoutes.post("/signin", async (c) => {
   const data = (await c.req.json()) as unknown
   const parsed = signInSchema.safeParse(data)
 
@@ -137,6 +137,6 @@ auth.post("/signin", async (c) => {
 })
 
 // ------------------------------- Sign Out --------------------------------
-auth.post("/signout", (c) => jsonSuccess(c, { data: "Success" }))
+authRoutes.post("/signout", (c) => jsonSuccess(c, { data: "Success" }))
 
-export { auth as authRoutes }
+export default authRoutes
