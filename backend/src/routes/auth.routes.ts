@@ -175,7 +175,8 @@ authRoutes.post("/signin", async (c) => {
 // ------------------------------- Sign Out --------------------------------
 authRoutes.post("/signout", (c) => {
   deleteCookie(c, "token", { httpOnly: true, secure: true, path: "/" })
-  return jsonSuccess(c, { data: { message: "Signed out" } })
+  // Abstract into a helper function called `jsonNoContent` if used in one more place.
+  return c.body(null, 204)
 })
 
 // --------------------------- GET Route for Testing -------------------------
