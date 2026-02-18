@@ -9,6 +9,9 @@ import { prisma } from "@/db/client"
 const JWT_SECRET = process.env.JWT_SECRET
 if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined.")
 
+/** Set JWT and Cookie expiration for 7 days. */
+const JWT_TTL_SECONDS = 60 * 60 * 24 * 7
+
 const authRoutes = new Hono()
 
 // ------------------------------- Sign Up --------------------------------
@@ -73,8 +76,15 @@ authRoutes.post("/signup", async (c) => {
     data: { password: hashedPassword, username, email, name },
   })
 
-  const token = await sign({ userId: user.id }, JWT_SECRET, "HS256")
-  setCookie(c, "token", token)
+  const exp = Math.floor(Date.now() / 1000) + JWT_TTL_SECONDS
+
+  const token = await sign({ userId: user.id, exp }, JWT_SECRET, "HS256")
+
+  setCookie(c, "token", token, {
+    maxAge: JWT_TTL_SECONDS,
+    httpOnly: true,
+    secure: true,
+  })
 
   return jsonSuccess(c, { data: user }, { status: 201 })
 })
@@ -130,8 +140,15 @@ authRoutes.post("/signin", async (c) => {
       { status: 401 }
     )
 
-  const token = await sign({ userId: user.id }, JWT_SECRET, "HS256")
-  setCookie(c, "token", token, { httpOnly: true, secure: true })
+  const exp = Math.floor(Date.now() / 1000) + JWT_TTL_SECONDS
+
+  const token = await sign({ userId: user.id, exp }, JWT_SECRET, "HS256")
+
+  setCookie(c, "token", token, {
+    maxAge: JWT_TTL_SECONDS,
+    httpOnly: true,
+    secure: true,
+  })
 
   return jsonSuccess(c, { data: { success: true } })
 })
