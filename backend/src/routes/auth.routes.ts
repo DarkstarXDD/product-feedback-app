@@ -97,7 +97,7 @@ authRoutes.post("/signin", async (c) => {
   const parsed = signInSchema.safeParse(data)
 
   if (!parsed.success) {
-    jsonError(
+    return jsonError(
       c,
       {
         errors: formatZodErrors(parsed.error),
