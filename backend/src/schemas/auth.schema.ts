@@ -9,7 +9,7 @@ export const signUpSchema = z
       .toLowerCase(),
     password: z.string().min(8, "Password must be at least 8 characters long"),
     username: z.string().min(1, "Username cannot be empty"),
-    name: z.string().min(1, "Username cannot be empty"),
+    name: z.string().min(1, "Name cannot be empty"),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
