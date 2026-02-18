@@ -17,7 +17,7 @@ authRoutes.post("/signup", async (c) => {
   const parsed = signUpSchema.safeParse(data)
 
   if (!parsed.success)
-    jsonError(
+    return jsonError(
       c,
       {
         errors: formatZodErrors(parsed.error),
@@ -48,7 +48,9 @@ authRoutes.post("/signup", async (c) => {
     }
 
     if (existingUser.username === username) {
-      fieldErrors.username = ["Username already exists"]
+      fieldErrors.username = [
+        "Username taken. Please pick a different username",
+      ]
     }
 
     return jsonError(
