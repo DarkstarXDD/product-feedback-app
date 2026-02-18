@@ -45,9 +45,7 @@ authRoutes.post("/signup", async (c) => {
 
     if (existingUser.email === email) {
       fieldErrors.email = ["Email already exists"]
-    }
-
-    if (existingUser.username === username) {
+    } else if (existingUser.username === username) {
       fieldErrors.username = [
         "Username taken. Please pick a different username",
       ]
@@ -133,7 +131,7 @@ authRoutes.post("/signin", async (c) => {
     )
 
   const token = await sign({ userId: user.id }, JWT_SECRET, "HS256")
-  setCookie(c, "token", token)
+  setCookie(c, "token", token, { httpOnly: true, secure: true })
 
   return jsonSuccess(c, { data: { success: true } })
 })
