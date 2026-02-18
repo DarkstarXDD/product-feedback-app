@@ -8,9 +8,9 @@ export const signUpSchema = z
       .min(1, "Email cannot be empty")
       .toLowerCase(),
     password: z.string().min(8, "Password must be at least 8 characters long"),
+    confirmPassword: z.string("Confirm password can't be empty"),
     username: z.string().min(1, "Username cannot be empty"),
     name: z.string().min(1, "Name cannot be empty"),
-    confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     error: "Passwords don't match",
