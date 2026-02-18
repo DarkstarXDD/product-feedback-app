@@ -58,7 +58,7 @@ app.onError((err, c) => {
     return err.getResponse()
   }
   console.log(err)
-  return c.json({ message: "Someting went wrong." }, 500)
+  return c.json({ message: "Something went wrong." }, 500)
 })
 
 /** All routes on `api` are public by default. Mount `auth` instance on it. */
@@ -70,7 +70,7 @@ api.use("/users/*", authMw)
 api.use("/posts/*", authMw)
 api.use("/comments/*", authMw)
 
-/** Mount instanes on protected routes. */
+/** Mount instances on protected routes. */
 api.route("/users", userRoutes)
 
 /** Mount API instance on app. */
