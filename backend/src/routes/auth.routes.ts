@@ -1,4 +1,4 @@
-import { setCookie } from "hono/cookie"
+import { deleteCookie, setCookie } from "hono/cookie"
 import { sign } from "hono/jwt"
 import { Hono } from "hono"
 
@@ -158,7 +158,10 @@ authRoutes.post("/signin", async (c) => {
 })
 
 // ------------------------------- Sign Out --------------------------------
-authRoutes.post("/signout", (c) => jsonSuccess(c, { data: "Success" }))
+authRoutes.post("/signout", (c) => {
+  deleteCookie(c, "token", { httpOnly: true, secure: true, path: "/" })
+  return jsonSuccess(c, { data: { message: "Signed out" } })
+})
 
 // --------------------------- GET Route for Testing -------------------------
 authRoutes.get("/signin", (c) => c.json({ message: "Success" }))
