@@ -1,4 +1,4 @@
-import { setCookie } from "hono/cookie"
+import { deleteCookie, setCookie } from "hono/cookie"
 import { sign } from "hono/jwt"
 import { Hono } from "hono"
 
@@ -97,7 +97,7 @@ authRoutes.post("/signin", async (c) => {
   const parsed = signInSchema.safeParse(data)
 
   if (!parsed.success) {
-    jsonError(
+    return jsonError(
       c,
       {
         errors: formatZodErrors(parsed.error),
@@ -109,7 +109,14 @@ authRoutes.post("/signin", async (c) => {
   }
 
   const user = await prisma.user.findUnique({
-    select: { password: true, id: true },
+    select: {
+      createdAt: true,
+      password: true,
+      username: true,
+      email: true,
+      name: true,
+      id: true,
+    },
     where: { email: parsed.data.email },
   })
 
@@ -154,11 +161,23 @@ authRoutes.post("/signin", async (c) => {
     path: "/",
   })
 
-  return jsonSuccess(c, { data: { success: true } })
+  return jsonSuccess(c, {
+    data: {
+      createdAt: user.createdAt,
+      username: user.username,
+      email: user.email,
+      name: user.name,
+      id: user.id,
+    },
+  })
 })
 
 // ------------------------------- Sign Out --------------------------------
-authRoutes.post("/signout", (c) => jsonSuccess(c, { data: "Success" }))
+authRoutes.post("/signout", (c) => {
+  deleteCookie(c, "token", { httpOnly: true, secure: true, path: "/" })
+  // Abstract into a helper function called `jsonNoContent` if used in one more place.
+  return c.body(null, 204)
+})
 
 // --------------------------- GET Route for Testing -------------------------
 authRoutes.get("/signin", (c) => c.json({ message: "Success" }))
