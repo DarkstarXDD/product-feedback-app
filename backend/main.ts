@@ -70,7 +70,7 @@ api.use("/users/*", authMw)
 api.use("/posts/*", authMw)
 api.use("/comments/*", authMw)
 
-/** Mount instanes on protected routes. */
+/** Mount instances on protected routes. */
 api.route("/users", userRoutes)
 
 /** Mount API instance on app. */
