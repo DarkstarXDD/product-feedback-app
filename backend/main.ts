@@ -13,13 +13,10 @@ const app = new Hono()
 const publicRoutes = new Hono()
 const protectedRoutes = new Hono()
 
+/** poweredBy middleware runs on all routes. */
 app.use(poweredBy())
 
-protectedRoutes.use(
-  "*",
-  jwt({ secret: JWT_SECRET, cookie: "token", alg: "HS256" })
-)
-
+/** Global error handler. */
 app.onError((err, c) => {
   if (err instanceof HTTPException) {
     console.log(err)
@@ -29,9 +26,18 @@ app.onError((err, c) => {
   return c.json({ message: "Someting went wrong." }, 500)
 })
 
-publicRoutes.get("/", (c) => c.json({ message: "Success" }))
+/** JWT middleware runs on all routes that are mounted in the protectedRoutes Hono instance.  */
+protectedRoutes.use(jwt({ secret: JWT_SECRET, cookie: "token", alg: "HS256" }))
+
+/** Mount `authRoutes` Hono instance at `/auth` base path, on the publicRoutes Hono instance.  */
 publicRoutes.route("/auth", authRoutes)
 
+/** A GET handler mounted on the `/` base path on the publicRoutes Hono instance.  */
+publicRoutes.get("/", (c) => c.json({ message: "Success" }))
+
+/** Mount `userRoutes` Hono instance on the `/users` base path on the protectedRoutes Hono instance.
+ * Because we are running the JWT middleware on all routes on the protectedRoutes instance, any route instance mounted on protectedRoutes will be protected by default.
+ */
 protectedRoutes.route("/users", userRoutes)
 
 app.route("/api/v1", publicRoutes)
