@@ -84,6 +84,7 @@ authRoutes.post("/signup", async (c) => {
     maxAge: JWT_TTL_SECONDS,
     httpOnly: true,
     secure: true,
+    path: "/",
   })
 
   return jsonSuccess(c, { data: user }, { status: 201 })
@@ -148,6 +149,7 @@ authRoutes.post("/signin", async (c) => {
     maxAge: JWT_TTL_SECONDS,
     httpOnly: true,
     secure: true,
+    path: "/",
   })
 
   return jsonSuccess(c, { data: { success: true } })
