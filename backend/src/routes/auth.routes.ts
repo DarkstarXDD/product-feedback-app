@@ -82,6 +82,7 @@ authRoutes.post("/signup", async (c) => {
 
   setCookie(c, "token", token, {
     maxAge: JWT_TTL_SECONDS,
+    sameSite: "Lax",
     httpOnly: true,
     secure: true,
     path: "/",
@@ -147,6 +148,7 @@ authRoutes.post("/signin", async (c) => {
 
   setCookie(c, "token", token, {
     maxAge: JWT_TTL_SECONDS,
+    sameSite: "Lax",
     httpOnly: true,
     secure: true,
     path: "/",
