@@ -109,7 +109,14 @@ authRoutes.post("/signin", async (c) => {
   }
 
   const user = await prisma.user.findUnique({
-    select: { password: true, id: true },
+    select: {
+      createdAt: true,
+      password: true,
+      username: true,
+      email: true,
+      name: true,
+      id: true,
+    },
     where: { email: parsed.data.email },
   })
 
@@ -154,7 +161,15 @@ authRoutes.post("/signin", async (c) => {
     path: "/",
   })
 
-  return jsonSuccess(c, { data: { success: true } })
+  return jsonSuccess(c, {
+    data: {
+      createdAt: user.createdAt,
+      username: user.username,
+      email: user.email,
+      name: user.name,
+      id: user.id,
+    },
+  })
 })
 
 // ------------------------------- Sign Out --------------------------------
