@@ -1,16 +1,16 @@
 import * as z from "zod"
 
+import { userSchema } from "@/schemas/user.schema"
+
 // --------------------- SignUp Schema -----------------------
-export const signUpSchema = z
-  .object({
-    email: z
-      .email("Invalid email")
-      .min(1, "Email cannot be empty")
-      .toLowerCase(),
-    password: z.string().min(8, "Password must be at least 8 characters long"),
-    confirmPassword: z.string("Confirm password can't be empty"),
-    username: z.string().min(1, "Username cannot be empty"),
-    name: z.string().min(1, "Name cannot be empty"),
+export const signUpSchema = userSchema
+  .extend({
+    confirmPassword: z
+      .string("Invalid confirm password")
+      .min(1, "Confirm password can't be empty"),
+    password: z
+      .string("Invalid password")
+      .min(8, "Password must be at least 8 characters long"),
   })
   .refine((data) => data.password === data.confirmPassword, {
     error: "Passwords don't match",
@@ -22,22 +22,3 @@ export const signInSchema = z.object({
   email: z.email("Invalid email").min(1, "Email cannot be empty").toLowerCase(),
   password: z.string().min(8, "Password must be at least 8 characters long"),
 })
-
-// const data = {
-//   confirmPassword: "harry123",
-//   email: "HarRy@email.com",
-//   username: "harrypotter1",
-//   password: "harry123",
-//   name: "Harry",
-// }
-
-// const parsed = createUserSchema.safeParse(data)
-
-// if (!parsed.success) {
-//   const errors = z.flattenError(parsed.error)
-//   console.log(errors)
-// }
-
-// if (parsed.success) {
-//   console.log(parsed.data)
-// }

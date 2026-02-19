@@ -93,3 +93,20 @@ export function jsonError(
 export function formatZodErrors(errorObj: z.ZodError) {
   return z.flattenError(errorObj)
 }
+
+/**
+ * Prisma doesn't provide a way to retreive the exact field name that violates the unique constraint.
+ * So we need to manually check whether there are existing entries for the given unique fields.
+ * This function is a hack found here: https://github.com/prisma/prisma/issues/28281#issuecomment-3857604910
+ */
+export function getPrismaUniqueConstraintViolationField(err: unknown) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+  const fields = (err as any)?.meta?.driverAdapterError?.cause?.constraint
+    ?.fields
+
+  const message = Array.isArray(fields)
+    ? fields.map((f: string) => f.replace(/"/g, "")).join(", ")
+    : "unique constraint violation"
+
+  return message
+}
