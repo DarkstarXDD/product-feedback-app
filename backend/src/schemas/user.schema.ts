@@ -12,3 +12,10 @@ export const userSchema = z.object({
     .max(50, "Name cannot have more than 50 characters"),
   email: z.email("Invalid email").toLowerCase(),
 })
+
+// --------------------- User Update Schema -----------------------
+export const userUpdateSchema = userSchema
+  .partial()
+  .refine((data) => Object.keys(data).length > 0, {
+    error: "At least one field is required",
+  })
