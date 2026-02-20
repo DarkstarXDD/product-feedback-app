@@ -107,11 +107,13 @@ meRoutes.patch("/", async (c) => {
 // ------------------------------- Delete Current User ----------------------------------
 /** This is yet to be implemented */
 meRoutes.delete("/", (c) => {
-  const jwtPayload = c.get("jwtPayload")
+  // const jwtPayload = c.get("jwtPayload")
 
-  return jsonSuccess(c, {
-    data: `Successfully deleted user ${jwtPayload.userId}`,
-  })
+  return jsonError(
+    c,
+    { message: "Not implemented yet", code: "NOT_IMPLEMENTED" },
+    { status: 501 }
+  )
 })
 
 export default meRoutes
