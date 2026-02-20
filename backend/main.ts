@@ -1,9 +1,9 @@
 import { HTTPException } from "hono/http-exception"
 import { poweredBy } from "hono/powered-by"
 import { logger } from "hono/logger"
-import { jwt } from "hono/jwt"
 import { Hono } from "hono"
 
+import { authMw } from "@/middlewares/auth.middleware"
 import authRoutes from "@/routes/auth.routes"
 import userRoutes from "@/routes/user.routes"
 import meRoutes from "@/routes/me.routes"
@@ -46,13 +46,8 @@ import meRoutes from "@/routes/me.routes"
 // app.route("/api/v1", protectedRoutes)
 // app.all("*", (c) => c.body("404 not found", 404))
 
-const JWT_SECRET = process.env.JWT_SECRET
-if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined.")
-
 const app = new Hono()
 const api = new Hono()
-
-const authMw = jwt({ secret: JWT_SECRET, cookie: "token", alg: "HS256" })
 
 /** poweredBy middleware runs on all routes. */
 app.use(poweredBy())
