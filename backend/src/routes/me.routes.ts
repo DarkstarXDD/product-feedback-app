@@ -29,7 +29,7 @@ meRoutes.get("/", async (c) => {
   return jsonSuccess(c, { data: user })
 })
 
-// ------------------------------- Get Current User ----------------------------------
+// ------------------------------- Update Current User ----------------------------------
 meRoutes.patch("/", async (c) => {
   const jwtPayload = c.get("jwtPayload")
 
