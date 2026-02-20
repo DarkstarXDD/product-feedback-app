@@ -3,6 +3,7 @@ import { poweredBy } from "hono/powered-by"
 import { logger } from "hono/logger"
 import { Hono } from "hono"
 
+import { currentUserMw } from "@/middlewares/current-user.middleware"
 import { authMw } from "@/middlewares/auth.middleware"
 import authRoutes from "@/routes/auth.routes"
 import userRoutes from "@/routes/user.routes"
@@ -68,9 +69,7 @@ api.route("/auth", authRoutes)
 api.get("/", (c) => c.json({ message: "Success" }))
 
 /** Apply auth middleware to only needed routes. So these are protected routes. */
-api.use("/users/*", authMw)
-api.use("/posts/*", authMw)
-api.use("/comments/*", authMw)
+api.use("/users/*", authMw, currentUserMw)
 
 /** Mount instances on protected routes. */
 api.route("/users/me", meRoutes)
