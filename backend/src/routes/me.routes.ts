@@ -104,4 +104,14 @@ meRoutes.patch("/", async (c) => {
   return jsonSuccess(c, { data: user })
 })
 
+// ------------------------------- Delete Current User ----------------------------------
+/** This is yet to be implemented */
+meRoutes.delete("/", (c) => {
+  const jwtPayload = c.get("jwtPayload")
+
+  return jsonSuccess(c, {
+    data: `Successfully deleted user ${jwtPayload.userId}`,
+  })
+})
+
 export default meRoutes
