@@ -52,6 +52,7 @@ export function jsonSuccess<T>(
 // ------------------------- Error Response ----------------------------
 type ErrorCodes =
   | "VALIDATION_ERROR"
+  | "NOT_IMPLEMENTED"
   | "INTERNAL_ERROR"
   | "UNAUTHORIZED"
   | "RATE_LIMITED"
