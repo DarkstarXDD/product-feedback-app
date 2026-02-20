@@ -1,5 +1,6 @@
 import { HTTPException } from "hono/http-exception"
 import { poweredBy } from "hono/powered-by"
+import { logger } from "hono/logger"
 import { jwt } from "hono/jwt"
 import { Hono } from "hono"
 
@@ -50,6 +51,7 @@ const authMw = jwt({ secret: JWT_SECRET, cookie: "token", alg: "HS256" })
 
 /** poweredBy middleware runs on all routes. */
 app.use(poweredBy())
+app.use(logger())
 
 /** Global error handler. */
 app.onError((err, c) => {
