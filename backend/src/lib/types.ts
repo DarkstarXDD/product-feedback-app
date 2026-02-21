@@ -1,6 +1,6 @@
 import type { JwtVariables } from "hono/jwt"
 
-type JwtPayload = { userId: string; exp: number }
+export type JwtPayload = { userId: string; exp: number }
 
 // type CurrentUser = {
 //   role: "ADMIN" | "USER"
@@ -14,7 +14,7 @@ type JwtPayload = { userId: string; exp: number }
 //   currentUser: CurrentUser
 // } & JwtVariables<JwtPayload>
 
-type Role = "ADMIN" | "USER"
+export type Role = "ADMIN" | "USER"
 
 type AuthUser = {
   username: string

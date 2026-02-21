@@ -1,13 +1,14 @@
 import { Hono } from "hono"
 
 import { formatZodErrors, jsonSuccess, jsonError } from "@/lib/utils"
+import { optionalAuth } from "@/middlewares/optional-auth.middleware"
 import { userUpdateSchema } from "@/schemas/user.schema"
 import { prisma } from "@/db/client"
 
 const userRoutes = new Hono()
 
 // ------------------------------- Get All Users --------------------------------
-userRoutes.get("/", async (c) => {
+userRoutes.get("/", optionalAuth, async (c) => {
   const users = await prisma.user.findMany({
     include: { suggestions: true, comments: true, upvotes: true, _count: true },
     omit: { updatedAt: true, password: true },
