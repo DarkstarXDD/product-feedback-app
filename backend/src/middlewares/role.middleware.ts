@@ -2,7 +2,7 @@
 
 import type { MiddlewareHandler } from "hono"
 
-import type { HonoInstanceVariables } from "@/lib/types"
+import type { AppContext } from "@/lib/types"
 
 import { jsonError } from "@/lib/utils"
 // Grab the current authed users route from context c.get("currentUser")
@@ -21,13 +21,21 @@ import { jsonError } from "@/lib/utils"
 
 export function authorizationMw(
   roles: ("ADMIN" | "USER")[]
-): MiddlewareHandler<{ Variables: HonoInstanceVariables }> {
+): MiddlewareHandler<AppContext> {
   return async (c, next) => {
-    const currentUser = c.get("currentUser")
+    const user = c.get("user")
 
-    const isAuthorized = roles.includes(currentUser.role)
+    if (!user) {
+      return jsonError(
+        c,
+        { message: "Unauthorized", code: "UNAUTHORIZED" },
+        { status: 401 }
+      )
+    }
 
-    console.log(c.get("currentUser"))
+    const isAuthorized = roles.includes(user.role)
+
+    console.log(c.get("user"))
     console.log(isAuthorized)
 
     if (!isAuthorized) {

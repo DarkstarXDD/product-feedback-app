@@ -1,14 +1,12 @@
 import type { MiddlewareHandler } from "hono"
 
-import type { HonoInstanceVariables } from "@/lib/types"
+import type { AppContext } from "@/lib/types"
 
 import { jsonError } from "@/lib/utils"
 import { prisma } from "@/db/client"
 
 /** Fetches user data based on the userId from auth token and add that data to the request context. */
-export const currentUserMw: MiddlewareHandler<{
-  Variables: HonoInstanceVariables
-}> = async (c, next) => {
+export const currentUserMw: MiddlewareHandler<AppContext> = async (c, next) => {
   const jwtPayload = c.get("jwtPayload")
 
   if (!jwtPayload.userId) {
@@ -32,6 +30,6 @@ export const currentUserMw: MiddlewareHandler<{
     )
   }
 
-  c.set("currentUser", user)
+  c.set("user", user)
   await next()
 }

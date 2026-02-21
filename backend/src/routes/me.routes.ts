@@ -1,12 +1,12 @@
 import { Hono } from "hono"
 
-import type { HonoInstanceVariables } from "@/lib/types"
+import type { AppContext } from "@/lib/types"
 
 import { formatZodErrors, jsonSuccess, jsonError } from "@/lib/utils"
 import { userUpdateSchema } from "@/schemas/user.schema"
 import { prisma } from "@/db/client"
 
-const meRoutes = new Hono<{ Variables: HonoInstanceVariables }>()
+const meRoutes = new Hono<AppContext>()
 
 // ------------------------------- Get Current User ----------------------------------
 meRoutes.get("/", async (c) => {
