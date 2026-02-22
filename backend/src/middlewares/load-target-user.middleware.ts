@@ -34,6 +34,5 @@ export const loadTargetUserByUsername: MiddlewareHandler<AppContext> = async (
   }
 
   c.set("targetUser", user)
-  console.log(user)
   await next()
 }
