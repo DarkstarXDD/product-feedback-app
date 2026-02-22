@@ -8,7 +8,7 @@ import { Hono } from "hono"
 // import { authMw } from "@/middlewares/auth.middleware"
 import authRoutes from "@/routes/auth.routes"
 import userRoutes from "@/routes/user.routes"
-import meRoutes from "@/routes/me.routes"
+// import meRoutes from "@/routes/me.routes"
 
 // const app = new Hono()
 // const publicRoutes = new Hono()
@@ -73,7 +73,7 @@ app.onError((err, c) => {
 api.route("/auth", authRoutes)
 
 /** Mount instances on protected routes. */
-api.route("/users/me", meRoutes)
+// api.route("/users/me", meRoutes)
 api.route("/users", userRoutes)
 
 /** Mount API instance on app. */
