@@ -1,119 +1,119 @@
-import { Hono } from "hono"
+// import { Hono } from "hono"
 
-import type { HonoInstanceVariables } from "@/lib/types"
+// import type { AppContext } from "@/lib/types"
 
-import { formatZodErrors, jsonSuccess, jsonError } from "@/lib/utils"
-import { userUpdateSchema } from "@/schemas/user.schema"
-import { prisma } from "@/db/client"
+// import { formatZodErrors, jsonSuccess, jsonError } from "@/lib/utils"
+// import { userUpdateSchema } from "@/schemas/user.schema"
+// import { prisma } from "@/db/client"
 
-const meRoutes = new Hono<{ Variables: HonoInstanceVariables }>()
+// const meRoutes = new Hono<AppContext>()
 
-// ------------------------------- Get Current User ----------------------------------
-meRoutes.get("/", async (c) => {
-  const jwtPayload = c.get("jwtPayload")
+// // ------------------------------- Get Current User ----------------------------------
+// meRoutes.get("/", async (c) => {
+//   const jwtPayload = c.get("jwtPayload")
 
-  const user = await prisma.user.findUnique({
-    include: { suggestions: true, comments: true, upvotes: true, _count: true },
-    where: { id: jwtPayload.userId },
-    omit: { password: true },
-  })
+//   const user = await prisma.user.findUnique({
+//     include: { suggestions: true, comments: true, upvotes: true, _count: true },
+//     where: { id: jwtPayload.userId },
+//     omit: { password: true },
+//   })
 
-  if (!user) {
-    return jsonError(
-      c,
-      { message: "User not found", code: "NOT_FOUND" },
-      { status: 404 }
-    )
-  }
+//   if (!user) {
+//     return jsonError(
+//       c,
+//       { message: "User not found", code: "NOT_FOUND" },
+//       { status: 404 }
+//     )
+//   }
 
-  return jsonSuccess(c, { data: user })
-})
+//   return jsonSuccess(c, { data: user })
+// })
 
-// ------------------------------- Update Current User ----------------------------------
-meRoutes.patch("/", async (c) => {
-  const jwtPayload = c.get("jwtPayload")
+// // ------------------------------- Update Current User ----------------------------------
+// meRoutes.patch("/", async (c) => {
+//   const jwtPayload = c.get("jwtPayload")
 
-  const payload = (await c.req.json()) as unknown
-  const parsed = userUpdateSchema.safeParse(payload)
+//   const payload = (await c.req.json()) as unknown
+//   const parsed = userUpdateSchema.safeParse(payload)
 
-  if (!parsed.success)
-    return jsonError(
-      c,
-      {
-        errors: formatZodErrors(parsed.error),
-        message: "Server validation fails",
-        code: "VALIDATION_ERROR",
-      },
-      { status: 400 }
-    )
+//   if (!parsed.success)
+//     return jsonError(
+//       c,
+//       {
+//         errors: formatZodErrors(parsed.error),
+//         message: "Server validation fails",
+//         code: "VALIDATION_ERROR",
+//       },
+//       { status: 400 }
+//     )
 
-  // 1. Get current user first
-  const currentUser = await prisma.user.findUnique({
-    select: { username: true, email: true, id: true },
-    where: { id: jwtPayload.userId },
-  })
+//   // 1. Get current user first
+//   const currentUser = await prisma.user.findUnique({
+//     select: { username: true, email: true, id: true },
+//     where: { id: jwtPayload.userId },
+//   })
 
-  if (!currentUser) {
-    return jsonError(
-      c,
-      { message: "User not found", code: "NOT_FOUND" },
-      { status: 404 }
-    )
-  }
+//   if (!currentUser) {
+//     return jsonError(
+//       c,
+//       { message: "User not found", code: "NOT_FOUND" },
+//       { status: 404 }
+//     )
+//   }
 
-  // 2. Check conflicts only for fields being updated, excluding current user
-  const conflict = await prisma.user.findFirst({
-    where: {
-      OR: [
-        ...(parsed.data.email ? [{ email: parsed.data.email }] : []),
-        ...(parsed.data.username ? [{ username: parsed.data.username }] : []),
-      ],
-      id: { not: currentUser.id }, // exclude own row
-    },
-    select: { username: true, email: true },
-  })
+//   // 2. Check conflicts only for fields being updated, excluding current user
+//   const conflict = await prisma.user.findFirst({
+//     where: {
+//       OR: [
+//         ...(parsed.data.email ? [{ email: parsed.data.email }] : []),
+//         ...(parsed.data.username ? [{ username: parsed.data.username }] : []),
+//       ],
+//       id: { not: currentUser.id }, // exclude own row
+//     },
+//     select: { username: true, email: true },
+//   })
 
-  if (conflict) {
-    const fieldErrors: Record<string, string[]> = {}
+//   if (conflict) {
+//     const fieldErrors: Record<string, string[]> = {}
 
-    if (parsed.data.email && conflict.email === parsed.data.email) {
-      fieldErrors.email = ["Email already exists"]
-    }
-    if (parsed.data.username && conflict.username === parsed.data.username) {
-      fieldErrors.username = [
-        "Username taken. Please pick a different username",
-      ]
-    }
+//     if (parsed.data.email && conflict.email === parsed.data.email) {
+//       fieldErrors.email = ["Email already exists"]
+//     }
+//     if (parsed.data.username && conflict.username === parsed.data.username) {
+//       fieldErrors.username = [
+//         "Username taken. Please pick a different username",
+//       ]
+//     }
 
-    return jsonError(
-      c,
-      {
-        message: "Unique constraint violation",
-        errors: { fieldErrors },
-        code: "CONFLICT",
-      },
-      { status: 409 }
-    )
-  }
+//     return jsonError(
+//       c,
+//       {
+//         message: "Unique constraint violation",
+//         errors: { fieldErrors },
+//         code: "CONFLICT",
+//       },
+//       { status: 409 }
+//     )
+//   }
 
-  const user = await prisma.user.update({
-    where: { id: jwtPayload.userId },
-    omit: { password: true },
-    data: parsed.data,
-  })
-  return jsonSuccess(c, { data: user })
-})
+//   const user = await prisma.user.update({
+//     where: { id: jwtPayload.userId },
+//     omit: { password: true },
+//     data: parsed.data,
+//   })
+//   return jsonSuccess(c, { data: user })
+// })
 
-// ------------------------------- Delete Current User ----------------------------------
-/** This is yet to be implemented */
-meRoutes.delete("/", (c) => {
-  // const jwtPayload = c.get("jwtPayload")
+// // ------------------------------- Delete Current User ----------------------------------
+// /** This is yet to be implemented */
+// meRoutes.delete("/", (c) => {
+//   // const jwtPayload = c.get("jwtPayload")
 
-  return jsonError(
-    c,
-    { message: "Not implemented yet", code: "NOT_IMPLEMENTED" },
-    { status: 501 }
-  )
-})
+//   return jsonError(
+//     c,
+//     { message: "Not implemented yet", code: "NOT_IMPLEMENTED" },
+//     { status: 501 }
+//   )
+// })
 
-export default meRoutes
+// export default meRoutes

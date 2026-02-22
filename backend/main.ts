@@ -1,12 +1,14 @@
 import { HTTPException } from "hono/http-exception"
 import { poweredBy } from "hono/powered-by"
 import { logger } from "hono/logger"
-import { jwt } from "hono/jwt"
 import { Hono } from "hono"
 
+// import { currentUserMw } from "@/middlewares/current-user.middleware"
+// import { authorizationMw } from "@/middlewares/role.middleware"
+// import { authMw } from "@/middlewares/auth.middleware"
 import authRoutes from "@/routes/auth.routes"
 import userRoutes from "@/routes/user.routes"
-import meRoutes from "@/routes/me.routes"
+// import meRoutes from "@/routes/me.routes"
 
 // const app = new Hono()
 // const publicRoutes = new Hono()
@@ -46,15 +48,9 @@ import meRoutes from "@/routes/me.routes"
 // app.route("/api/v1", protectedRoutes)
 // app.all("*", (c) => c.body("404 not found", 404))
 
-const JWT_SECRET = process.env.JWT_SECRET
-if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined.")
-
 const app = new Hono()
 const api = new Hono()
 
-const authMw = jwt({ secret: JWT_SECRET, cookie: "token", alg: "HS256" })
-
-/** poweredBy middleware runs on all routes. */
 app.use(poweredBy())
 app.use(logger())
 
@@ -68,17 +64,16 @@ app.onError((err, c) => {
   return c.json({ message: "Something went wrong." }, 500)
 })
 
+/** Apply auth middleware to only needed routes. So these are protected routes. */
+// api.use("/users", authMw, currentUserMw)
+// api.use("/users/me", authMw, currentUserMw, authorizationMw(["USER", "ADMIN"]))
+// api.use("/users/*", authMw, currentUserMw, authorizationMw(["ADMIN"]))
+
 /** All routes on `api` are public by default. Mount `auth` instance on it. */
 api.route("/auth", authRoutes)
-api.get("/", (c) => c.json({ message: "Success" }))
-
-/** Apply auth middleware to only needed routes. So these are protected routes. */
-api.use("/users/*", authMw)
-api.use("/posts/*", authMw)
-api.use("/comments/*", authMw)
 
 /** Mount instances on protected routes. */
-api.route("/users/me", meRoutes)
+// api.route("/users/me", meRoutes)
 api.route("/users", userRoutes)
 
 /** Mount API instance on app. */

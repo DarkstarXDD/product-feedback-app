@@ -1,13 +1,17 @@
 import { Hono } from "hono"
 
+import { loadTargetUserByUsername } from "@/middlewares/load-target-user.middleware"
+import { computeAccessFlags } from "@/middlewares/compute-access-flags"
 import { formatZodErrors, jsonSuccess, jsonError } from "@/lib/utils"
+import { optionalAuth } from "@/middlewares/optional-auth.middleware"
+import { hydrateUser } from "@/middlewares/hydrate-user.middleware"
 import { userUpdateSchema } from "@/schemas/user.schema"
 import { prisma } from "@/db/client"
 
 const userRoutes = new Hono()
 
 // ------------------------------- Get All Users --------------------------------
-userRoutes.get("/", async (c) => {
+userRoutes.get("/", optionalAuth, computeAccessFlags, async (c) => {
   const users = await prisma.user.findMany({
     include: { suggestions: true, comments: true, upvotes: true, _count: true },
     omit: { updatedAt: true, password: true },
@@ -16,24 +20,36 @@ userRoutes.get("/", async (c) => {
 })
 
 // ------------------------------- Get a User ----------------------------------
-userRoutes.get("/:username", async (c) => {
-  const { username } = c.req.param()
-  const user = await prisma.user.findUnique({
-    include: { suggestions: true, comments: true, upvotes: true, _count: true },
-    omit: { updatedAt: true, password: true },
-    where: { username },
-  })
+userRoutes.get(
+  "/:username",
+  optionalAuth,
+  hydrateUser,
+  loadTargetUserByUsername,
+  computeAccessFlags,
+  async (c) => {
+    const { username } = c.req.param()
+    const user = await prisma.user.findUnique({
+      include: {
+        suggestions: true,
+        comments: true,
+        upvotes: true,
+        _count: true,
+      },
+      omit: { updatedAt: true, password: true },
+      where: { username },
+    })
 
-  if (!user) {
-    return jsonError(
-      c,
-      { message: "User not found", code: "NOT_FOUND" },
-      { status: 404 }
-    )
+    if (!user) {
+      return jsonError(
+        c,
+        { message: "User not found", code: "NOT_FOUND" },
+        { status: 404 }
+      )
+    }
+
+    return jsonSuccess(c, { data: user })
   }
-
-  return jsonSuccess(c, { data: user })
-})
+)
 
 // --------------------------------- Update a User ------------------------------
 userRoutes.patch("/:username", async (c) => {
