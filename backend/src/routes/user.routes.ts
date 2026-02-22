@@ -1,5 +1,6 @@
 import { Hono } from "hono"
 
+import { loadTargetUserByUsername } from "@/middlewares/load-target-user.middleware"
 import { formatZodErrors, jsonSuccess, jsonError } from "@/lib/utils"
 import { optionalAuth } from "@/middlewares/optional-auth.middleware"
 import { userUpdateSchema } from "@/schemas/user.schema"
@@ -17,7 +18,7 @@ userRoutes.get("/", optionalAuth, async (c) => {
 })
 
 // ------------------------------- Get a User ----------------------------------
-userRoutes.get("/:username", async (c) => {
+userRoutes.get("/:username", loadTargetUserByUsername, async (c) => {
   const { username } = c.req.param()
   const user = await prisma.user.findUnique({
     include: { suggestions: true, comments: true, upvotes: true, _count: true },
