@@ -17,8 +17,8 @@ const userRoutes = new Hono()
 userRoutes.get(
   "/",
   resolveAuthUser,
-  // requireAuth,
   requireRole("ADMIN"),
+  // requireAuth,
   // // optionalAuth,
   // computeAccessFlags,
   async (c) => {
