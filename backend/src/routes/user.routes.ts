@@ -1,12 +1,13 @@
 import { Hono } from "hono"
 
-import { loadTargetUserByUsername } from "@/middlewares/load-target-user.middleware"
-import { computeAccessFlags } from "@/middlewares/compute-access-flags.middleware"
+// import { loadTargetUserByUsername } from "@/middlewares/load-target-user.middleware"
+// import { computeAccessFlags } from "@/middlewares/compute-access-flags.middleware"
 import { resolveAuthUser } from "@/middlewares/resolve-auth-user.middleware"
 import { formatZodErrors, jsonSuccess, jsonError } from "@/lib/utils"
-import { optionalAuth } from "@/middlewares/optional-auth.middleware"
-import { hydrateUser } from "@/middlewares/hydrate-user.middleware"
-import { requireAuth } from "@/middlewares/require-auth.middleware"
+// import { optionalAuth } from "@/middlewares/optional-auth.middleware"
+// import { hydrateUser } from "@/middlewares/hydrate-user.middleware"
+// import { requireAuth } from "@/middlewares/require-auth.middleware"
+import { requireRole } from "@/middlewares/require-role.middleware"
 import { userUpdateSchema } from "@/schemas/user.schema"
 import { prisma } from "@/db/client"
 
@@ -16,7 +17,8 @@ const userRoutes = new Hono()
 userRoutes.get(
   "/",
   resolveAuthUser,
-  requireAuth,
+  // requireAuth,
+  requireRole("ADMIN"),
   // // optionalAuth,
   // computeAccessFlags,
   async (c) => {
@@ -36,10 +38,11 @@ userRoutes.get(
 // ------------------------------- Get a User ----------------------------------
 userRoutes.get(
   "/:username",
-  optionalAuth,
-  hydrateUser,
-  loadTargetUserByUsername,
-  computeAccessFlags,
+  resolveAuthUser,
+  // optionalAuth,
+  // hydrateUser,
+  // loadTargetUserByUsername,
+  // computeAccessFlags,
   async (c) => {
     const { username } = c.req.param()
     const user = await prisma.user.findUnique({
