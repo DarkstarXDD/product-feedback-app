@@ -6,6 +6,7 @@ import { resolveAuthUser } from "@/middlewares/resolve-auth-user.middleware"
 import { formatZodErrors, jsonSuccess, jsonError } from "@/lib/utils"
 import { optionalAuth } from "@/middlewares/optional-auth.middleware"
 import { hydrateUser } from "@/middlewares/hydrate-user.middleware"
+import { requireAuth } from "@/middlewares/require-auth.middleware"
 import { userUpdateSchema } from "@/schemas/user.schema"
 import { prisma } from "@/db/client"
 
@@ -15,6 +16,7 @@ const userRoutes = new Hono()
 userRoutes.get(
   "/",
   resolveAuthUser,
+  requireAuth,
   // // optionalAuth,
   // computeAccessFlags,
   async (c) => {

@@ -1,13 +1,16 @@
 import type { MiddlewareHandler } from "hono"
 
-import type { AppContext } from "@/lib/types"
-import type { Role } from "@/lib/types"
+import type { AppContext, Role } from "@/lib/types"
 
 import { jsonError } from "@/lib/utils"
 
 export function requireRole(
   ...allowedRoles: Role[]
 ): MiddlewareHandler<AppContext> {
+  if (allowedRoles.length === 0) {
+    throw new Error("requireRole requires at least one allowed role.")
+  }
+
   return async (c, next) => {
     const user = c.get("user")
 
