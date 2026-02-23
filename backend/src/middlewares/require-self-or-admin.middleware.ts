@@ -36,5 +36,9 @@ export const requireSelfOrAdmin: MiddlewareHandler<AppContext> = async (
     return
   }
 
-  return c.json({ message: "Forbidden" }, 403)
+  return jsonError(
+    c,
+    { message: "Forbidden", code: "FORBIDDEN" },
+    { status: 403 }
+  )
 }

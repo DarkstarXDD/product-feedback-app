@@ -1,13 +1,20 @@
 import type { MiddlewareHandler } from "hono"
 
-import type { AppContext } from "@/lib/types"
-import type { Role } from "@/lib/types"
+import type { AppContext, Role } from "@/lib/types"
 
 import { jsonError } from "@/lib/utils"
 
+/**
+ * Requires an authenticated user and enforces that the user's role is one of the allowed roles.
+ * Returns 401 if unauthenticated and 403 if authenticated but not permitted.
+ */
 export function requireRole(
   ...allowedRoles: Role[]
 ): MiddlewareHandler<AppContext> {
+  if (allowedRoles.length === 0) {
+    throw new Error("requireRole requires at least one allowed role.")
+  }
+
   return async (c, next) => {
     const user = c.get("user")
 
