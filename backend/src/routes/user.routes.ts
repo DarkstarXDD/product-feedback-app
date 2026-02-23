@@ -2,6 +2,7 @@ import { Hono } from "hono"
 
 import { loadTargetUserByUsername } from "@/middlewares/load-target-user.middleware"
 import { computeAccessFlags } from "@/middlewares/compute-access-flags.middleware"
+import { resolveAuthUser } from "@/middlewares/resolve-auth-user.middleware"
 import { formatZodErrors, jsonSuccess, jsonError } from "@/lib/utils"
 import { optionalAuth } from "@/middlewares/optional-auth.middleware"
 import { hydrateUser } from "@/middlewares/hydrate-user.middleware"
@@ -11,13 +12,24 @@ import { prisma } from "@/db/client"
 const userRoutes = new Hono()
 
 // ------------------------------- Get All Users --------------------------------
-userRoutes.get("/", optionalAuth, computeAccessFlags, async (c) => {
-  const users = await prisma.user.findMany({
-    include: { suggestions: true, comments: true, upvotes: true, _count: true },
-    omit: { updatedAt: true, password: true },
-  })
-  return jsonSuccess(c, { data: users })
-})
+userRoutes.get(
+  "/",
+  resolveAuthUser,
+  // // optionalAuth,
+  // computeAccessFlags,
+  async (c) => {
+    const users = await prisma.user.findMany({
+      include: {
+        suggestions: true,
+        comments: true,
+        upvotes: true,
+        _count: true,
+      },
+      omit: { updatedAt: true, password: true },
+    })
+    return jsonSuccess(c, { data: users })
+  }
+)
 
 // ------------------------------- Get a User ----------------------------------
 userRoutes.get(
