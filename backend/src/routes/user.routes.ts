@@ -1,7 +1,7 @@
 import { Hono } from "hono"
 
 import { loadTargetUserByUsername } from "@/middlewares/load-target-user.middleware"
-import { computeAccessFlags } from "@/middlewares/compute-access-flags"
+import { computeAccessFlags } from "@/middlewares/compute-access-flags.middleware"
 import { formatZodErrors, jsonSuccess, jsonError } from "@/lib/utils"
 import { optionalAuth } from "@/middlewares/optional-auth.middleware"
 import { hydrateUser } from "@/middlewares/hydrate-user.middleware"
