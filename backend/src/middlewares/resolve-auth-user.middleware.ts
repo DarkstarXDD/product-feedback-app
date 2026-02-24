@@ -26,23 +26,26 @@ export const resolveAuthUser: MiddlewareHandler<AppContext> = async (
     return
   }
 
+  let jwtPayload: JwtPayload
   try {
-    const jwtPayload = (await verify(token, JWT_SECRET, {
+    jwtPayload = (await verify(token, JWT_SECRET, {
       alg: "HS256",
     })) as JwtPayload
-
-    const user = await prisma.user.findUnique({
-      select: { username: true, email: true, role: true, name: true, id: true },
-      where: { id: jwtPayload.userId },
-    })
-
-    if (user) {
-      c.set("jwtPayload", jwtPayload)
-      c.set("user", user)
-    } else {
-      c.set("jwtPayload", undefined)
-    }
   } catch {
+    c.set("jwtPayload", undefined)
+    await next()
+    return
+  }
+
+  const user = await prisma.user.findUnique({
+    select: { username: true, email: true, role: true, name: true, id: true },
+    where: { id: jwtPayload.userId },
+  })
+
+  if (user) {
+    c.set("jwtPayload", jwtPayload)
+    c.set("user", user)
+  } else {
     c.set("jwtPayload", undefined)
   }
 
