@@ -2,7 +2,11 @@ import { Hono } from "hono"
 
 import type { AppContext } from "@/lib/types"
 
-import { privateUserSelect, publicUserSelect } from "@/lib/selects/user.selects"
+import {
+  adminUserListSelect,
+  privateUserSelect,
+  publicUserSelect,
+} from "@/lib/selects/user.selects"
 import { withTargetAccess } from "@/middlewares/with-target-access.middleware"
 import { resolveAuthUser } from "@/middlewares/resolve-auth-user.middleware"
 import { formatZodErrors, jsonSuccess, jsonError } from "@/lib/utils"
@@ -15,13 +19,7 @@ const userRoutes = new Hono<AppContext>()
 // ------------------------------- Get All Users --------------------------------
 userRoutes.get("/", resolveAuthUser, requireRole("ADMIN"), async (c) => {
   const users = await prisma.user.findMany({
-    include: {
-      suggestions: true,
-      comments: true,
-      upvotes: true,
-      _count: true,
-    },
-    omit: { updatedAt: true, password: true },
+    select: adminUserListSelect,
   })
   return jsonSuccess(c, { data: users })
 })
