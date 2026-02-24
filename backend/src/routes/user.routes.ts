@@ -11,6 +11,7 @@ import { withTargetAccess } from "@/middlewares/with-target-access.middleware"
 import { resolveAuthUser } from "@/middlewares/resolve-auth-user.middleware"
 import { formatZodErrors, jsonSuccess, jsonError } from "@/lib/utils"
 import { requireRole } from "@/middlewares/require-role.middleware"
+import { getTargetUserOrThrow } from "@/lib/context-helpers"
 import { userUpdateSchema } from "@/schemas/user.schema"
 import { prisma } from "@/db/client"
 
@@ -27,14 +28,7 @@ userRoutes.get("/", resolveAuthUser, requireRole("ADMIN"), async (c) => {
 // ------------------------------- Get a User ----------------------------------
 userRoutes.get("/:username", resolveAuthUser, withTargetAccess(), async (c) => {
   const access = c.get("access")
-  const targetUser = c.get("targetUser")
-  if (!targetUser) {
-    return jsonError(
-      c,
-      { message: "Internal server error", code: "INTERNAL_ERROR" },
-      { status: 500 }
-    )
-  }
+  const targetUser = getTargetUserOrThrow(c)
 
   const select =
     access && (access.isAdmin || access.isSelf)
@@ -63,14 +57,7 @@ userRoutes.patch(
   resolveAuthUser,
   withTargetAccess({ requireSelfOrAdmin: true }),
   async (c) => {
-    const targetUser = c.get("targetUser")
-    if (!targetUser) {
-      return jsonError(
-        c,
-        { message: "Internal server error", code: "INTERNAL_ERROR" },
-        { status: 500 }
-      )
-    }
+    const targetUser = getTargetUserOrThrow(c)
 
     const payload = (await c.req.json()) as unknown
     const parsed = userUpdateSchema.safeParse(payload)
