@@ -1,17 +1,5 @@
 import type { JwtVariables } from "hono/jwt"
 
-// type CurrentUser = {
-//   role: "ADMIN" | "USER"
-//   username: string
-//   email: string
-//   name: string
-//   id: string
-// }
-
-// export type HonoInstanceVariables = {
-//   currentUser: CurrentUser
-// } & JwtVariables<JwtPayload>
-
 export type JwtPayload = { userId: string; exp: number }
 
 export type Role = "ADMIN" | "USER"
@@ -29,10 +17,12 @@ type HonoInstanceVariables = {
     isAdmin: boolean
     isSelf: boolean
   }
+
   targetUser?: {
     username: string
     id: string
   }
+
   user?: AuthUser
 } & JwtVariables<JwtPayload | undefined>
 
