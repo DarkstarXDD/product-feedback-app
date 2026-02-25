@@ -9,6 +9,7 @@ node_modules
 
 # Exclude the local SQLite database files
 dev.db
+test.db
 
 # output
 out
