@@ -1,5 +1,7 @@
 import { describe, expect, test } from "vitest"
 
+import type { JsonErrorBody } from "@/lib/utils"
+
 import authRoutes from "@/routes/auth.routes"
 
 import { createDummyUserData } from "./utils"
@@ -14,17 +16,8 @@ type SignupResponse = {
   }
 }
 
-type ValidationErrorResponse = {
-  errors: {
-    fieldErrors: Record<string, string[]>
-    formErrors: string[]
-  }
-  message: string
-  code: string
-}
-
 describe("POST /api/v1/auth/signup", () => {
-  test("returns 201 and created user for valid payload", async () => {
+  test("returns 201 and created user when valid payload", async () => {
     const payload = createDummyUserData()
 
     const res = await authRoutes.request("/signup", {
@@ -34,6 +27,8 @@ describe("POST /api/v1/auth/signup", () => {
     })
 
     const resBody = (await res.json()) as SignupResponse
+
+    expect(res.status).toBe(201)
 
     /* eslint-disable @typescript-eslint/no-unsafe-assignment */
     expect(resBody).toEqual({
@@ -48,8 +43,6 @@ describe("POST /api/v1/auth/signup", () => {
 
     expect(resBody.data).not.toHaveProperty("password")
     expect(resBody.data).not.toHaveProperty("confirmPassword")
-
-    expect(res.status).toBe(201)
   })
 
   test("returns 400 and field errors when missing required fields", async () => {
@@ -59,7 +52,9 @@ describe("POST /api/v1/auth/signup", () => {
       method: "POST",
     })
 
-    const resBody = (await res.json()) as ValidationErrorResponse
+    const resBody = (await res.json()) as JsonErrorBody
+
+    expect(res.status).toBe(400)
 
     expect(resBody).toEqual({
       errors: {
@@ -75,7 +70,55 @@ describe("POST /api/v1/auth/signup", () => {
       message: "Server validation fails",
       code: "VALIDATION_ERROR",
     })
+  })
 
-    expect(res.status).toBe(400)
+  test("returns 400 and field errors when confirm password mismatch", async () => {
+    const payload = createDummyUserData()
+
+    const res = await authRoutes.request("/signup", {
+      body: JSON.stringify({ ...payload, confirmPassword: "12345678" }),
+      headers: new Headers({ "Content-Type": "application/json" }),
+      method: "POST",
+    })
+
+    const resBody = await res.json()
+
+    expect(resBody).toEqual({
+      errors: {
+        fieldErrors: {
+          confirmPassword: ["Passwords don't match"],
+        },
+        formErrors: [],
+      },
+      message: "Server validation fails",
+      code: "VALIDATION_ERROR",
+    })
+  })
+
+  test("returns 400 and field errors when password is shorter than minimum", async () => {
+    const payload = createDummyUserData()
+
+    const res = await authRoutes.request("/signup", {
+      body: JSON.stringify({
+        ...payload,
+        confirmPassword: "123456",
+        password: "123456",
+      }),
+      headers: new Headers({ "Content-Type": "application/json" }),
+      method: "POST",
+    })
+
+    const resBody = await res.json()
+
+    expect(resBody).toEqual({
+      errors: {
+        fieldErrors: {
+          password: ["Password must be at least 8 characters long"],
+        },
+        formErrors: [],
+      },
+      message: "Server validation fails",
+      code: "VALIDATION_ERROR",
+    })
   })
 })
