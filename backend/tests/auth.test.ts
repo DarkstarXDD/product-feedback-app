@@ -83,6 +83,8 @@ describe("POST /api/v1/auth/signup", () => {
 
     const resBody = await res.json()
 
+    expect(res.status).toBe(400)
+
     expect(resBody).toEqual({
       errors: {
         fieldErrors: {
@@ -110,10 +112,40 @@ describe("POST /api/v1/auth/signup", () => {
 
     const resBody = await res.json()
 
+    expect(res.status).toBe(400)
+
     expect(resBody).toEqual({
       errors: {
         fieldErrors: {
           password: ["Password must be at least 8 characters long"],
+        },
+        formErrors: [],
+      },
+      message: "Server validation fails",
+      code: "VALIDATION_ERROR",
+    })
+  })
+
+  test("returns 400 and field errors when email format is invalid", async () => {
+    const payload = createDummyUserData()
+
+    const res = await authRoutes.request("/signup", {
+      body: JSON.stringify({
+        ...payload,
+        email: "invalidemailformat",
+      }),
+      headers: new Headers({ "Content-Type": "application/json" }),
+      method: "POST",
+    })
+
+    const resBody = await res.json()
+
+    expect(res.status).toBe(400)
+
+    expect(resBody).toEqual({
+      errors: {
+        fieldErrors: {
+          email: ["Invalid email"],
         },
         formErrors: [],
       },
