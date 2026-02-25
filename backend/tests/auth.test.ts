@@ -190,4 +190,41 @@ describe("POST /api/v1/auth/signup", () => {
       code: "CONFLICT",
     })
   })
+
+  test("returns 409 and field errors when username already exists", async () => {
+    const payload = createDummyUserData()
+
+    const firstRes = await authRoutes.request("/signup", {
+      headers: new Headers({ "Content-Type": "application/json" }),
+      body: JSON.stringify(payload),
+      method: "POST",
+    })
+
+    expect(firstRes.status).toBe(201)
+
+    const duplicatePayload = createDummyUserData()
+
+    const duplicateRes = await authRoutes.request("/signup", {
+      body: JSON.stringify({
+        ...duplicatePayload,
+        username: payload.username,
+      }),
+      headers: new Headers({ "Content-Type": "application/json" }),
+      method: "POST",
+    })
+
+    const duplicateResBody = (await duplicateRes.json()) as JsonErrorBody
+
+    expect(duplicateRes.status).toBe(409)
+
+    expect(duplicateResBody).toEqual({
+      errors: {
+        fieldErrors: {
+          username: ["Username taken. Please pick a different username"],
+        },
+      },
+      message: "Unique constraint violation",
+      code: "CONFLICT",
+    })
+  })
 })
