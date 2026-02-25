@@ -3,6 +3,7 @@ import { describe, expect, test } from "vitest"
 import type { JsonErrorBody } from "@/lib/utils"
 
 import authRoutes from "@/routes/auth.routes"
+import { prisma } from "@/db/client"
 
 import { createDummyUserData } from "./utils"
 
@@ -247,5 +248,34 @@ describe("POST /api/v1/auth/signup", () => {
     expect(cookie).toContain("SameSite=Lax")
     expect(cookie).toContain("Path=/")
     expect(cookie).toContain("Max-Age=604800")
+  })
+
+  test("returns 201 and persists created user in database when success", async () => {
+    const payload = createDummyUserData()
+
+    const res = await authRoutes.request("/signup", {
+      headers: new Headers({ "Content-Type": "application/json" }),
+      body: JSON.stringify(payload),
+      method: "POST",
+    })
+
+    expect(res.status).toBe(201)
+
+    const dbUser = await prisma.user.findUnique({
+      select: {
+        username: true,
+        email: true,
+        name: true,
+        id: true,
+      },
+      where: { email: payload.email.toLowerCase() },
+    })
+
+    expect(dbUser).toEqual({
+      email: payload.email.toLowerCase(),
+      username: payload.username,
+      id: expect.any(String),
+      name: payload.name,
+    })
   })
 })
