@@ -1,4 +1,5 @@
 import { deleteCookie, setCookie } from "hono/cookie"
+import { compare, hash } from "bcryptjs"
 import { sign } from "hono/jwt"
 import { Hono } from "hono"
 
@@ -30,7 +31,8 @@ authRoutes.post("/signup", async (c) => {
       { status: 400 }
     )
 
-  const hashedPassword = await Bun.password.hash(parsed.data.password, "bcrypt")
+  // const hashedPassword = await Bun.password.hash(parsed.data.password, "bcrypt")
+  const hashedPassword = await hash(parsed.data.password, 10)
 
   const { username, email, name } = parsed.data
 
@@ -133,10 +135,7 @@ authRoutes.post("/signin", async (c) => {
       { status: 401 }
     )
 
-  const isPasswordValid = await Bun.password.verify(
-    parsed.data.password,
-    user.password
-  )
+  const isPasswordValid = await compare(parsed.data.password, user.password)
 
   if (!isPasswordValid)
     return jsonError(

@@ -3,6 +3,7 @@
   "type": "module",
   "private": true,
   "scripts": {
+    "dev": "bun --watch main.ts",
     "lint": "eslint .",
     "type-check": "tsc --noEmit",
     "db:seed": "bunx --bun prisma db seed",
@@ -10,13 +11,13 @@
     "db:generate": "bunx --bun prisma generate",
     "db:push": "bunx --bun prisma db push",
     "db:migrate:dev": "bunx --bun prisma migrate dev",
-    "db:migrate:deploy": "bunx --bun prisma migrate deploy",
-    "dev": "bun --watch main.ts"
+    "db:migrate:deploy": "bunx --bun prisma migrate deploy"
   },
   "dependencies": {
     "@prisma/adapter-libsql": "7.3.0",
     "@prisma/adapter-neon": "7.3.0",
     "@prisma/client": "7.3.0",
+    "bcryptjs": "3.0.3",
     "hono": "4.11.7",
     "zod": "4.3.6"
   },
