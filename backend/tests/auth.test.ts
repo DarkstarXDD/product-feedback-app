@@ -227,4 +227,25 @@ describe("POST /api/v1/auth/signup", () => {
       code: "CONFLICT",
     })
   })
+
+  test("returns 201 and sets auth cookie with expected attributes when success", async () => {
+    const payload = createDummyUserData()
+
+    const res = await authRoutes.request("/signup", {
+      headers: new Headers({ "Content-Type": "application/json" }),
+      body: JSON.stringify(payload),
+      method: "POST",
+    })
+
+    const cookie = res.headers.get("set-cookie")
+
+    expect(res.status).toBe(201)
+    expect(cookie).toBeTruthy()
+    expect(cookie).toContain("token=")
+    expect(cookie).toContain("HttpOnly")
+    expect(cookie).toContain("Secure")
+    expect(cookie).toContain("SameSite=Lax")
+    expect(cookie).toContain("Path=/")
+    expect(cookie).toContain("Max-Age=604800")
+  })
 })
