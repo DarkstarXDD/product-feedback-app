@@ -9,6 +9,7 @@ describe("POST /api/v1/auth/signup", () => {
     const payload = createDummyUserData()
 
     const res = await authRoutes.request("/signup", {
+      headers: new Headers({ "Content-Type": "application/json" }),
       body: JSON.stringify(payload),
       method: "POST",
     })
