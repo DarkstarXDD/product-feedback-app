@@ -153,4 +153,41 @@ describe("POST /api/v1/auth/signup", () => {
       code: "VALIDATION_ERROR",
     })
   })
+
+  test("returns 409 and field errors when email already exists", async () => {
+    const payload = createDummyUserData()
+
+    const firstRes = await authRoutes.request("/signup", {
+      headers: new Headers({ "Content-Type": "application/json" }),
+      body: JSON.stringify(payload),
+      method: "POST",
+    })
+
+    expect(firstRes.status).toBe(201)
+
+    const duplicatePayload = createDummyUserData()
+
+    const duplicateRes = await authRoutes.request("/signup", {
+      body: JSON.stringify({
+        ...duplicatePayload,
+        email: payload.email,
+      }),
+      headers: new Headers({ "Content-Type": "application/json" }),
+      method: "POST",
+    })
+
+    const duplicateResBody = (await duplicateRes.json()) as JsonErrorBody
+
+    expect(duplicateRes.status).toBe(409)
+
+    expect(duplicateResBody).toEqual({
+      errors: {
+        fieldErrors: {
+          email: ["Email already exists"],
+        },
+      },
+      message: "Unique constraint violation",
+      code: "CONFLICT",
+    })
+  })
 })
