@@ -61,7 +61,7 @@ type ErrorCodes =
   | "FORBIDDEN"
   | "CONFLICT"
 
-type JsonErrorBody = {
+export type JsonErrorBody = {
   errors?: { fieldErrors?: Record<string, string[]>; formErrors?: string[] }
   code: ErrorCodes
   message: string
