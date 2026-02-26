@@ -13,6 +13,16 @@ export const suggestionListSelect = {
   id: true,
 } as const satisfies Prisma.SuggestionSelect
 
+export const suggestionCreateSelect = {
+  category: { select: { name: true, slug: true, id: true } },
+  description: true,
+  createdAt: true,
+  statusId: true,
+  title: true,
+  slug: true,
+  id: true,
+} as const satisfies Prisma.SuggestionSelect
+
 export type PublicUser = Prisma.SuggestionGetPayload<{
   select: typeof suggestionListSelect
 }>
