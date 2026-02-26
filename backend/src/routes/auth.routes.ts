@@ -31,7 +31,6 @@ authRoutes.post("/signup", async (c) => {
       { status: 400 }
     )
 
-  // const hashedPassword = await Bun.password.hash(parsed.data.password, "bcrypt")
   const hashedPassword = await hash(parsed.data.password, 10)
 
   const { username, email, name } = parsed.data
