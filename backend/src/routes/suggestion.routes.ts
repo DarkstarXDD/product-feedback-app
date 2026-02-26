@@ -3,6 +3,7 @@ import { Hono } from "hono"
 import {
   suggestionCreateSelect,
   suggestionListSelect,
+  suggestionSelect,
 } from "@/lib/selects/suggestion.selects"
 import {
   formatZodErrors,
@@ -25,6 +26,26 @@ suggestionRoutes.get("/", async (c) => {
   })
 
   return jsonSuccess(c, { data: suggestions }, { status: 200 })
+})
+
+// ------------------------------- GET a Suggestion --------------------------------
+suggestionRoutes.get("/:slug", async (c) => {
+  const slug = c.req.param("slug")
+
+  const suggestion = await prisma.suggestion.findUnique({
+    select: suggestionSelect,
+    where: { slug },
+  })
+
+  if (!suggestion) {
+    return jsonError(
+      c,
+      { message: "Suggestion not found", code: "NOT_FOUND" },
+      { status: 404 }
+    )
+  }
+
+  return jsonSuccess(c, { data: suggestion }, { status: 200 })
 })
 
 // ------------------------------- Create a Suggestion --------------------------------
