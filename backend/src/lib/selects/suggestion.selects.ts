@@ -38,12 +38,14 @@ export const suggestionSelect = {
   id: true,
 } as const satisfies Prisma.SuggestionSelect
 
-// ------------------------------- Create a Suggestion --------------------------------
+// ------------------------------- Create/Update a Suggestion --------------------------------
 export const suggestionCreateSelect = {
   category: { select: { name: true, slug: true, id: true } },
+  status: { select: { name: true, slug: true, id: true } },
+  _count: { select: { comments: true, upvotes: true } },
   description: true,
   createdAt: true,
-  statusId: true,
+  updatedAt: true,
   title: true,
   slug: true,
   id: true,
