@@ -4,6 +4,7 @@ import { logger } from "hono/logger"
 import { Hono } from "hono"
 
 import suggestionRoutes from "@/routes/suggestion.routes"
+import commentsRouter from "@/routes/comments.route"
 import authRoutes from "@/routes/auth.routes"
 import userRoutes from "@/routes/user.routes"
 
@@ -26,6 +27,7 @@ app.onError((err, c) => {
 api.route("/auth", authRoutes)
 api.route("/users", userRoutes)
 api.route("/suggestions", suggestionRoutes)
+api.route("/comments", commentsRouter)
 
 /** Mount API instance on app. */
 app.route("/api/v1", api)
