@@ -12,6 +12,7 @@ import { resolveAuthUser } from "@/middlewares/resolve-auth-user.middleware"
 import { suggestionListSelect } from "@/lib/selects/suggestion.selects"
 import { formatZodErrors, jsonSuccess, jsonError } from "@/lib/utils"
 import { requireRole } from "@/middlewares/require-role.middleware"
+import { commentSelect } from "@/lib/selects/comments.select"
 import { getTargetUserOrThrow } from "@/lib/context-helpers"
 import { userUpdateSchema } from "@/schemas/user.schema"
 import { prisma } from "@/db/client"
@@ -128,6 +129,18 @@ userRoutes.get("/:username/suggestions", async (c) => {
   })
 
   return jsonSuccess(c, { data: suggestions }, { status: 200 })
+})
+
+// ------------------------------- GET All Comments of a User --------------------------------
+userRoutes.get("/:username/comments", async (c) => {
+  const username = c.req.param("username")
+
+  const comments = await prisma.comment.findMany({
+    where: { user: { username } },
+    select: commentSelect,
+  })
+
+  return jsonSuccess(c, { data: comments }, { status: 200 })
 })
 
 export default userRoutes
