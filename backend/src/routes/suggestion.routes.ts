@@ -14,6 +14,7 @@ import {
 import { resolveAuthUser } from "@/middlewares/resolve-auth-user.middleware"
 import { suggestionCreateSchema } from "@/schemas/suggestion.schema"
 import { requireRole } from "@/middlewares/require-role.middleware"
+import { commentSelect } from "@/lib/selects/comments.select"
 import { getUserOrThrow } from "@/lib/context-helpers"
 import { Prisma } from "@/db/client"
 import { prisma } from "@/db/client"
@@ -135,6 +136,18 @@ suggestionRoutes.patch(
     }
   }
 )
+
+// ------------------------------- Get All Comments for a Suggestion --------------------------------
+suggestionRoutes.get("/:slug/comments", async (c) => {
+  const slug = c.req.param("slug")
+
+  const comments = await prisma.comment.findMany({
+    where: { suggestion: { slug } },
+    select: commentSelect,
+  })
+
+  return jsonSuccess(c, { data: comments })
+})
 
 // Delete suggestion is not yet implemented.
 
