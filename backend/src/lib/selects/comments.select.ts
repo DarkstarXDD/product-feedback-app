@@ -1,8 +1,8 @@
 import type { Prisma } from "@/db/client"
 
-export const commentsListSelect = {
-  user: { select: { username: true, name: true, role: true, id: true } },
+export const commentSelect = {
   suggestion: { select: { title: true, slug: true, id: true } },
+  user: { select: { username: true, name: true, id: true } },
   createdAt: true,
   updatedAt: true,
   content: true,
