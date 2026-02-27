@@ -2,9 +2,11 @@ import { Hono } from "hono"
 
 import { resolveAuthUser } from "@/middlewares/resolve-auth-user.middleware"
 import { requireRole } from "@/middlewares/require-role.middleware"
+import { commentCreateSchema } from "@/schemas/comments.schema"
 import { commentSelect } from "@/lib/selects/comments.select"
+import { getUserOrThrow } from "@/lib/context-helpers"
 import { jsonSuccess, jsonError } from "@/lib/utils"
-import { prisma } from "@/db/client"
+import { Prisma, prisma } from "@/db/client"
 
 const commentsRouter = new Hono()
 
@@ -36,5 +38,51 @@ commentsRouter.get("/:id", async (c) => {
 
   return jsonSuccess(c, { data: comment }, { status: 200 })
 })
+
+// ------------------------------- Update a Comment --------------------------------
+commentsRouter.patch(
+  "/:id",
+  resolveAuthUser,
+  requireRole("ADMIN", "USER"),
+  async (c) => {
+    const id = c.req.param("id")
+    const user = getUserOrThrow(c)
+
+    const payload = (await c.req.json()) as unknown
+    const parsed = commentCreateSchema.safeParse(payload)
+
+    if (!parsed.success) {
+      return jsonError(
+        c,
+        { message: "Server validation fails", code: "VALIDATION_ERROR" },
+        { status: 400 }
+      )
+    }
+
+    const where = user.role === "ADMIN" ? { id } : { userId: user.id, id }
+
+    try {
+      const comment = await prisma.comment.update({
+        data: { content: parsed.data.content },
+        select: commentSelect,
+        where,
+      })
+
+      return jsonSuccess(c, { data: comment }, { status: 200 })
+    } catch (e) {
+      console.log(e)
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === "P2025"
+      ) {
+        return jsonError(
+          c,
+          { message: "Not allowed or foribidden", code: "NOT_FOUND" },
+          { status: 404 }
+        )
+      }
+    }
+  }
+)
 
 export default commentsRouter
