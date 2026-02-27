@@ -9,6 +9,7 @@ import {
 } from "@/lib/selects/user.selects"
 import { withTargetAccess } from "@/middlewares/with-target-access.middleware"
 import { resolveAuthUser } from "@/middlewares/resolve-auth-user.middleware"
+import { suggestionListSelect } from "@/lib/selects/suggestion.selects"
 import { formatZodErrors, jsonSuccess, jsonError } from "@/lib/utils"
 import { requireRole } from "@/middlewares/require-role.middleware"
 import { getTargetUserOrThrow } from "@/lib/context-helpers"
@@ -116,5 +117,17 @@ userRoutes.patch(
     return jsonSuccess(c, { data: user })
   }
 )
+
+// ---------------------------- Get All Suggestions of a User -------------------------
+userRoutes.get("/:username/suggestions", async (c) => {
+  const username = c.req.param("username")
+
+  const suggestions = await prisma.suggestion.findMany({
+    where: { user: { username } },
+    select: suggestionListSelect,
+  })
+
+  return jsonSuccess(c, { data: suggestions }, { status: 200 })
+})
 
 export default userRoutes
