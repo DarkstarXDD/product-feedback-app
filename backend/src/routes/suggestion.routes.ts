@@ -14,6 +14,7 @@ import {
 import { resolveAuthUser } from "@/middlewares/resolve-auth-user.middleware"
 import { suggestionCreateSchema } from "@/schemas/suggestion.schema"
 import { requireRole } from "@/middlewares/require-role.middleware"
+import { commentCreateSchema } from "@/schemas/comments.schema"
 import { commentSelect } from "@/lib/selects/comments.select"
 import { getUserOrThrow } from "@/lib/context-helpers"
 import { Prisma } from "@/db/client"
@@ -134,6 +135,47 @@ suggestionRoutes.patch(
         )
       }
     }
+  }
+)
+
+// ------------------------------- Create a Comment for a Suggestion --------------------------------
+suggestionRoutes.post(
+  "/:slug/comments",
+  resolveAuthUser,
+  requireRole("ADMIN", "USER"),
+  async (c) => {
+    const slug = c.req.param("slug")
+
+    const user = getUserOrThrow(c)
+    const payload = (await c.req.json()) as unknown
+    const parsed = commentCreateSchema.safeParse(payload)
+
+    if (!parsed.success) {
+      return jsonError(
+        c,
+        {
+          errors: formatZodErrors(parsed.error),
+          message: "Server validation fails",
+          code: "VALIDATION_ERROR",
+        },
+        { status: 400 }
+      )
+    }
+
+    /** Can't use connect if at least one foreign key is used directly.
+     *  So both suggestion and user needs to use the `connect` appraoch.
+     *  https://www.prisma.io/docs/orm/reference/prisma-client-reference#examples-28
+     */
+    const comment = await prisma.comment.create({
+      data: {
+        user: { connect: { id: user.id } },
+        suggestion: { connect: { slug } },
+        content: parsed.data.content,
+      },
+      select: commentSelect,
+    })
+
+    return jsonSuccess(c, { data: comment }, { status: 201 })
   }
 )
 
