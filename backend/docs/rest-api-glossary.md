@@ -227,46 +227,57 @@ Example:
   - Allow self or admin.
 
 ## RBAC (Role-Based Access Control)
+
 RBAC grants permissions based on user roles.
 
 How it works:
+
 - Assign users to roles (for example, `ADMIN`, `USER`).
 - Assign actions to roles.
 - Allow/deny requests by checking the actor's role.
 
 Example:
+
 - `GET /api/v1/users` -> only `ADMIN` can access.
 - Rule shape: `allow if actor.role in ["ADMIN"]`.
 
 Good for:
+
 - Simple, predictable permission models.
 
 ## ABAC (Attribute-Based Access Control)
+
 ABAC grants permissions based on attributes, not only role.
 
 Attributes can include:
+
 - Actor attributes: `id`, `role`, `status`.
 - Resource attributes: owner id, privacy flags (`isPrivate`).
 - Request attributes: HTTP method, route params.
 - Environment attributes: time, tenant, IP/network.
 
 Example:
+
 - `PATCH /api/v1/users/:username`
 - Allow if actor is admin OR actor owns target user.
 - Rule shape: `allow if actor.role === "ADMIN" || actor.id === target.id`.
 
 Another example:
+
 - `GET /api/v1/users/:username`
 - Public can access basic profile.
 - Private fields (email) shown only if actor is admin or owner.
 
 Good for:
+
 - Fine-grained and context-aware permissions.
 
 ## RBAC vs ABAC (Quick Comparison)
+
 - RBAC: role-only decisions. Easier to implement, less flexible.
 - ABAC: decisions from multiple attributes. More flexible, more complex.
 
 In this project:
+
 - `GET /users` admin-only is RBAC-like.
 - `PATCH/DELETE /users/:username` self-or-admin is ABAC-like (role + ownership attribute).
