@@ -5,6 +5,7 @@ import { sign } from "hono/jwt"
 import type { Role } from "@/lib/types"
 
 import { JWT_TTL_SECONDS } from "@/routes/auth.routes"
+import { generateSlug } from "@/lib/utils"
 import { prisma } from "@/db/client"
 
 const JWT_SECRET = process.env.JWT_SECRET
@@ -58,4 +59,36 @@ export async function createUserSession(role: Role) {
     token,
     user,
   }
+}
+
+export async function createSuggestion() {
+  const user = await createDummyUser("USER")
+  const title = faker.lorem.sentence()
+
+  const categories = await prisma.category.findMany()
+  const categoryIndex = Math.floor(Math.random() * categories.length)
+  const categoryId = categories[categoryIndex]?.id
+
+  return prisma.suggestion.create({
+    data: {
+      description: faker.lorem.paragraph(),
+      categoryId: categoryId ?? "",
+      slug: generateSlug(title),
+      userId: user.id,
+      title: title,
+    },
+  })
+}
+
+export async function createComment() {
+  const user = await createDummyUser("USER")
+  const suggestion = await createSuggestion()
+
+  return prisma.comment.create({
+    data: {
+      content: faker.lorem.paragraph(),
+      suggestionId: suggestion.id,
+      userId: user.id,
+    },
+  })
 }
