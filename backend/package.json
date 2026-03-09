@@ -7,6 +7,7 @@
     "lint": "eslint .",
     "type-check": "tsc --noEmit",
     "db:seed": "bunx --bun prisma db seed",
+    "db:seed:test": "bun --env-file=.env.test run db:seed",
     "db:studio": "bunx --bun prisma studio",
     "db:studio:test": "bun --env-file=.env.test run db:studio",
     "db:generate": "bunx --bun prisma generate",
@@ -14,6 +15,8 @@
     "db:push:test": "bun --env-file=.env.test run db:push",
     "db:migrate:dev": "bunx --bun prisma migrate dev",
     "db:migrate:deploy": "bunx --bun prisma migrate deploy",
+    "db:reset": "bunx --bun prisma migrate reset",
+    "db:reset:test": "bun --env-file=.env.test run db:reset",
     "test": "vitest run",
     "test:watch": "vitest watch"
   },
