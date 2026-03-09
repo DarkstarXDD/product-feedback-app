@@ -17,6 +17,7 @@ export default defineConfig(({ mode }) => {
     // https://vitest.dev/guide/features#environment-variables
     test: {
       env: loadEnv(mode, __dirname, ""),
+      reporters: ["verbose"],
     },
   }
 })
