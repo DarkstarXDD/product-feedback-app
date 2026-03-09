@@ -11,7 +11,7 @@ const JWT_SECRET = process.env.JWT_SECRET
 if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined.")
 
 /** Set JWT and Cookie expiration for 7 days. */
-const JWT_TTL_SECONDS = 60 * 60 * 24 * 7
+export const JWT_TTL_SECONDS = 60 * 60 * 24 * 7
 
 const authRoutes = new Hono()
 
