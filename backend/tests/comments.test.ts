@@ -133,7 +133,7 @@ describe("PATCH /api/v1/comments/:id", () => {
 
     expect(res.status).toBe(404)
     expect(resBody).toMatchObject({
-      message: "Not allowed or foribidden",
+      message: "Not allowed or forbidden",
       code: "NOT_FOUND",
     })
 

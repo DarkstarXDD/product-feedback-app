@@ -84,7 +84,7 @@ commentsRouter.patch(
       ) {
         return jsonError(
           c,
-          { message: "Not allowed or foribidden", code: "NOT_FOUND" },
+          { message: "Not allowed or forbidden", code: "NOT_FOUND" },
           { status: 404 }
         )
       }
