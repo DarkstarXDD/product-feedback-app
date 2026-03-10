@@ -1,11 +1,11 @@
 import { Hono } from "hono"
 
 import { resolveAuthUser } from "@/middlewares/resolve-auth-user.middleware"
+import { formatZodErrors, jsonSuccess, jsonError } from "@/lib/utils"
 import { requireRole } from "@/middlewares/require-role.middleware"
 import { commentCreateSchema } from "@/schemas/comments.schema"
 import { commentSelect } from "@/lib/selects/comments.select"
 import { getUserOrThrow } from "@/lib/context-helpers"
-import { jsonSuccess, jsonError } from "@/lib/utils"
 import { Prisma, prisma } from "@/db/client"
 
 const commentsRouter = new Hono()
@@ -54,7 +54,11 @@ commentsRouter.patch(
     if (!parsed.success) {
       return jsonError(
         c,
-        { message: "Server validation fails", code: "VALIDATION_ERROR" },
+        {
+          errors: formatZodErrors(parsed.error),
+          message: "Server validation fails",
+          code: "VALIDATION_ERROR",
+        },
         { status: 400 }
       )
     }
@@ -80,7 +84,7 @@ commentsRouter.patch(
       ) {
         return jsonError(
           c,
-          { message: "Not allowed or foribidden", code: "NOT_FOUND" },
+          { message: "Not allowed or forbidden", code: "NOT_FOUND" },
           { status: 404 }
         )
       }

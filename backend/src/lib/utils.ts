@@ -11,7 +11,7 @@ import { randomUUID } from "node:crypto"
 import * as z from "zod"
 
 // ------------------------- Success Response ----------------------------
-interface JsonSuccessBody<T> {
+export interface JsonSuccessBody<T> {
   meta?: Record<string, unknown>
   data: T
 }

@@ -24,7 +24,6 @@ export function createDummyUserData() {
 
 export async function createDummyUser(role: Role) {
   const userData = createDummyUserData()
-
   const hashedPassword = await hash(userData.password, 10)
 
   const user = await prisma.user.create({
@@ -37,58 +36,141 @@ export async function createDummyUser(role: Role) {
     },
   })
 
-  return user
-}
-
-export async function deleteDummyUser(id: string) {
-  await prisma.user.delete({ where: { id } })
+  return {
+    userCleanup: async () =>
+      await prisma.user.delete({ where: { id: user.id } }),
+    user,
+  }
 }
 
 export async function createUserSession(role: Role) {
   if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined.")
 
-  const user = await createDummyUser(role)
+  const { userCleanup, user } = await createDummyUser(role)
 
   const exp = Math.floor(Date.now() / 1000) + JWT_TTL_SECONDS
   const token = await sign({ userId: user.id, exp }, JWT_SECRET, "HS256")
 
   return {
-    cleanup: async () => {
-      await deleteDummyUser(user.id)
-    },
+    userCleanup,
     token,
     user,
   }
 }
 
-export async function createSuggestion() {
-  const user = await createDummyUser("USER")
+/**
+ * Low level helper.
+ * Creates only a suggestion.
+ * Caller must provide the owner.
+ */
+export async function createSuggestion(input: { ownerId: string }) {
   const title = faker.lorem.sentence()
 
   const categories = await prisma.category.findMany()
-  const categoryIndex = Math.floor(Math.random() * categories.length)
-  const categoryId = categories[categoryIndex]?.id
 
-  return prisma.suggestion.create({
+  if (categories.length === 0) {
+    throw new Error(
+      "Test setup error: no categories found. Seed the categories in the database."
+    )
+  }
+
+  const category = faker.helpers.arrayElement(categories)
+
+  const suggestion = await prisma.suggestion.create({
     data: {
       description: faker.lorem.paragraph(),
-      categoryId: categoryId ?? "",
       slug: generateSlug(title),
-      userId: user.id,
+      categoryId: category.id,
+      userId: input.ownerId,
       title: title,
     },
   })
+
+  return {
+    suggestionCleanup: async () => {
+      await prisma.suggestion.delete({ where: { id: suggestion.id } })
+    },
+    suggestion,
+  }
 }
 
-export async function createComment() {
-  const user = await createDummyUser("USER")
-  const suggestion = await createSuggestion()
-
-  return prisma.comment.create({
+/**
+ * Low level helper.
+ * Creates only a comment.
+ * Caller must provide both owner and suggestion.
+ */
+export async function createComment(input: {
+  suggestionId: string
+  ownerId: string
+}) {
+  const comment = await prisma.comment.create({
     data: {
       content: faker.lorem.paragraph(),
-      suggestionId: suggestion.id,
-      userId: user.id,
+      suggestionId: input.suggestionId,
+      userId: input.ownerId,
     },
   })
+
+  return {
+    commentCleanup: async () => {
+      await prisma.comment.delete({ where: { id: comment.id } })
+    },
+    comment,
+  }
+}
+
+/**
+ * High level scenario helper for comment tests.
+ * Creates a suggestion, a comment, and any missing owners required for them.
+ * If `commentOwnerId` is provided, that existing user is used as the comment owner
+ * and is not deleted by the returned cleanup function.
+ */
+export async function createCommentScenario(commentOwnerId?: string) {
+  if (commentOwnerId) {
+    const { userCleanup: suggestionOwnerCleanup, user: suggestionOwner } =
+      await createDummyUser("USER")
+
+    const { suggestionCleanup, suggestion } = await createSuggestion({
+      ownerId: suggestionOwner.id,
+    })
+
+    const { commentCleanup, comment } = await createComment({
+      suggestionId: suggestion.id,
+      ownerId: commentOwnerId,
+    })
+
+    return {
+      commentScenarioCleanup: async () => {
+        await commentCleanup()
+        await suggestionCleanup()
+        await suggestionOwnerCleanup()
+      },
+      comment,
+    }
+  }
+
+  const { userCleanup: suggestionOwnerCleanup, user: suggestionOwner } =
+    await createDummyUser("USER")
+
+  const { userCleanup: commentOwnerCleanup, user: commentOwner } =
+    await createDummyUser("USER")
+
+  const { suggestionCleanup, suggestion } = await createSuggestion({
+    ownerId: suggestionOwner.id,
+  })
+
+  const { commentCleanup, comment } = await createComment({
+    suggestionId: suggestion.id,
+    ownerId: commentOwner.id,
+  })
+
+  return {
+    commentScenarioCleanup: async () => {
+      await commentCleanup()
+      await suggestionCleanup()
+      await commentOwnerCleanup()
+      await suggestionOwnerCleanup()
+    },
+    comment,
+  }
 }
