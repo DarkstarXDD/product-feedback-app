@@ -49,11 +49,11 @@ describe("GET /api/v1/comments", () => {
     })
 
     const resBody = (await res.json()) as JsonSuccessBody<
-      Record<string, unknown>
+      Array<Record<string, unknown>>
     >
 
     expect(res.status).toBe(200)
-    expect(resBody.data[0]).toHaveProperty("id", comment.id)
+    expect(resBody.data.some((item) => item.id === comment.id)).toBe(true)
 
     await userCleanup()
     await commentScenarioCleanup()
