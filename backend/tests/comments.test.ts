@@ -238,7 +238,7 @@ describe("PATCH /api/v1/comments/:id", () => {
   })
 
   /** Comment cannot be empty */
-  test.only("returns 400 and field errors when validation fails", async () => {
+  test("returns 400 and field errors when validation fails", async () => {
     const { userCleanup, token, user } = await createUserSession("USER")
     const { commentScenarioCleanup, comment } = await createCommentScenario(
       user.id
