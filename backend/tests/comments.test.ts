@@ -208,6 +208,35 @@ describe("PATCH /api/v1/comments/:id", () => {
     await commentScenarioCleanup()
   })
 
+  /** John can update any comment created by themselves  */
+  test.only("user can update their own comment", async () => {
+    const { userCleanup, token, user } = await createUserSession("USER")
+    const { commentScenarioCleanup, comment } = await createCommentScenario(
+      user.id
+    )
+
+    const updatedComment = faker.lorem.sentence()
+
+    const res = await app.request(`/api/v1/comments/${comment.id}`, {
+      headers: { "content-type": "application/json", cookie: `token=${token}` },
+      body: JSON.stringify({
+        content: updatedComment,
+      }),
+      method: "PATCH",
+    })
+
+    const resBody = (await res.json()) as JsonSuccessBody<
+      Record<string, unknown>
+    >
+
+    expect(res.status).toBe(200)
+    expect(resBody.data).toHaveProperty("id", comment.id)
+    expect(resBody.data).toHaveProperty("content", updatedComment)
+
+    await commentScenarioCleanup()
+    await userCleanup()
+  })
+
   // test("returns 400 and field errors when validation fails", async () => {
   //   const {commentCleanup, cleanup} = await createComment()
 
