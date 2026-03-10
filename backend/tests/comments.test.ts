@@ -209,7 +209,7 @@ describe("PATCH /api/v1/comments/:id", () => {
   })
 
   /** John can update any comment created by themselves  */
-  test.only("user can update their own comment", async () => {
+  test("user can update their own comment", async () => {
     const { userCleanup, token, user } = await createUserSession("USER")
     const { commentScenarioCleanup, comment } = await createCommentScenario(
       user.id
@@ -237,16 +237,37 @@ describe("PATCH /api/v1/comments/:id", () => {
     await userCleanup()
   })
 
-  // test("returns 400 and field errors when validation fails", async () => {
-  //   const {commentCleanup, cleanup} = await createComment()
+  /** Comment cannot be empty */
+  test.only("returns 400 and field errors when validation fails", async () => {
+    const { userCleanup, token, user } = await createUserSession("USER")
+    const { commentScenarioCleanup, comment } = await createCommentScenario(
+      user.id
+    )
 
-  //   const res = await app.request(`/api/v1/comments/:${id}`, {
-  //     body: JSON.stringify({ content: "" }),
-  //     method: "POST",
-  //   })
+    const res = await app.request(`/api/v1/comments/${comment.id}`, {
+      headers: { "content-type": "application/json", cookie: `token=${token}` },
+      body: JSON.stringify({
+        content: "",
+      }),
+      method: "PATCH",
+    })
 
-  //   // const resBody = (await res.json()) as JsonErrorBody
+    const resBody = (await res.json()) as JsonErrorBody
 
-  //   expect(res.status).toBe(400)
-  // })
+    expect(res.status).toBe(400)
+
+    expect(resBody).toEqual({
+      errors: {
+        fieldErrors: {
+          content: ["Comment cannot be empty"],
+        },
+        formErrors: [],
+      },
+      message: "Server validation fails",
+      code: "VALIDATION_ERROR",
+    })
+
+    await commentScenarioCleanup()
+    await userCleanup()
+  })
 })
