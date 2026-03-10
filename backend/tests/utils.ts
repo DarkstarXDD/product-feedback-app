@@ -117,7 +117,7 @@ export async function createComment(input: {
  * High level scenario helper for tests.
  * Creates everything needed for a comment test.
  */
-export async function createCommmentScenario() {
+export async function createCommentScenario() {
   const { userCleanup: suggestionOwnerCleanup, user: suggestionOwner } =
     await createDummyUser("USER")
 

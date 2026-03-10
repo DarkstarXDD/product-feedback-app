@@ -3,7 +3,7 @@ import { faker } from "@faker-js/faker"
 
 import type { JsonSuccessBody, JsonErrorBody } from "@/lib/utils"
 
-import { createCommmentScenario, createUserSession } from "./utils"
+import { createCommentScenario, createUserSession } from "./utils"
 import app from "../main"
 
 describe("GET /api/v1/comments", () => {
@@ -42,7 +42,7 @@ describe("GET /api/v1/comments", () => {
   /** Only admins can access the full comment list  */
   test("return 200 and comment list when admin", async () => {
     const { userCleanup, token } = await createUserSession("ADMIN")
-    const { commentScenarioCleanup, comment } = await createCommmentScenario()
+    const { commentScenarioCleanup, comment } = await createCommentScenario()
 
     const res = await app.request("/api/v1/comments", {
       headers: { cookie: `token=${token}` },
@@ -63,7 +63,7 @@ describe("GET /api/v1/comments", () => {
 describe("GET /api/v1/comments/:id", () => {
   /** Anyone can access individual comments if they know the commendId  */
   test("return 200 and comment when public", async () => {
-    const { commentScenarioCleanup, comment } = await createCommmentScenario()
+    const { commentScenarioCleanup, comment } = await createCommentScenario()
 
     const res = await app.request(`/api/v1/comments/${comment.id}`)
 
@@ -80,7 +80,7 @@ describe("GET /api/v1/comments/:id", () => {
   /** Anyone can access individual comments if they know the commendId  */
   test("return 200 and comment when user", async () => {
     const { userCleanup, token } = await createUserSession("USER")
-    const { commentScenarioCleanup, comment } = await createCommmentScenario()
+    const { commentScenarioCleanup, comment } = await createCommentScenario()
 
     const res = await app.request(`/api/v1/comments/${comment.id}`, {
       headers: { cookie: `token=${token}` },
@@ -100,7 +100,7 @@ describe("GET /api/v1/comments/:id", () => {
   /** Anyone can access individual comments if they know the commendId  */
   test("return 200 and comment when admin", async () => {
     const { userCleanup, token } = await createUserSession("ADMIN")
-    const { commentScenarioCleanup, comment } = await createCommmentScenario()
+    const { commentScenarioCleanup, comment } = await createCommentScenario()
 
     const res = await app.request(`/api/v1/comments/${comment.id}`, {
       headers: { cookie: `token=${token}` },
@@ -135,7 +135,7 @@ describe("GET /api/v1/comments/:id", () => {
 describe("PATCH /api/v1/comments/:id", () => {
   /** Public (non logged in users) can't update any comments  */
   test("public can't update comments", async () => {
-    const { commentScenarioCleanup, comment } = await createCommmentScenario()
+    const { commentScenarioCleanup, comment } = await createCommentScenario()
 
     const res = await app.request(`/api/v1/comments/${comment.id}`, {
       body: JSON.stringify({
@@ -159,7 +159,7 @@ describe("PATCH /api/v1/comments/:id", () => {
   /** John can't update Janes comment and vice versa  */
   test("user can't update another user's comment", async () => {
     const { userCleanup, token } = await createUserSession("USER")
-    const { commentScenarioCleanup, comment } = await createCommmentScenario()
+    const { commentScenarioCleanup, comment } = await createCommentScenario()
 
     const res = await app.request(`/api/v1/comments/${comment.id}`, {
       body: JSON.stringify({
@@ -184,7 +184,7 @@ describe("PATCH /api/v1/comments/:id", () => {
   /** Admin can update any comment created by anyone  */
   test("admin can update anyones comment", async () => {
     const { userCleanup, token } = await createUserSession("ADMIN")
-    const { commentScenarioCleanup, comment } = await createCommmentScenario()
+    const { commentScenarioCleanup, comment } = await createCommentScenario()
 
     const updatedComment = faker.lorem.sentence()
 
