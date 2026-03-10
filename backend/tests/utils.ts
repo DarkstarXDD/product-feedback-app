@@ -120,10 +120,35 @@ export async function createComment(input: {
 }
 
 /**
- * High level scenario helper for tests.
- * Creates everything needed for a comment test.
+ * High level scenario helper for comment tests.
+ * Creates a suggestion, a comment, and any missing owners required for them.
+ * If `commentOwnerId` is provided, that existing user is used as the comment owner
+ * and is not deleted by the returned cleanup function.
  */
-export async function createCommentScenario() {
+export async function createCommentScenario(commentOwnerId?: string) {
+  if (commentOwnerId) {
+    const { userCleanup: suggestionOwnerCleanup, user: suggestionOwner } =
+      await createDummyUser("USER")
+
+    const { suggestionCleanup, suggestion } = await createSuggestion({
+      ownerId: suggestionOwner.id,
+    })
+
+    const { commentCleanup, comment } = await createComment({
+      suggestionId: suggestion.id,
+      ownerId: commentOwnerId,
+    })
+
+    return {
+      commentScenarioCleanup: async () => {
+        await commentCleanup()
+        await suggestionCleanup()
+        await suggestionOwnerCleanup()
+      },
+      comment,
+    }
+  }
+
   const { userCleanup: suggestionOwnerCleanup, user: suggestionOwner } =
     await createDummyUser("USER")
 
