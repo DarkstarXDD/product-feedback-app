@@ -53,7 +53,7 @@ export async function createUserSession(role: Role) {
   const token = await sign({ userId: user.id, exp }, JWT_SECRET, "HS256")
 
   return {
-    cleanup: async () => {
+    userCleanup: async () => {
       await deleteDummyUser(user.id)
     },
     token,
@@ -80,15 +80,32 @@ export async function createSuggestion() {
   })
 }
 
+export async function deleteSuggestion(id: string) {
+  await prisma.suggestion.delete({ where: { id } })
+}
+
 export async function createComment() {
   const user = await createDummyUser("USER")
   const suggestion = await createSuggestion()
 
-  return prisma.comment.create({
+  const comment = await prisma.comment.create({
     data: {
       content: faker.lorem.paragraph(),
       suggestionId: suggestion.id,
       userId: user.id,
     },
   })
+
+  return {
+    commentCleanup: async () => {
+      await deleteComment(comment.id)
+      await deleteSuggestion(suggestion.id)
+      await deleteDummyUser(user.id) // User is not getting deleted
+    },
+    comment,
+  }
+}
+
+export async function deleteComment(id: string) {
+  await prisma.comment.delete({ where: { id } })
 }
