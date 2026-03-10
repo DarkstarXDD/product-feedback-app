@@ -67,14 +67,20 @@ export async function createSuggestion(input: { ownerId: string }) {
   const title = faker.lorem.sentence()
 
   const categories = await prisma.category.findMany()
-  const categoryIndex = Math.floor(Math.random() * categories.length)
-  const categoryId = categories[categoryIndex]?.id
+
+  if (categories.length === 0) {
+    throw new Error(
+      "Test setup error: no categories found. Seed the categories in the database."
+    )
+  }
+
+  const category = faker.helpers.arrayElement(categories)
 
   const suggestion = await prisma.suggestion.create({
     data: {
       description: faker.lorem.paragraph(),
-      categoryId: categoryId ?? "",
       slug: generateSlug(title),
+      categoryId: category.id,
       userId: input.ownerId,
       title: title,
     },
