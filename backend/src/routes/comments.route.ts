@@ -21,11 +21,11 @@ commentsRouter.get("/", resolveAuthUser, requireRole("ADMIN"), async (c) => {
 
 // ------------------------------- GET a Comment --------------------------------
 commentsRouter.get("/:id", async (c) => {
-  const id = c.req.param("id")
+  const commentId = c.req.param("id")
 
   const comment = await prisma.comment.findUnique({
+    where: { id: commentId },
     select: commentSelect,
-    where: { id },
   })
 
   if (!comment) {
@@ -45,7 +45,7 @@ commentsRouter.patch(
   resolveAuthUser,
   requireRole("ADMIN", "USER"),
   async (c) => {
-    const id = c.req.param("id")
+    const commentId = c.req.param("id")
     const user = getUserOrThrow(c)
 
     const payload = (await c.req.json()) as unknown
@@ -59,7 +59,10 @@ commentsRouter.patch(
       )
     }
 
-    const where = user.role === "ADMIN" ? { id } : { userId: user.id, id }
+    const where =
+      user.role === "ADMIN"
+        ? { id: commentId }
+        : { userId: user.id, id: commentId }
 
     try {
       const comment = await prisma.comment.update({
