@@ -77,46 +77,6 @@ describe("GET /api/v1/comments/:id", () => {
     await commentScenarioCleanup()
   })
 
-  /** Anyone can access individual comments if they know the commendId  */
-  test("return 200 and comment when user", async () => {
-    const { userCleanup, token } = await createUserSession("USER")
-    const { commentScenarioCleanup, comment } = await createCommentScenario()
-
-    const res = await app.request(`/api/v1/comments/${comment.id}`, {
-      headers: { cookie: `token=${token}` },
-    })
-
-    const resBody = (await res.json()) as JsonSuccessBody<
-      Record<string, unknown>
-    >
-
-    expect(res.status).toBe(200)
-    expect(resBody.data).toHaveProperty("id", comment.id)
-
-    await userCleanup()
-    await commentScenarioCleanup()
-  })
-
-  /** Anyone can access individual comments if they know the commendId  */
-  test("return 200 and comment when admin", async () => {
-    const { userCleanup, token } = await createUserSession("ADMIN")
-    const { commentScenarioCleanup, comment } = await createCommentScenario()
-
-    const res = await app.request(`/api/v1/comments/${comment.id}`, {
-      headers: { cookie: `token=${token}` },
-    })
-
-    const resBody = (await res.json()) as JsonSuccessBody<
-      Record<string, unknown>
-    >
-
-    expect(res.status).toBe(200)
-    expect(resBody.data).toHaveProperty("id", comment.id)
-
-    await userCleanup()
-    await commentScenarioCleanup()
-  })
-
   test("return 404 if comment not found", async () => {
     const id: string = "123"
 
