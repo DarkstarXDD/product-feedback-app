@@ -21,7 +21,7 @@ describe("GET /api/v1/comments", () => {
   })
 
   /** Only admins can access the full comment list  */
-  test("return 401 when auth user", async () => {
+  test("return 403 when auth user", async () => {
     const { userCleanup, token } = await createUserSession("USER")
 
     const res = await app.request("/api/v1/comments", {
