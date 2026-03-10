@@ -3,7 +3,7 @@ import { faker } from "@faker-js/faker"
 
 import type { JsonSuccessBody, JsonErrorBody } from "@/lib/utils"
 
-import { createUserSession, createComment } from "./utils"
+import { createCommmentScenario, createUserSession } from "./utils"
 import app from "../main"
 
 describe("GET /api/v1/comments", () => {
@@ -42,7 +42,7 @@ describe("GET /api/v1/comments", () => {
   /** Only admins can access the full comment list  */
   test("return 200 and comment list when admin", async () => {
     const { userCleanup, token } = await createUserSession("ADMIN")
-    const { commentCleanup, comment } = await createComment()
+    const { commentScenarioCleanup, comment } = await createCommmentScenario()
 
     const res = await app.request("/api/v1/comments", {
       headers: { cookie: `token=${token}` },
@@ -56,14 +56,14 @@ describe("GET /api/v1/comments", () => {
     expect(resBody.data[0]).toHaveProperty("id", comment.id)
 
     await userCleanup()
-    await commentCleanup()
+    await commentScenarioCleanup()
   })
 })
 
 describe("GET /api/v1/comments/:id", () => {
   /** Anyone can access individual comments if they know the commendId  */
   test("return 200 and comment when public", async () => {
-    const { commentCleanup, comment } = await createComment()
+    const { commentScenarioCleanup, comment } = await createCommmentScenario()
 
     const res = await app.request(`/api/v1/comments/${comment.id}`)
 
@@ -74,13 +74,13 @@ describe("GET /api/v1/comments/:id", () => {
     expect(res.status).toBe(200)
     expect(resBody.data).toHaveProperty("id", comment.id)
 
-    await commentCleanup()
+    await commentScenarioCleanup()
   })
 
   /** Anyone can access individual comments if they know the commendId  */
   test("return 200 and comment when user", async () => {
     const { userCleanup, token } = await createUserSession("USER")
-    const { commentCleanup, comment } = await createComment()
+    const { commentScenarioCleanup, comment } = await createCommmentScenario()
 
     const res = await app.request(`/api/v1/comments/${comment.id}`, {
       headers: { cookie: `token=${token}` },
@@ -94,13 +94,13 @@ describe("GET /api/v1/comments/:id", () => {
     expect(resBody.data).toHaveProperty("id", comment.id)
 
     await userCleanup()
-    await commentCleanup()
+    await commentScenarioCleanup()
   })
 
   /** Anyone can access individual comments if they know the commendId  */
   test("return 200 and comment when admin", async () => {
     const { userCleanup, token } = await createUserSession("ADMIN")
-    const { commentCleanup, comment } = await createComment()
+    const { commentScenarioCleanup, comment } = await createCommmentScenario()
 
     const res = await app.request(`/api/v1/comments/${comment.id}`, {
       headers: { cookie: `token=${token}` },
@@ -114,7 +114,7 @@ describe("GET /api/v1/comments/:id", () => {
     expect(resBody.data).toHaveProperty("id", comment.id)
 
     await userCleanup()
-    await commentCleanup()
+    await commentScenarioCleanup()
   })
 
   test("return 404 if comment not found", async () => {
@@ -135,7 +135,7 @@ describe("GET /api/v1/comments/:id", () => {
 describe("PATCH /api/v1/comments/:id", () => {
   /** Public (non logged in users) can't update any comments  */
   test("public can't update comments", async () => {
-    const { commentCleanup, comment } = await createComment()
+    const { commentScenarioCleanup, comment } = await createCommmentScenario()
 
     const res = await app.request(`/api/v1/comments/${comment.id}`, {
       body: JSON.stringify({
@@ -153,13 +153,13 @@ describe("PATCH /api/v1/comments/:id", () => {
       code: "UNAUTHORIZED",
     })
 
-    await commentCleanup()
+    await commentScenarioCleanup()
   })
 
   /** John can't update Janes comment and vice versa  */
   test("user can't update another user's comment", async () => {
     const { userCleanup, token } = await createUserSession("USER")
-    const { commentCleanup, comment } = await createComment()
+    const { commentScenarioCleanup, comment } = await createCommmentScenario()
 
     const res = await app.request(`/api/v1/comments/${comment.id}`, {
       body: JSON.stringify({
@@ -178,13 +178,13 @@ describe("PATCH /api/v1/comments/:id", () => {
     })
 
     await userCleanup()
-    await commentCleanup()
+    await commentScenarioCleanup()
   })
 
   /** Admin can update any comment created by anyone  */
   test("admin can update anyones comment", async () => {
     const { userCleanup, token } = await createUserSession("ADMIN")
-    const { commentCleanup, comment } = await createComment()
+    const { commentScenarioCleanup, comment } = await createCommmentScenario()
 
     const updatedComment = faker.lorem.sentence()
 
@@ -205,7 +205,7 @@ describe("PATCH /api/v1/comments/:id", () => {
     expect(resBody.data).toHaveProperty("content", updatedComment)
 
     await userCleanup()
-    await commentCleanup()
+    await commentScenarioCleanup()
   })
 
   // test("returns 400 and field errors when validation fails", async () => {
