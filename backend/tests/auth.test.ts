@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest"
 
-import type { JsonErrorBody } from "@/lib/utils"
+import type { JsonSuccessBody, JsonErrorBody } from "@/lib/utils"
 
 import authRoutes from "@/routes/auth.routes"
 import { prisma } from "@/db/client"
@@ -8,13 +8,11 @@ import { prisma } from "@/db/client"
 import { createDummyUserData } from "./utils"
 
 type SignupResponse = {
-  data: {
-    createdAt: string
-    username: string
-    email: string
-    name: string
-    id: string
-  }
+  createdAt: string
+  username: string
+  email: string
+  name: string
+  id: string
 }
 
 describe("POST /api/v1/auth/signup", () => {
@@ -27,7 +25,7 @@ describe("POST /api/v1/auth/signup", () => {
       method: "POST",
     })
 
-    const resBody = (await res.json()) as SignupResponse
+    const resBody = (await res.json()) as JsonSuccessBody<SignupResponse>
 
     expect(res.status).toBe(201)
 
