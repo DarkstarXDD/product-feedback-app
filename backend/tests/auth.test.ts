@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest"
 
-import type { JsonErrorBody } from "@/lib/utils"
+import type { JsonSuccessBody, JsonErrorBody } from "@/lib/utils"
 
 import authRoutes from "@/routes/auth.routes"
 import { prisma } from "@/db/client"
@@ -8,13 +8,11 @@ import { prisma } from "@/db/client"
 import { createDummyUserData } from "./utils"
 
 type SignupResponse = {
-  data: {
-    createdAt: string
-    username: string
-    email: string
-    name: string
-    id: string
-  }
+  createdAt: string
+  username: string
+  email: string
+  name: string
+  id: string
 }
 
 describe("POST /api/v1/auth/signup", () => {
@@ -26,11 +24,9 @@ describe("POST /api/v1/auth/signup", () => {
       body: JSON.stringify(payload),
       method: "POST",
     })
-
-    const resBody = (await res.json()) as SignupResponse
+    const resBody = (await res.json()) as JsonSuccessBody<SignupResponse>
 
     expect(res.status).toBe(201)
-
     /* eslint-disable @typescript-eslint/no-unsafe-assignment */
     expect(resBody).toEqual({
       data: expect.objectContaining({
@@ -41,9 +37,12 @@ describe("POST /api/v1/auth/signup", () => {
         name: payload.name,
       }),
     })
+    /* eslint-enable @typescript-eslint/no-unsafe-assignment */
 
     expect(resBody.data).not.toHaveProperty("password")
     expect(resBody.data).not.toHaveProperty("confirmPassword")
+
+    await prisma.user.delete({ where: { id: resBody.data.id } })
   })
 
   test("returns 400 and field errors when missing required fields", async () => {
@@ -164,6 +163,10 @@ describe("POST /api/v1/auth/signup", () => {
       method: "POST",
     })
 
+    const firstResBody =
+      (await firstRes.json()) as JsonSuccessBody<SignupResponse>
+    const firstUserId = firstResBody.data.id
+
     expect(firstRes.status).toBe(201)
 
     const duplicatePayload = createDummyUserData()
@@ -190,6 +193,8 @@ describe("POST /api/v1/auth/signup", () => {
       message: "Unique constraint violation",
       code: "CONFLICT",
     })
+
+    await prisma.user.delete({ where: { id: firstUserId } })
   })
 
   test("returns 409 and field errors when username already exists", async () => {
@@ -200,6 +205,9 @@ describe("POST /api/v1/auth/signup", () => {
       body: JSON.stringify(payload),
       method: "POST",
     })
+    const firstResBody =
+      (await firstRes.json()) as JsonSuccessBody<SignupResponse>
+    const firstUserId = firstResBody.data.id
 
     expect(firstRes.status).toBe(201)
 
@@ -227,6 +235,8 @@ describe("POST /api/v1/auth/signup", () => {
       message: "Unique constraint violation",
       code: "CONFLICT",
     })
+
+    await prisma.user.delete({ where: { id: firstUserId } })
   })
 
   test("returns 201 and sets auth cookie with expected attributes when success", async () => {
@@ -237,7 +247,7 @@ describe("POST /api/v1/auth/signup", () => {
       body: JSON.stringify(payload),
       method: "POST",
     })
-
+    const resBody = (await res.json()) as JsonSuccessBody<SignupResponse>
     const cookie = res.headers.get("set-cookie")
 
     expect(res.status).toBe(201)
@@ -248,6 +258,8 @@ describe("POST /api/v1/auth/signup", () => {
     expect(cookie).toContain("SameSite=Lax")
     expect(cookie).toContain("Path=/")
     expect(cookie).toContain("Max-Age=604800")
+
+    await prisma.user.delete({ where: { id: resBody.data.id } })
   })
 
   test("returns 201 and persists created user in database when success", async () => {
@@ -258,8 +270,7 @@ describe("POST /api/v1/auth/signup", () => {
       body: JSON.stringify(payload),
       method: "POST",
     })
-
-    expect(res.status).toBe(201)
+    const resBody = (await res.json()) as JsonSuccessBody<SignupResponse>
 
     const dbUser = await prisma.user.findUnique({
       select: {
@@ -271,11 +282,16 @@ describe("POST /api/v1/auth/signup", () => {
       where: { email: payload.email.toLowerCase() },
     })
 
+    expect(res.status).toBe(201)
+    /* eslint-disable @typescript-eslint/no-unsafe-assignment */
     expect(dbUser).toEqual({
       email: payload.email.toLowerCase(),
       username: payload.username,
       id: expect.any(String),
       name: payload.name,
     })
+    /* eslint-enable @typescript-eslint/no-unsafe-assignment */
+
+    await prisma.user.delete({ where: { id: resBody.data.id } })
   })
 })

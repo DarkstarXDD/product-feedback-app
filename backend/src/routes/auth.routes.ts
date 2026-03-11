@@ -177,7 +177,4 @@ authRoutes.post("/signout", (c) => {
   return c.body(null, 204)
 })
 
-// --------------------------- GET Route for Testing -------------------------
-authRoutes.get("/signin", (c) => c.json({ message: "Success" }))
-
 export default authRoutes
