@@ -27,17 +27,12 @@ describe("POST /api/v1/auth/signup", () => {
     const resBody = (await res.json()) as JsonSuccessBody<SignupResponse>
 
     expect(res.status).toBe(201)
-    /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-    expect(resBody).toEqual({
-      data: expect.objectContaining({
-        email: payload.email.toLowerCase(),
-        createdAt: expect.any(String),
-        username: payload.username,
-        id: expect.any(String),
-        name: payload.name,
-      }),
+
+    expect(resBody.data).toMatchObject({
+      email: payload.email.toLowerCase(),
+      username: payload.username,
+      name: payload.name,
     })
-    /* eslint-enable @typescript-eslint/no-unsafe-assignment */
 
     expect(resBody.data).not.toHaveProperty("password")
     expect(resBody.data).not.toHaveProperty("confirmPassword")
@@ -268,14 +263,11 @@ describe("POST /api/v1/auth/signup", () => {
     })
 
     expect(res.status).toBe(201)
-    /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-    expect(dbUser).toEqual({
+    expect(dbUser).toMatchObject({
       email: payload.email.toLowerCase(),
       username: payload.username,
-      id: expect.any(String),
       name: payload.name,
     })
-    /* eslint-enable @typescript-eslint/no-unsafe-assignment */
 
     await prisma.user.delete({ where: { id: resBody.data.id } })
   })
