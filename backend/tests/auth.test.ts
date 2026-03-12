@@ -320,7 +320,7 @@ describe("POST /api/v1/auth/signin", () => {
     }
   })
 
-  test.only("returns 401 and form errors when password is invalid", async () => {
+  test("returns 401 and form errors when password is invalid", async () => {
     const { userCleanup, user } = await createDummyUser("USER")
 
     try {
@@ -346,5 +346,24 @@ describe("POST /api/v1/auth/signin", () => {
     } finally {
       await userCleanup().catch(() => {})
     }
+  })
+})
+
+// ------------------------------- Sign Out --------------------------------
+describe("POST /api/v1/auth/signout", () => {
+  test("returns 204 and clears auth cookie", async () => {
+    const res = await app.request("/api/v1/auth/signout", {
+      method: "POST",
+    })
+
+    const cookie = res.headers.get("set-cookie")
+
+    expect(res.status).toBe(204)
+    expect(cookie).toBeTruthy()
+    expect(cookie).toContain("token=")
+    expect(cookie).toContain("HttpOnly")
+    expect(cookie).toContain("Secure")
+    expect(cookie).toContain("Path=/")
+    expect(cookie ?? "").toMatch(/(?:Max-Age=0|Expires=)/)
   })
 })
