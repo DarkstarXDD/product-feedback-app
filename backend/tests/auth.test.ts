@@ -4,7 +4,7 @@ import type { JsonSuccessBody, JsonErrorBody } from "@/lib/utils"
 
 import { prisma } from "@/db/client"
 
-import { createDummyUserData } from "./utils"
+import { createDummyUserData, createDummyUser } from "./utils"
 import app from "../main"
 
 type SignupResponse = {
@@ -278,5 +278,73 @@ describe("POST /api/v1/auth/signup", () => {
     /* eslint-enable @typescript-eslint/no-unsafe-assignment */
 
     await prisma.user.delete({ where: { id: resBody.data.id } })
+  })
+})
+
+// ------------------------------- Sign In --------------------------------
+describe("POST /api/v1/auth/signin", () => {
+  test("returns 200 and sets auth cookie when credentials are valid", async () => {
+    const { userPassword, userCleanup, user } = await createDummyUser("USER")
+
+    try {
+      const signinRes = await app.request("/api/v1/auth/signin", {
+        body: JSON.stringify({
+          password: userPassword,
+          email: user.email,
+        }),
+        headers: new Headers({ "Content-Type": "application/json" }),
+        method: "POST",
+      })
+
+      const signinResBody =
+        (await signinRes.json()) as JsonSuccessBody<SignupResponse>
+      const cookie = signinRes.headers.get("set-cookie")
+
+      expect(signinRes.status).toBe(200)
+      expect(signinResBody.data).toMatchObject({
+        username: user.username,
+        email: user.email,
+        name: user.name,
+        id: user.id,
+      })
+      expect(signinResBody.data).not.toHaveProperty("password")
+      expect(cookie).toBeTruthy()
+      expect(cookie).toContain("token=")
+      expect(cookie).toContain("HttpOnly")
+      expect(cookie).toContain("Secure")
+      expect(cookie).toContain("SameSite=Lax")
+      expect(cookie).toContain("Path=/")
+      expect(cookie).toContain("Max-Age=604800")
+    } finally {
+      await userCleanup().catch(() => {})
+    }
+  })
+
+  test.only("returns 401 and form errors when password is invalid", async () => {
+    const { userCleanup, user } = await createDummyUser("USER")
+
+    try {
+      const signinRes = await app.request("/api/v1/auth/signin", {
+        body: JSON.stringify({
+          password: "invalid-password",
+          email: user.email,
+        }),
+        headers: new Headers({ "Content-Type": "application/json" }),
+        method: "POST",
+      })
+
+      const signinResBody = (await signinRes.json()) as JsonErrorBody
+
+      expect(signinRes.status).toBe(401)
+      expect(signinResBody).toEqual({
+        errors: {
+          formErrors: ["Invalid email or password"],
+        },
+        message: "Invalid email or password",
+        code: "UNAUTHORIZED",
+      })
+    } finally {
+      await userCleanup().catch(() => {})
+    }
   })
 })
