@@ -2,10 +2,10 @@ import { describe, expect, test } from "vitest"
 
 import type { JsonSuccessBody, JsonErrorBody } from "@/lib/utils"
 
-import authRoutes from "@/routes/auth.routes"
 import { prisma } from "@/db/client"
 
 import { createDummyUserData } from "./utils"
+import app from "../main"
 
 type SignupResponse = {
   createdAt: string
@@ -19,7 +19,7 @@ describe("POST /api/v1/auth/signup", () => {
   test("returns 201 and created user when valid payload", async () => {
     const payload = createDummyUserData()
 
-    const res = await authRoutes.request("/signup", {
+    const res = await app.request("/api/v1/auth/signup", {
       headers: new Headers({ "Content-Type": "application/json" }),
       body: JSON.stringify(payload),
       method: "POST",
@@ -46,7 +46,7 @@ describe("POST /api/v1/auth/signup", () => {
   })
 
   test("returns 400 and field errors when missing required fields", async () => {
-    const res = await authRoutes.request("/signup", {
+    const res = await app.request("/api/v1/auth/signup", {
       headers: new Headers({ "Content-Type": "application/json" }),
       body: JSON.stringify({}),
       method: "POST",
@@ -73,7 +73,7 @@ describe("POST /api/v1/auth/signup", () => {
   test("returns 400 and field errors when confirm password mismatch", async () => {
     const payload = createDummyUserData()
 
-    const res = await authRoutes.request("/signup", {
+    const res = await app.request("/api/v1/auth/signup", {
       body: JSON.stringify({ ...payload, confirmPassword: "12345678" }),
       headers: new Headers({ "Content-Type": "application/json" }),
       method: "POST",
@@ -96,7 +96,7 @@ describe("POST /api/v1/auth/signup", () => {
   test("returns 400 and field errors when password is shorter than minimum", async () => {
     const payload = createDummyUserData()
 
-    const res = await authRoutes.request("/signup", {
+    const res = await app.request("/api/v1/auth/signup", {
       body: JSON.stringify({
         ...payload,
         confirmPassword: "123456",
@@ -123,7 +123,7 @@ describe("POST /api/v1/auth/signup", () => {
   test("returns 400 and field errors when email format is invalid", async () => {
     const payload = createDummyUserData()
 
-    const res = await authRoutes.request("/signup", {
+    const res = await app.request("/api/v1/auth/signup", {
       body: JSON.stringify({
         ...payload,
         email: "invalidemailformat",
@@ -149,7 +149,7 @@ describe("POST /api/v1/auth/signup", () => {
   test("returns 409 and field errors when email already exists", async () => {
     const firstPayload = createDummyUserData()
 
-    const firstRes = await authRoutes.request("/signup", {
+    const firstRes = await app.request("/api/v1/auth/signup", {
       headers: new Headers({ "Content-Type": "application/json" }),
       body: JSON.stringify(firstPayload),
       method: "POST",
@@ -161,7 +161,7 @@ describe("POST /api/v1/auth/signup", () => {
     expect(firstRes.status).toBe(201)
 
     const duplicatePayload = createDummyUserData()
-    const duplicateRes = await authRoutes.request("/signup", {
+    const duplicateRes = await app.request("/api/v1/auth/signup", {
       body: JSON.stringify({
         ...duplicatePayload,
         email: firstPayload.email,
@@ -188,7 +188,7 @@ describe("POST /api/v1/auth/signup", () => {
   test("returns 409 and field errors when username already exists", async () => {
     const payload = createDummyUserData()
 
-    const firstRes = await authRoutes.request("/signup", {
+    const firstRes = await app.request("/api/v1/auth/signup", {
       headers: new Headers({ "Content-Type": "application/json" }),
       body: JSON.stringify(payload),
       method: "POST",
@@ -200,7 +200,7 @@ describe("POST /api/v1/auth/signup", () => {
     expect(firstRes.status).toBe(201)
 
     const duplicatePayload = createDummyUserData()
-    const duplicateRes = await authRoutes.request("/signup", {
+    const duplicateRes = await app.request("/api/v1/auth/signup", {
       body: JSON.stringify({
         ...duplicatePayload,
         username: payload.username,
@@ -227,7 +227,7 @@ describe("POST /api/v1/auth/signup", () => {
   test("returns 201 and sets auth cookie with expected attributes when success", async () => {
     const payload = createDummyUserData()
 
-    const res = await authRoutes.request("/signup", {
+    const res = await app.request("/api/v1/auth/signup", {
       headers: new Headers({ "Content-Type": "application/json" }),
       body: JSON.stringify(payload),
       method: "POST",
@@ -250,7 +250,7 @@ describe("POST /api/v1/auth/signup", () => {
   test("returns 201 and persists created user in database when success", async () => {
     const payload = createDummyUserData()
 
-    const res = await authRoutes.request("/signup", {
+    const res = await app.request("/api/v1/auth/signup", {
       headers: new Headers({ "Content-Type": "application/json" }),
       body: JSON.stringify(payload),
       method: "POST",
