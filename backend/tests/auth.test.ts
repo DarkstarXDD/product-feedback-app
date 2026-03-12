@@ -51,11 +51,9 @@ describe("POST /api/v1/auth/signup", () => {
       body: JSON.stringify({}),
       method: "POST",
     })
-
     const resBody = (await res.json()) as JsonErrorBody
 
     expect(res.status).toBe(400)
-
     expect(resBody).toEqual({
       errors: {
         fieldErrors: {
@@ -80,11 +78,9 @@ describe("POST /api/v1/auth/signup", () => {
       headers: new Headers({ "Content-Type": "application/json" }),
       method: "POST",
     })
-
     const resBody = await res.json()
 
     expect(res.status).toBe(400)
-
     expect(resBody).toEqual({
       errors: {
         fieldErrors: {
@@ -109,11 +105,9 @@ describe("POST /api/v1/auth/signup", () => {
       headers: new Headers({ "Content-Type": "application/json" }),
       method: "POST",
     })
-
     const resBody = await res.json()
 
     expect(res.status).toBe(400)
-
     expect(resBody).toEqual({
       errors: {
         fieldErrors: {
@@ -137,11 +131,9 @@ describe("POST /api/v1/auth/signup", () => {
       headers: new Headers({ "Content-Type": "application/json" }),
       method: "POST",
     })
-
     const resBody = await res.json()
 
     expect(res.status).toBe(400)
-
     expect(resBody).toEqual({
       errors: {
         fieldErrors: {
@@ -155,14 +147,13 @@ describe("POST /api/v1/auth/signup", () => {
   })
 
   test("returns 409 and field errors when email already exists", async () => {
-    const payload = createDummyUserData()
+    const firstPayload = createDummyUserData()
 
     const firstRes = await authRoutes.request("/signup", {
       headers: new Headers({ "Content-Type": "application/json" }),
-      body: JSON.stringify(payload),
+      body: JSON.stringify(firstPayload),
       method: "POST",
     })
-
     const firstResBody =
       (await firstRes.json()) as JsonSuccessBody<SignupResponse>
     const firstUserId = firstResBody.data.id
@@ -170,20 +161,17 @@ describe("POST /api/v1/auth/signup", () => {
     expect(firstRes.status).toBe(201)
 
     const duplicatePayload = createDummyUserData()
-
     const duplicateRes = await authRoutes.request("/signup", {
       body: JSON.stringify({
         ...duplicatePayload,
-        email: payload.email,
+        email: firstPayload.email,
       }),
       headers: new Headers({ "Content-Type": "application/json" }),
       method: "POST",
     })
-
     const duplicateResBody = (await duplicateRes.json()) as JsonErrorBody
 
     expect(duplicateRes.status).toBe(409)
-
     expect(duplicateResBody).toEqual({
       errors: {
         fieldErrors: {
@@ -212,7 +200,6 @@ describe("POST /api/v1/auth/signup", () => {
     expect(firstRes.status).toBe(201)
 
     const duplicatePayload = createDummyUserData()
-
     const duplicateRes = await authRoutes.request("/signup", {
       body: JSON.stringify({
         ...duplicatePayload,
@@ -221,11 +208,9 @@ describe("POST /api/v1/auth/signup", () => {
       headers: new Headers({ "Content-Type": "application/json" }),
       method: "POST",
     })
-
     const duplicateResBody = (await duplicateRes.json()) as JsonErrorBody
 
     expect(duplicateRes.status).toBe(409)
-
     expect(duplicateResBody).toEqual({
       errors: {
         fieldErrors: {
