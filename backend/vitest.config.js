@@ -8,16 +8,17 @@ const __dirname = path.dirname(__filename)
 
 export default defineConfig(({ mode }) => {
   return {
-    resolve: {
-      alias: {
-        "@": path.resolve(__dirname, "src"),
-      },
-    },
-
     // https://vitest.dev/guide/features#environment-variables
     test: {
       env: loadEnv(mode, __dirname, ""),
       reporters: ["verbose"],
+      maxWorkers: 1,
+    },
+
+    resolve: {
+      alias: {
+        "@": path.resolve(__dirname, "src"),
+      },
     },
   }
 })

@@ -39,6 +39,7 @@ export async function createDummyUser(role: Role) {
   return {
     userCleanup: async () =>
       await prisma.user.delete({ where: { id: user.id } }),
+    userPassword: userData.password,
     user,
   }
 }
