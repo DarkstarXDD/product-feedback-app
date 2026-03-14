@@ -59,6 +59,10 @@ export const suggestionCreateSelect = {
   id: true,
 } as const satisfies Prisma.SuggestionSelect
 
+export type SuggestionCreate = Prisma.SuggestionGetPayload<{
+  select: typeof suggestionCreateSelect
+}>
+
 export type PublicUser = Prisma.SuggestionGetPayload<{
   select: typeof suggestionListSelect
 }>

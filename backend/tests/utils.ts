@@ -59,14 +59,7 @@ export async function createUserSession(role: Role) {
   }
 }
 
-/**
- * Low level helper.
- * Creates only a suggestion.
- * Caller must provide the owner.
- */
-export async function createSuggestion(input: { ownerId: string }) {
-  const title = faker.lorem.sentence()
-
+export async function getRandomCategoryId() {
   const categories = await prisma.category.findMany()
 
   if (categories.length === 0) {
@@ -77,13 +70,25 @@ export async function createSuggestion(input: { ownerId: string }) {
 
   const category = faker.helpers.arrayElement(categories)
 
+  return category.id
+}
+
+/**
+ * Low level helper.
+ * Creates only a suggestion.
+ * Caller must provide the owner.
+ */
+export async function createSuggestion(input: { ownerId: string }) {
+  const title = faker.lorem.sentence()
+  const categoryId = await getRandomCategoryId()
+
   const suggestion = await prisma.suggestion.create({
     data: {
       description: faker.lorem.paragraph(),
       slug: generateSlug(title),
-      categoryId: category.id,
       userId: input.ownerId,
       title: title,
+      categoryId,
     },
   })
 
