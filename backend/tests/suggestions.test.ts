@@ -38,6 +38,10 @@ describe("GET /api/v1/suggestions/:slug", () => {
     expect(res.status).toBe(200)
     expect(resBody.data).toHaveProperty("id", suggestion.id)
     expect(resBody.data).toHaveProperty("slug", suggestion.slug)
+    expect(resBody.data).toHaveProperty("title", suggestion.title)
+    expect(resBody.data).toHaveProperty("description", suggestion.description)
+    expect(Array.isArray(resBody.data.comments)).toBe(true)
+    expect(resBody.data).toHaveProperty("_count")
 
     await suggestionScenarioCleanup()
   })
