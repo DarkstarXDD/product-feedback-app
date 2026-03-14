@@ -159,3 +159,192 @@ describe("POST /api/v1/suggestions", () => {
     await userCleanup()
   })
 })
+
+describe("PATCH /api/v1/suggestions/:slug", () => {
+  test("returns 401 when unauthenticated", async () => {
+    const categoryId = await getRandomCategoryId()
+    const { suggestionScenarioCleanup, suggestion } =
+      await createSuggestionScenario()
+
+    const res = await app.request(`/api/v1/suggestions/${suggestion.slug}`, {
+      body: JSON.stringify({
+        description: "Public user tries to update a suggestion",
+        title: "Updated feature idea",
+        categoryId,
+      }),
+      headers: { "content-type": "application/json" },
+      method: "PATCH",
+    })
+
+    const resBody = (await res.json()) as JsonErrorBody
+
+    expect(res.status).toBe(401)
+    expect(resBody).toMatchObject({
+      message: "Unauthorized",
+      code: "UNAUTHORIZED",
+    })
+
+    await suggestionScenarioCleanup()
+  })
+
+  test("returns 200 when owner updates their own suggestion", async () => {
+    const { userCleanup, token, user } = await createUserSession("USER")
+    const { suggestionScenarioCleanup, suggestion } =
+      await createSuggestionScenario(user.id)
+
+    const payload = {
+      description: "Owner updates their own suggestion",
+      categoryId: suggestion.categoryId,
+      title: "Updated by owner",
+    }
+
+    const res = await app.request(`/api/v1/suggestions/${suggestion.slug}`, {
+      headers: {
+        "content-type": "application/json",
+        cookie: `token=${token}`,
+      },
+      body: JSON.stringify(payload),
+      method: "PATCH",
+    })
+
+    const resBody = (await res.json()) as JsonSuccessBody<SuggestionCreate>
+
+    expect(res.status).toBe(200)
+    expect(resBody.data).toHaveProperty("id", suggestion.id)
+    expect(resBody.data).toHaveProperty("title", payload.title)
+    expect(resBody.data).toHaveProperty("description", payload.description)
+
+    await suggestionScenarioCleanup()
+    await userCleanup()
+  })
+
+  test("returns 200 when admin updates any suggestion", async () => {
+    const { userCleanup, token } = await createUserSession("ADMIN")
+    const { suggestionScenarioCleanup, suggestion } =
+      await createSuggestionScenario()
+
+    const payload = {
+      description: "Admin updates another user's suggestion",
+      categoryId: suggestion.categoryId,
+      title: "Updated by admin",
+    }
+
+    const res = await app.request(`/api/v1/suggestions/${suggestion.slug}`, {
+      headers: {
+        "content-type": "application/json",
+        cookie: `token=${token}`,
+      },
+      body: JSON.stringify(payload),
+      method: "PATCH",
+    })
+
+    const resBody = (await res.json()) as JsonSuccessBody<SuggestionCreate>
+
+    expect(res.status).toBe(200)
+    expect(resBody.data).toHaveProperty("id", suggestion.id)
+    expect(resBody.data).toHaveProperty("title", payload.title)
+    expect(resBody.data).toHaveProperty("description", payload.description)
+
+    await suggestionScenarioCleanup()
+    await userCleanup()
+  })
+
+  test("returns 404 when a user tries to update another user's suggestion", async () => {
+    const { userCleanup, token } = await createUserSession("USER")
+    const { suggestionScenarioCleanup, suggestion } =
+      await createSuggestionScenario()
+
+    const payload = {
+      description: "Another user tries to update a suggestion",
+      categoryId: suggestion.categoryId,
+      title: "Updated by another user",
+    }
+
+    const res = await app.request(`/api/v1/suggestions/${suggestion.slug}`, {
+      headers: {
+        "content-type": "application/json",
+        cookie: `token=${token}`,
+      },
+      body: JSON.stringify(payload),
+      method: "PATCH",
+    })
+
+    const resBody = (await res.json()) as JsonErrorBody
+
+    expect(res.status).toBe(404)
+    expect(resBody).toMatchObject({
+      message: "Not found or forbidden",
+      code: "NOT_FOUND",
+    })
+
+    await suggestionScenarioCleanup()
+    await userCleanup()
+  })
+
+  test("returns 400 with field errors when validation fails", async () => {
+    const { userCleanup, token, user } = await createUserSession("USER")
+    const { suggestionScenarioCleanup, suggestion } =
+      await createSuggestionScenario(user.id)
+
+    const res = await app.request(`/api/v1/suggestions/${suggestion.slug}`, {
+      body: JSON.stringify({
+        categoryId: "123",
+        description: "",
+        title: "",
+      }),
+      headers: {
+        "content-type": "application/json",
+        cookie: `token=${token}`,
+      },
+      method: "PATCH",
+    })
+
+    const resBody = (await res.json()) as JsonErrorBody
+
+    expect(res.status).toBe(400)
+    expect(resBody).toEqual({
+      errors: {
+        fieldErrors: {
+          description: ["Description cannot be empty"],
+          categoryId: ["Please pick a valid category"],
+          title: ["Title cannot be empty"],
+        },
+        formErrors: [],
+      },
+      message: "Server validation fails",
+      code: "VALIDATION_ERROR",
+    })
+
+    await suggestionScenarioCleanup()
+    await userCleanup()
+  })
+
+  test("returns 404 when slug does not exist", async () => {
+    const categoryId = await getRandomCategoryId()
+    const { userCleanup, token } = await createUserSession("USER")
+    const slug = "does-not-exist"
+
+    const res = await app.request(`/api/v1/suggestions/${slug}`, {
+      body: JSON.stringify({
+        description: "Authenticated user tries to update a missing suggestion",
+        title: "Missing suggestion update",
+        categoryId,
+      }),
+      headers: {
+        "content-type": "application/json",
+        cookie: `token=${token}`,
+      },
+      method: "PATCH",
+    })
+
+    const resBody = (await res.json()) as JsonErrorBody
+
+    expect(res.status).toBe(404)
+    expect(resBody).toMatchObject({
+      message: "Not found or forbidden",
+      code: "NOT_FOUND",
+    })
+
+    await userCleanup()
+  })
+})
