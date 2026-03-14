@@ -96,6 +96,42 @@ export async function createSuggestion(input: { ownerId: string }) {
 }
 
 /**
+ * High level scenario helper for suggestion tests.
+ * Creates a suggestion and any missing owner required for it.
+ * If `suggestionOwnerId` is provided, that existing user is used as the suggestion owner
+ * and is not deleted by the returned cleanup function.
+ */
+export async function createSuggestionScenario(suggestionOwnerId?: string) {
+  if (suggestionOwnerId) {
+    const { suggestionCleanup, suggestion } = await createSuggestion({
+      ownerId: suggestionOwnerId,
+    })
+
+    return {
+      suggestionScenarioCleanup: async () => {
+        await suggestionCleanup()
+      },
+      suggestion,
+    }
+  }
+
+  const { userCleanup: suggestionOwnerCleanup, user: suggestionOwner } =
+    await createDummyUser("USER")
+
+  const { suggestionCleanup, suggestion } = await createSuggestion({
+    ownerId: suggestionOwner.id,
+  })
+
+  return {
+    suggestionScenarioCleanup: async () => {
+      await suggestionCleanup()
+      await suggestionOwnerCleanup()
+    },
+    suggestion,
+  }
+}
+
+/**
  * Low level helper.
  * Creates only a comment.
  * Caller must provide both owner and suggestion.
