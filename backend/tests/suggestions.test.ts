@@ -7,6 +7,7 @@ import {
   type SuggestionCreate,
   type Suggestion,
 } from "@/lib/selects/suggestion.selects"
+import { type Comment } from "@/lib/selects/comments.select"
 import { prisma } from "@/db/client"
 
 import {
@@ -345,6 +346,106 @@ describe("PATCH /api/v1/suggestions/:slug", () => {
       code: "NOT_FOUND",
     })
 
+    await userCleanup()
+  })
+})
+
+describe("POST /api/v1/suggestions/:slug/comments", () => {
+  test("returns 401 when unauthenticated", async () => {
+    const { suggestionScenarioCleanup, suggestion } =
+      await createSuggestionScenario()
+
+    const res = await app.request(
+      `/api/v1/suggestions/${suggestion.slug}/comments`,
+      {
+        body: JSON.stringify({
+          content: "Public user tries to create a comment",
+        }),
+        headers: { "content-type": "application/json" },
+        method: "POST",
+      }
+    )
+
+    const resBody = (await res.json()) as JsonErrorBody
+
+    expect(res.status).toBe(401)
+    expect(resBody).toMatchObject({
+      message: "Unauthorized",
+      code: "UNAUTHORIZED",
+    })
+
+    await suggestionScenarioCleanup()
+  })
+
+  test("returns 201 when authenticated user creates a valid comment on a suggestion", async () => {
+    const { userCleanup, token } = await createUserSession("USER")
+    const { suggestionScenarioCleanup, suggestion } =
+      await createSuggestionScenario()
+
+    const payload = {
+      content: "Authenticated user creates a valid comment",
+    }
+
+    const res = await app.request(
+      `/api/v1/suggestions/${suggestion.slug}/comments`,
+      {
+        headers: {
+          "content-type": "application/json",
+          cookie: `token=${token}`,
+        },
+        body: JSON.stringify(payload),
+        method: "POST",
+      }
+    )
+
+    const resBody = (await res.json()) as JsonSuccessBody<Comment>
+
+    expect(res.status).toBe(201)
+    expect(resBody.data).toHaveProperty("content", payload.content)
+    expect(resBody.data).toHaveProperty("id")
+    expect(resBody.data).toHaveProperty("suggestion.slug", suggestion.slug)
+
+    await prisma.comment.delete({
+      where: { id: resBody.data.id },
+    })
+    await suggestionScenarioCleanup()
+    await userCleanup()
+  })
+
+  test("returns 400 with field errors when validation fails", async () => {
+    const { userCleanup, token } = await createUserSession("USER")
+    const { suggestionScenarioCleanup, suggestion } =
+      await createSuggestionScenario()
+
+    const res = await app.request(
+      `/api/v1/suggestions/${suggestion.slug}/comments`,
+      {
+        headers: {
+          "content-type": "application/json",
+          cookie: `token=${token}`,
+        },
+        body: JSON.stringify({
+          content: "",
+        }),
+        method: "POST",
+      }
+    )
+
+    const resBody = (await res.json()) as JsonErrorBody
+
+    expect(res.status).toBe(400)
+    expect(resBody).toEqual({
+      errors: {
+        fieldErrors: {
+          content: ["Comment cannot be empty"],
+        },
+        formErrors: [],
+      },
+      message: "Server validation fails",
+      code: "VALIDATION_ERROR",
+    })
+
+    await suggestionScenarioCleanup()
     await userCleanup()
   })
 })
