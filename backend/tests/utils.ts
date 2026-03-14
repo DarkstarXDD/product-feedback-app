@@ -187,6 +187,7 @@ export async function createCommentScenario(commentOwnerId?: string) {
         await suggestionCleanup()
         await suggestionOwnerCleanup()
       },
+      suggestion,
       comment,
     }
   }
@@ -213,6 +214,7 @@ export async function createCommentScenario(commentOwnerId?: string) {
       await commentOwnerCleanup()
       await suggestionOwnerCleanup()
     },
+    suggestion,
     comment,
   }
 }

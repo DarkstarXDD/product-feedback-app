@@ -12,6 +12,7 @@ import { prisma } from "@/db/client"
 
 import {
   createSuggestionScenario,
+  createCommentScenario,
   getRandomCategoryId,
   createUserSession,
 } from "./utils"
@@ -447,5 +448,23 @@ describe("POST /api/v1/suggestions/:slug/comments", () => {
 
     await suggestionScenarioCleanup()
     await userCleanup()
+  })
+})
+
+describe("GET /api/v1/suggestions/:slug/comments", () => {
+  test("returns 200 and comment list for that suggestion", async () => {
+    const { commentScenarioCleanup, suggestion, comment } =
+      await createCommentScenario()
+
+    const res = await app.request(
+      `/api/v1/suggestions/${suggestion.slug}/comments`
+    )
+
+    const resBody = (await res.json()) as JsonSuccessBody<Comment[]>
+
+    expect(res.status).toBe(200)
+    expect(resBody.data.some((item) => item.id === comment.id)).toBe(true)
+
+    await commentScenarioCleanup()
   })
 })
