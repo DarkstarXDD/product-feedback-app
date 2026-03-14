@@ -59,14 +59,7 @@ export async function createUserSession(role: Role) {
   }
 }
 
-/**
- * Low level helper.
- * Creates only a suggestion.
- * Caller must provide the owner.
- */
-export async function createSuggestion(input: { ownerId: string }) {
-  const title = faker.lorem.sentence()
-
+export async function getRandomCategoryId() {
   const categories = await prisma.category.findMany()
 
   if (categories.length === 0) {
@@ -77,19 +70,67 @@ export async function createSuggestion(input: { ownerId: string }) {
 
   const category = faker.helpers.arrayElement(categories)
 
+  return category.id
+}
+
+/**
+ * Low level helper.
+ * Creates only a suggestion.
+ * Caller must provide the owner.
+ */
+export async function createSuggestion(input: { ownerId: string }) {
+  const title = faker.lorem.sentence()
+  const categoryId = await getRandomCategoryId()
+
   const suggestion = await prisma.suggestion.create({
     data: {
       description: faker.lorem.paragraph(),
       slug: generateSlug(title),
-      categoryId: category.id,
       userId: input.ownerId,
       title: title,
+      categoryId,
     },
   })
 
   return {
     suggestionCleanup: async () => {
       await prisma.suggestion.delete({ where: { id: suggestion.id } })
+    },
+    suggestion,
+  }
+}
+
+/**
+ * High level scenario helper for suggestion tests.
+ * Creates a suggestion and any missing owner required for it.
+ * If `suggestionOwnerId` is provided, that existing user is used as the suggestion owner
+ * and is not deleted by the returned cleanup function.
+ */
+export async function createSuggestionScenario(suggestionOwnerId?: string) {
+  if (suggestionOwnerId) {
+    const { suggestionCleanup, suggestion } = await createSuggestion({
+      ownerId: suggestionOwnerId,
+    })
+
+    return {
+      suggestionScenarioCleanup: async () => {
+        await suggestionCleanup()
+      },
+      suggestion,
+    }
+  }
+
+  const { userCleanup: suggestionOwnerCleanup, user: suggestionOwner } =
+    await createDummyUser("USER")
+
+  const { suggestionCleanup, suggestion } = await createSuggestion({
+    ownerId: suggestionOwner.id,
+  })
+
+  return {
+    suggestionScenarioCleanup: async () => {
+      await suggestionCleanup()
+      await suggestionOwnerCleanup()
     },
     suggestion,
   }
@@ -146,6 +187,7 @@ export async function createCommentScenario(commentOwnerId?: string) {
         await suggestionCleanup()
         await suggestionOwnerCleanup()
       },
+      suggestion,
       comment,
     }
   }
@@ -172,6 +214,7 @@ export async function createCommentScenario(commentOwnerId?: string) {
       await commentOwnerCleanup()
       await suggestionOwnerCleanup()
     },
+    suggestion,
     comment,
   }
 }

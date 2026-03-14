@@ -8,3 +8,7 @@ export const commentSelect = {
   content: true,
   id: true,
 } as const satisfies Prisma.CommentSelect
+
+export type Comment = Prisma.CommentGetPayload<{
+  select: typeof commentSelect
+}>
