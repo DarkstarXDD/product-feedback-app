@@ -6,6 +6,7 @@ import { Hono } from "hono"
 import suggestionRoutes from "@/routes/suggestion.routes"
 import categoryRoutes from "@/routes/category.routes"
 import commentsRouter from "@/routes/comments.route"
+import statusRoutes from "@/routes/status.routes"
 import authRoutes from "@/routes/auth.routes"
 import userRoutes from "@/routes/user.routes"
 
@@ -28,6 +29,7 @@ app.onError((err, c) => {
 api.route("/auth", authRoutes)
 api.route("/users", userRoutes)
 api.route("/categories", categoryRoutes)
+api.route("/statuses", statusRoutes)
 api.route("/suggestions", suggestionRoutes)
 api.route("/comments", commentsRouter)
 
