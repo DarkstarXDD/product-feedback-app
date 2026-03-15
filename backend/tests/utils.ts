@@ -162,6 +162,30 @@ export async function createComment(input: {
 }
 
 /**
+ * Low level helper.
+ * Creates only an upvote.
+ * Caller must provide both owner and suggestion.
+ */
+export async function createUpvote(input: {
+  suggestionId: string
+  ownerId: string
+}) {
+  const upvote = await prisma.upvote.create({
+    data: {
+      suggestionId: input.suggestionId,
+      userId: input.ownerId,
+    },
+  })
+
+  return {
+    upvoteCleanup: async () => {
+      await prisma.upvote.delete({ where: { id: upvote.id } })
+    },
+    upvote,
+  }
+}
+
+/**
  * High level scenario helper for comment tests.
  * Creates a suggestion, a comment, and any missing owners required for them.
  * If `commentOwnerId` is provided, that existing user is used as the comment owner
