@@ -7,6 +7,8 @@ node_modules
 # Omit the generated Prisma client
 backend/src/db/generated/*
 
+todo.md
+
 # output
 out
 dist
