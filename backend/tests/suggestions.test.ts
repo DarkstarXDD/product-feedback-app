@@ -8,6 +8,7 @@ import {
   type Suggestion,
 } from "@/lib/selects/suggestion.selects"
 import { type Comment } from "@/lib/selects/comments.select"
+import { type Upvote } from "@/lib/selects/upvote.selects"
 import { prisma } from "@/db/client"
 
 import {
@@ -15,6 +16,7 @@ import {
   createCommentScenario,
   getRandomCategoryId,
   createUserSession,
+  createUpvote,
 } from "./utils"
 import app from "../main"
 
@@ -466,5 +468,167 @@ describe("GET /api/v1/suggestions/:slug/comments", () => {
     expect(resBody.data.some((item) => item.id === comment.id)).toBe(true)
 
     await commentScenarioCleanup()
+  })
+})
+
+// --------------------------- Upvotes tests -----------------------------
+describe("POST /api/v1/suggestions/:slug/upvotes", () => {
+  test("returns 401 when unauthenticated", async () => {
+    const { suggestionScenarioCleanup, suggestion } =
+      await createSuggestionScenario()
+
+    const res = await app.request(
+      `/api/v1/suggestions/${suggestion.slug}/upvotes`,
+      {
+        method: "POST",
+      }
+    )
+
+    const resBody = (await res.json()) as JsonErrorBody
+
+    expect(res.status).toBe(401)
+    expect(resBody).toMatchObject({
+      message: "Unauthorized",
+      code: "UNAUTHORIZED",
+    })
+
+    await suggestionScenarioCleanup()
+  })
+
+  test("returns 201 when authenticated user upvotes a suggestion", async () => {
+    const { userCleanup, token, user } = await createUserSession("USER")
+    const { suggestionScenarioCleanup, suggestion } =
+      await createSuggestionScenario()
+
+    const res = await app.request(
+      `/api/v1/suggestions/${suggestion.slug}/upvotes`,
+      {
+        headers: {
+          cookie: `token=${token}`,
+        },
+        method: "POST",
+      }
+    )
+
+    const resBody = (await res.json()) as JsonSuccessBody<Upvote>
+
+    expect(res.status).toBe(201)
+    expect(resBody.data).toHaveProperty("userId", user.id)
+    expect(resBody.data).toHaveProperty("suggestionId", suggestion.id)
+    expect(resBody.data).toHaveProperty("id")
+
+    await prisma.upvote.delete({ where: { id: resBody.data.id } })
+    await suggestionScenarioCleanup()
+    await userCleanup()
+  })
+
+  test("returns 409 when authenticated user upvotes the same suggestion twice", async () => {
+    const { userCleanup, token, user } = await createUserSession("USER")
+    const { suggestionScenarioCleanup, suggestion } =
+      await createSuggestionScenario()
+
+    const { upvoteCleanup } = await createUpvote({
+      suggestionId: suggestion.id,
+      ownerId: user.id,
+    })
+
+    const res = await app.request(
+      `/api/v1/suggestions/${suggestion.slug}/upvotes`,
+      {
+        headers: {
+          cookie: `token=${token}`,
+        },
+        method: "POST",
+      }
+    )
+
+    const resBody = (await res.json()) as JsonErrorBody
+
+    expect(res.status).toBe(409)
+    expect(resBody).toMatchObject({
+      message: "Suggestion already upvoted",
+      code: "CONFLICT",
+    })
+
+    await upvoteCleanup()
+    await suggestionScenarioCleanup()
+    await userCleanup()
+  })
+})
+
+describe("DELETE /api/v1/suggestions/:slug/upvotes", () => {
+  test("returns 401 when unauthenticated", async () => {
+    const { suggestionScenarioCleanup, suggestion } =
+      await createSuggestionScenario()
+
+    const res = await app.request(
+      `/api/v1/suggestions/${suggestion.slug}/upvotes`,
+      {
+        method: "DELETE",
+      }
+    )
+
+    const resBody = (await res.json()) as JsonErrorBody
+
+    expect(res.status).toBe(401)
+    expect(resBody).toMatchObject({
+      message: "Unauthorized",
+      code: "UNAUTHORIZED",
+    })
+
+    await suggestionScenarioCleanup()
+  })
+
+  test("returns 204 when authenticated user removes their upvote", async () => {
+    const { userCleanup, token, user } = await createUserSession("USER")
+    const { suggestionScenarioCleanup, suggestion } =
+      await createSuggestionScenario()
+
+    await createUpvote({
+      suggestionId: suggestion.id,
+      ownerId: user.id,
+    })
+
+    const res = await app.request(
+      `/api/v1/suggestions/${suggestion.slug}/upvotes`,
+      {
+        headers: {
+          cookie: `token=${token}`,
+        },
+        method: "DELETE",
+      }
+    )
+
+    expect(res.status).toBe(204)
+
+    await suggestionScenarioCleanup()
+    await userCleanup()
+  })
+
+  test("returns 404 when authenticated user tries to remove a missing upvote", async () => {
+    const { userCleanup, token } = await createUserSession("USER")
+    const { suggestionScenarioCleanup, suggestion } =
+      await createSuggestionScenario()
+
+    const res = await app.request(
+      `/api/v1/suggestions/${suggestion.slug}/upvotes`,
+      {
+        headers: {
+          cookie: `token=${token}`,
+        },
+        method: "DELETE",
+      }
+    )
+
+    const resBody = (await res.json()) as JsonErrorBody
+
+    expect(res.status).toBe(404)
+    expect(resBody).toMatchObject({
+      message: "Upvote not found",
+      code: "NOT_FOUND",
+    })
+
+    await suggestionScenarioCleanup()
+    await userCleanup()
   })
 })

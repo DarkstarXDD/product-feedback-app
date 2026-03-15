@@ -16,6 +16,7 @@ import { suggestionCreateSchema } from "@/schemas/suggestion.schema"
 import { requireRole } from "@/middlewares/require-role.middleware"
 import { commentCreateSchema } from "@/schemas/comments.schema"
 import { commentSelect } from "@/lib/selects/comments.select"
+import { upvoteSelect } from "@/lib/selects/upvote.selects"
 import { getUserOrThrow } from "@/lib/context-helpers"
 import { Prisma } from "@/db/client"
 import { prisma } from "@/db/client"
@@ -190,6 +191,90 @@ suggestionRoutes.get("/:slug/comments", async (c) => {
 
   return jsonSuccess(c, { data: comments })
 })
+
+// ------------------------------- Create an Upvote for a Suggestion --------------------------------
+suggestionRoutes.post(
+  "/:slug/upvotes",
+  resolveAuthUser,
+  requireRole("ADMIN", "USER"),
+  async (c) => {
+    const slug = c.req.param("slug")
+    const user = getUserOrThrow(c)
+
+    const suggestion = await prisma.suggestion.findUnique({
+      select: { id: true },
+      where: { slug },
+    })
+
+    if (!suggestion) {
+      return jsonError(
+        c,
+        { message: "Suggestion not found", code: "NOT_FOUND" },
+        { status: 404 }
+      )
+    }
+
+    try {
+      const upvote = await prisma.upvote.create({
+        data: {
+          suggestionId: suggestion.id,
+          userId: user.id,
+        },
+        select: upvoteSelect,
+      })
+
+      return jsonSuccess(c, { data: upvote }, { status: 201 })
+    } catch (e) {
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === "P2002"
+      ) {
+        return jsonError(
+          c,
+          {
+            message: "Suggestion already upvoted",
+            code: "CONFLICT",
+          },
+          { status: 409 }
+        )
+      }
+    }
+  }
+)
+
+// ------------------------------- Delete an Upvote for a Suggestion --------------------------------
+suggestionRoutes.delete(
+  "/:slug/upvotes",
+  resolveAuthUser,
+  requireRole("ADMIN", "USER"),
+  async (c) => {
+    const slug = c.req.param("slug")
+    const user = getUserOrThrow(c)
+
+    /**
+     * `delete` would need a unique clause like `id` or the compound
+     * `userId + suggestionId`, but here we only have `userId` and the related
+     * suggestion `slug`. `deleteMany` lets us filter by relation and use the
+     * returned count to decide whether to return 204 or 404.
+     */
+    const deleted = await prisma.upvote.deleteMany({
+      where: {
+        suggestion: { slug },
+        userId: user.id,
+      },
+    })
+
+    if (deleted.count === 0) {
+      return jsonError(
+        c,
+        { message: "Upvote not found", code: "NOT_FOUND" },
+        { status: 404 }
+      )
+    }
+
+    return c.body(null, 204)
+  }
+)
 
 // Delete suggestion is not yet implemented.
 
