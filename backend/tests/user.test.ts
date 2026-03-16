@@ -65,6 +65,249 @@ describe("GET /api/v1/users", () => {
   })
 })
 
+describe("PATCH /api/v1/users/:username", () => {
+  test("returns 401 when unauthenticated", async () => {
+    const { userCleanup, user } = await createDummyUser("USER")
+
+    try {
+      const res = await app.request(`/api/v1/users/${user.username}`, {
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name: "Updated name" }),
+        method: "PATCH",
+      })
+
+      const resBody = (await res.json()) as JsonErrorBody
+
+      expect(res.status).toBe(401)
+      expect(resBody).toMatchObject({
+        message: "Unauthorized",
+        code: "UNAUTHORIZED",
+      })
+    } finally {
+      await userCleanup().catch(() => {})
+    }
+  })
+
+  test("returns 403 when authenticated user tries to update another user's profile", async () => {
+    const { userCleanup: authUserCleanup, token } =
+      await createUserSession("USER")
+    const { userCleanup: targetUserCleanup, user: targetUser } =
+      await createDummyUser("USER")
+
+    try {
+      const res = await app.request(`/api/v1/users/${targetUser.username}`, {
+        headers: {
+          "content-type": "application/json",
+          cookie: `token=${token}`,
+        },
+        body: JSON.stringify({ name: "Updated by another user" }),
+        method: "PATCH",
+      })
+
+      const resBody = (await res.json()) as JsonErrorBody
+
+      expect(res.status).toBe(403)
+      expect(resBody).toMatchObject({
+        message: "Forbidden",
+        code: "FORBIDDEN",
+      })
+    } finally {
+      await targetUserCleanup().catch(() => {})
+      await authUserCleanup().catch(() => {})
+    }
+  })
+
+  test("returns 200 when authenticated user updates their own profile", async () => {
+    const { userCleanup, token, user } = await createUserSession("USER")
+    const payload = { name: "Updated self name" }
+
+    try {
+      const res = await app.request(`/api/v1/users/${user.username}`, {
+        headers: {
+          "content-type": "application/json",
+          cookie: `token=${token}`,
+        },
+        body: JSON.stringify(payload),
+        method: "PATCH",
+      })
+
+      const resBody = (await res.json()) as JsonSuccessBody<PrivateUser>
+
+      expect(res.status).toBe(200)
+      expect(resBody.data).toMatchObject({
+        username: user.username,
+        name: payload.name,
+        email: user.email,
+        role: user.role,
+        id: user.id,
+      })
+      expect(resBody.data).toHaveProperty("_count")
+      expect(resBody.data).toHaveProperty("createdAt")
+      expect(resBody.data).toHaveProperty("updatedAt")
+      expect(resBody.data).not.toHaveProperty("password")
+    } finally {
+      await userCleanup().catch(() => {})
+    }
+  })
+
+  test("returns 200 when admin updates another user's profile", async () => {
+    const { userCleanup: adminCleanup, token } =
+      await createUserSession("ADMIN")
+    const { userCleanup: targetUserCleanup, user: targetUser } =
+      await createDummyUser("USER")
+    const payload = { name: "Updated by admin" }
+
+    try {
+      const res = await app.request(`/api/v1/users/${targetUser.username}`, {
+        headers: {
+          "content-type": "application/json",
+          cookie: `token=${token}`,
+        },
+        body: JSON.stringify(payload),
+        method: "PATCH",
+      })
+
+      const resBody = (await res.json()) as JsonSuccessBody<PrivateUser>
+
+      expect(res.status).toBe(200)
+      expect(resBody.data).toMatchObject({
+        username: targetUser.username,
+        email: targetUser.email,
+        role: targetUser.role,
+        name: payload.name,
+        id: targetUser.id,
+      })
+      expect(resBody.data).toHaveProperty("_count")
+      expect(resBody.data).toHaveProperty("createdAt")
+      expect(resBody.data).toHaveProperty("updatedAt")
+      expect(resBody.data).not.toHaveProperty("password")
+    } finally {
+      await targetUserCleanup().catch(() => {})
+      await adminCleanup().catch(() => {})
+    }
+  })
+
+  test("returns 400 with form errors when payload is empty", async () => {
+    const { userCleanup, token, user } = await createUserSession("USER")
+
+    try {
+      const res = await app.request(`/api/v1/users/${user.username}`, {
+        headers: {
+          "content-type": "application/json",
+          cookie: `token=${token}`,
+        },
+        body: JSON.stringify({}),
+        method: "PATCH",
+      })
+
+      const resBody = (await res.json()) as JsonErrorBody
+
+      expect(res.status).toBe(400)
+      expect(resBody).toEqual({
+        errors: {
+          formErrors: ["At least one field is required"],
+          fieldErrors: {},
+        },
+        message: "Server validation fails",
+        code: "VALIDATION_ERROR",
+      })
+    } finally {
+      await userCleanup().catch(() => {})
+    }
+  })
+
+  test("returns 409 when email already exists", async () => {
+    const { userCleanup, token, user } = await createUserSession("USER")
+    const { userCleanup: conflictingUserCleanup, user: conflictingUser } =
+      await createDummyUser("USER")
+
+    try {
+      const res = await app.request(`/api/v1/users/${user.username}`, {
+        headers: {
+          "content-type": "application/json",
+          cookie: `token=${token}`,
+        },
+        body: JSON.stringify({ email: conflictingUser.email }),
+        method: "PATCH",
+      })
+
+      const resBody = (await res.json()) as JsonErrorBody
+
+      expect(res.status).toBe(409)
+      expect(resBody).toEqual({
+        errors: {
+          fieldErrors: {
+            email: ["Email already exists"],
+          },
+        },
+        message: "Unique constraint violation",
+        code: "CONFLICT",
+      })
+    } finally {
+      await conflictingUserCleanup().catch(() => {})
+      await userCleanup().catch(() => {})
+    }
+  })
+
+  test("returns 409 when username already exists", async () => {
+    const { userCleanup, token, user } = await createUserSession("USER")
+    const { userCleanup: conflictingUserCleanup, user: conflictingUser } =
+      await createDummyUser("USER")
+
+    try {
+      const res = await app.request(`/api/v1/users/${user.username}`, {
+        headers: {
+          "content-type": "application/json",
+          cookie: `token=${token}`,
+        },
+        body: JSON.stringify({ username: conflictingUser.username }),
+        method: "PATCH",
+      })
+
+      const resBody = (await res.json()) as JsonErrorBody
+
+      expect(res.status).toBe(409)
+      expect(resBody).toEqual({
+        errors: {
+          fieldErrors: {
+            username: ["Username taken. Please pick a different username"],
+          },
+        },
+        message: "Unique constraint violation",
+        code: "CONFLICT",
+      })
+    } finally {
+      await conflictingUserCleanup().catch(() => {})
+      await userCleanup().catch(() => {})
+    }
+  })
+
+  test("returns 404 when username does not exist", async () => {
+    const { userCleanup, token } = await createUserSession("USER")
+
+    try {
+      const res = await app.request("/api/v1/users/does-not-exist", {
+        headers: {
+          "content-type": "application/json",
+          cookie: `token=${token}`,
+        },
+        body: JSON.stringify({ name: "Updated name" }),
+        method: "PATCH",
+      })
+
+      const resBody = (await res.json()) as JsonErrorBody
+
+      expect(res.status).toBe(404)
+      expect(resBody).toMatchObject({
+        message: "User not found",
+        code: "NOT_FOUND",
+      })
+    } finally {
+      await userCleanup().catch(() => {})
+    }
+  })
+})
+
 describe("GET /api/v1/users/:username", () => {
   test("returns 200 and public user fields when unauthenticated", async () => {
     const { userCleanup, user } = await createDummyUser("USER")

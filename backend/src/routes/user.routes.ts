@@ -112,7 +112,7 @@ userRoutes.patch(
 
     const user = await prisma.user.update({
       where: { id: targetUser.id },
-      omit: { password: true },
+      select: privateUserSelect,
       data: parsed.data,
     })
     return jsonSuccess(c, { data: user })
