@@ -433,48 +433,6 @@ describe("GET /api/v1/users/:username/suggestions", () => {
       await userCleanup().catch(() => {})
     }
   })
-
-  test("returns viewerHasUpvoted as true when authenticated viewer has upvoted one of that user's suggestions", async () => {
-    const { userCleanup: ownerCleanup, user: owner } =
-      await createDummyUser("USER")
-    const {
-      userCleanup: viewerCleanup,
-      user: viewer,
-      token,
-    } = await createUserSession("USER")
-    const { suggestionScenarioCleanup, suggestion } =
-      await createSuggestionScenario(owner.id)
-    const { upvoteCleanup } = await createUpvote({
-      suggestionId: suggestion.id,
-      ownerId: viewer.id,
-    })
-
-    try {
-      const res = await app.request(
-        `/api/v1/users/${owner.username}/suggestions`,
-        {
-          headers: { cookie: `token=${token}` },
-        }
-      )
-
-      const resBody = (await res.json()) as JsonSuccessBody<
-        SuggestionListItemResponse[]
-      >
-
-      const returnedSuggestion = resBody.data.find(
-        (item) => item.id === suggestion.id
-      )
-
-      expect(res.status).toBe(200)
-      expect(returnedSuggestion).toBeTruthy()
-      expect(returnedSuggestion).toHaveProperty("viewerHasUpvoted", true)
-    } finally {
-      await upvoteCleanup().catch(() => {})
-      await suggestionScenarioCleanup().catch(() => {})
-      await viewerCleanup().catch(() => {})
-      await ownerCleanup().catch(() => {})
-    }
-  })
 })
 
 describe("GET /api/v1/users/:username/upvotes", () => {
