@@ -14,9 +14,13 @@ export const suggestionListSelect = {
   id: true,
 } as const satisfies Prisma.SuggestionSelect
 
-export type SuggestionListItem = Prisma.SuggestionGetPayload<{
+type SuggestionListItem = Prisma.SuggestionGetPayload<{
   select: typeof suggestionListSelect
 }>
+
+export type SuggestionListItemResponse = {
+  viewerHasUpvoted: boolean
+} & SuggestionListItem
 
 // ------------------------------- GET a Suggestion --------------------------------
 export const suggestionSelect = {
@@ -42,9 +46,13 @@ export const suggestionSelect = {
   id: true,
 } as const satisfies Prisma.SuggestionSelect
 
-export type Suggestion = Prisma.SuggestionGetPayload<{
+type Suggestion = Prisma.SuggestionGetPayload<{
   select: typeof suggestionSelect
 }>
+
+export type SuggestionResponse = {
+  viewerHasUpvoted: boolean
+} & Suggestion
 
 // ------------------------------- Create/Update a Suggestion --------------------------------
 export const suggestionCreateSelect = {
