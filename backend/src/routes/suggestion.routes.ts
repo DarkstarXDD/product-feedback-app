@@ -24,12 +24,34 @@ import { prisma } from "@/db/client"
 const suggestionRoutes = new Hono()
 
 // ------------------------------- GET All Suggestions --------------------------------
-suggestionRoutes.get("/", async (c) => {
+suggestionRoutes.get("/", resolveAuthUser, async (c) => {
+  const user = c.get("user")
+
   const suggestions = await prisma.suggestion.findMany({
-    select: suggestionListSelect,
+    select: {
+      ...suggestionListSelect,
+      ...(user
+        ? {
+            upvotes: {
+              where: { userId: user.id },
+              select: { id: true },
+            },
+          }
+        : {}),
+    },
   })
 
-  return jsonSuccess(c, { data: suggestions }, { status: 200 })
+  const data = suggestions.map((suggestion) => {
+    const viewerHasUpvoted =
+      user && "upvotes" in suggestion ? suggestion.upvotes.length > 0 : false
+
+    return {
+      ...suggestion,
+      viewerHasUpvoted,
+    }
+  })
+
+  return jsonSuccess(c, { data }, { status: 200 })
 })
 
 // ------------------------------- GET a Suggestion --------------------------------

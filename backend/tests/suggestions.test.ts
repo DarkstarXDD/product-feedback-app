@@ -3,7 +3,7 @@ import { describe, expect, test } from "vitest"
 import type { JsonSuccessBody, JsonErrorBody } from "@/lib/utils"
 
 import {
-  type SuggestionListItem,
+  type SuggestionListItemResponse,
   type SuggestionCreate,
   type Suggestion,
 } from "@/lib/selects/suggestion.selects"
@@ -27,10 +27,13 @@ describe("GET /api/v1/suggestions", () => {
 
     const res = await app.request("/api/v1/suggestions")
 
-    const resBody = (await res.json()) as JsonSuccessBody<SuggestionListItem[]>
+    const resBody = (await res.json()) as JsonSuccessBody<
+      SuggestionListItemResponse[]
+    >
 
     expect(res.status).toBe(200)
     expect(resBody.data.some((item) => item.id === suggestion.id)).toBe(true)
+    expect(resBody.data[0]).toHaveProperty("viewerHasUpvoted")
 
     await suggestionScenarioCleanup()
   })
