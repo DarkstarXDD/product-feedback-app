@@ -4,8 +4,8 @@ import type { JsonSuccessBody, JsonErrorBody } from "@/lib/utils"
 
 import {
   type SuggestionListItemResponse,
+  type SuggestionResponse,
   type SuggestionCreate,
-  type Suggestion,
 } from "@/lib/selects/suggestion.selects"
 import { type Comment } from "@/lib/selects/comments.select"
 import { type Upvote } from "@/lib/selects/upvote.selects"
@@ -46,7 +46,7 @@ describe("GET /api/v1/suggestions/:slug", () => {
 
     const res = await app.request(`/api/v1/suggestions/${suggestion.slug}`)
 
-    const resBody = (await res.json()) as JsonSuccessBody<Suggestion>
+    const resBody = (await res.json()) as JsonSuccessBody<SuggestionResponse>
 
     expect(res.status).toBe(200)
     expect(resBody.data).toHaveProperty("id", suggestion.id)
@@ -55,6 +55,7 @@ describe("GET /api/v1/suggestions/:slug", () => {
     expect(resBody.data).toHaveProperty("description", suggestion.description)
     expect(Array.isArray(resBody.data.comments)).toBe(true)
     expect(resBody.data).toHaveProperty("_count")
+    expect(resBody.data).toHaveProperty("viewerHasUpvoted")
 
     await suggestionScenarioCleanup()
   })

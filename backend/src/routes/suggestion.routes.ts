@@ -55,11 +55,22 @@ suggestionRoutes.get("/", resolveAuthUser, async (c) => {
 })
 
 // ------------------------------- GET a Suggestion --------------------------------
-suggestionRoutes.get("/:slug", async (c) => {
+suggestionRoutes.get("/:slug", resolveAuthUser, async (c) => {
   const slug = c.req.param("slug")
+  const user = c.get("user")
 
   const suggestion = await prisma.suggestion.findUnique({
-    select: suggestionSelect,
+    select: {
+      ...suggestionSelect,
+      ...(user
+        ? {
+            upvotes: {
+              where: { userId: user.id },
+              select: { id: true },
+            },
+          }
+        : {}),
+    },
     where: { slug },
   })
 
@@ -71,7 +82,19 @@ suggestionRoutes.get("/:slug", async (c) => {
     )
   }
 
-  return jsonSuccess(c, { data: suggestion }, { status: 200 })
+  const viewerHasUpvoted =
+    user && "upvotes" in suggestion ? suggestion.upvotes.length > 0 : false
+
+  return jsonSuccess(
+    c,
+    {
+      data: {
+        ...suggestion,
+        viewerHasUpvoted,
+      },
+    },
+    { status: 200 }
+  )
 })
 
 // ------------------------------- Create a Suggestion --------------------------------
