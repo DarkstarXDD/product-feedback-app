@@ -5,9 +5,17 @@ import type {
   PrivateUser,
   PublicUser,
 } from "@/lib/selects/user.selects"
+import type { SuggestionListItemResponse } from "@/lib/selects/suggestion.selects"
 import type { JsonSuccessBody, JsonErrorBody } from "@/lib/utils"
+import type { Comment } from "@/lib/selects/comments.select"
 
-import { createUserSession, createDummyUser } from "./utils"
+import {
+  createSuggestionScenario,
+  createCommentScenario,
+  createUserSession,
+  createDummyUser,
+  createUpvote,
+} from "./utils"
 import app from "../main"
 
 describe("GET /api/v1/users", () => {
@@ -399,5 +407,121 @@ describe("GET /api/v1/users/:username", () => {
       message: "User not found",
       code: "NOT_FOUND",
     })
+  })
+})
+
+describe("GET /api/v1/users/:username/suggestions", () => {
+  test("returns 200 and suggestion list for that user", async () => {
+    const { userCleanup, user } = await createDummyUser("USER")
+    const { suggestionScenarioCleanup, suggestion } =
+      await createSuggestionScenario(user.id)
+
+    try {
+      const res = await app.request(
+        `/api/v1/users/${user.username}/suggestions`
+      )
+
+      const resBody = (await res.json()) as JsonSuccessBody<
+        SuggestionListItemResponse[]
+      >
+
+      expect(res.status).toBe(200)
+      expect(resBody.data.some((item) => item.id === suggestion.id)).toBe(true)
+      expect(resBody.data[0]).toHaveProperty("viewerHasUpvoted")
+    } finally {
+      await suggestionScenarioCleanup().catch(() => {})
+      await userCleanup().catch(() => {})
+    }
+  })
+
+  test("returns viewerHasUpvoted as true when authenticated viewer has upvoted one of that user's suggestions", async () => {
+    const { userCleanup: ownerCleanup, user: owner } =
+      await createDummyUser("USER")
+    const {
+      userCleanup: viewerCleanup,
+      user: viewer,
+      token,
+    } = await createUserSession("USER")
+    const { suggestionScenarioCleanup, suggestion } =
+      await createSuggestionScenario(owner.id)
+    const { upvoteCleanup } = await createUpvote({
+      suggestionId: suggestion.id,
+      ownerId: viewer.id,
+    })
+
+    try {
+      const res = await app.request(
+        `/api/v1/users/${owner.username}/suggestions`,
+        {
+          headers: { cookie: `token=${token}` },
+        }
+      )
+
+      const resBody = (await res.json()) as JsonSuccessBody<
+        SuggestionListItemResponse[]
+      >
+
+      const returnedSuggestion = resBody.data.find(
+        (item) => item.id === suggestion.id
+      )
+
+      expect(res.status).toBe(200)
+      expect(returnedSuggestion).toBeTruthy()
+      expect(returnedSuggestion).toHaveProperty("viewerHasUpvoted", true)
+    } finally {
+      await upvoteCleanup().catch(() => {})
+      await suggestionScenarioCleanup().catch(() => {})
+      await viewerCleanup().catch(() => {})
+      await ownerCleanup().catch(() => {})
+    }
+  })
+})
+
+describe("GET /api/v1/users/:username/upvotes", () => {
+  test("returns 200 and suggestion list the user has upvoted", async () => {
+    const { userCleanup, user } = await createDummyUser("USER")
+    const { suggestionScenarioCleanup, suggestion } =
+      await createSuggestionScenario()
+    const { upvoteCleanup } = await createUpvote({
+      suggestionId: suggestion.id,
+      ownerId: user.id,
+    })
+
+    try {
+      const res = await app.request(`/api/v1/users/${user.username}/upvotes`)
+
+      const resBody = (await res.json()) as JsonSuccessBody<
+        SuggestionListItemResponse[]
+      >
+
+      expect(res.status).toBe(200)
+      expect(resBody.data.some((item) => item.id === suggestion.id)).toBe(true)
+      expect(resBody.data[0]).toHaveProperty("viewerHasUpvoted", false)
+    } finally {
+      await upvoteCleanup().catch(() => {})
+      await suggestionScenarioCleanup().catch(() => {})
+      await userCleanup().catch(() => {})
+    }
+  })
+})
+
+describe("GET /api/v1/users/:username/comments", () => {
+  test("returns 200 and comment list for that user", async () => {
+    const { userCleanup, user } = await createUserSession("USER")
+    const { commentScenarioCleanup, comment } = await createCommentScenario(
+      user.id
+    )
+
+    try {
+      const res = await app.request(`/api/v1/users/${user.username}/comments`)
+
+      const resBody = (await res.json()) as JsonSuccessBody<Comment[]>
+
+      expect(res.status).toBe(200)
+      expect(resBody.data.some((item) => item.id === comment.id)).toBe(true)
+    } finally {
+      await commentScenarioCleanup().catch(() => {})
+      await userCleanup().catch(() => {})
+    }
   })
 })
