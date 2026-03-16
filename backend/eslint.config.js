@@ -8,14 +8,22 @@ export default defineConfig(
   tseslint.configs.strictTypeChecked,
   perfectionist.configs["recommended-line-length"],
   {
+    rules: {
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
+      ],
+      "no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
+      ],
+      "perfectionist/sort-modules": "off",
+    },
+
     languageOptions: {
       parserOptions: {
         projectService: true,
       },
-    },
-
-    rules: {
-      "perfectionist/sort-modules": "off",
     },
   }
 )

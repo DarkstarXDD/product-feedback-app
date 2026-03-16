@@ -142,9 +142,50 @@ userRoutes.get("/:username/suggestions", resolveAuthUser, async (c) => {
   const data = suggestions.map((suggestion) => {
     const viewerHasUpvoted =
       user && "upvotes" in suggestion ? suggestion.upvotes.length > 0 : false
+    const { upvotes: _upvotes, ...suggestionData } = suggestion
 
     return {
-      ...suggestion,
+      ...suggestionData,
+      viewerHasUpvoted,
+    }
+  })
+
+  return jsonSuccess(c, { data }, { status: 200 })
+})
+
+// ---------------------------- Get All Upvoted Suggestions of a User -------------------------
+userRoutes.get("/:username/upvotes", resolveAuthUser, async (c) => {
+  const username = c.req.param("username")
+  const user = c.get("user")
+
+  const suggestions = await prisma.suggestion.findMany({
+    select: {
+      ...suggestionListSelect,
+      ...(user
+        ? {
+            upvotes: {
+              where: { userId: user.id },
+              select: { id: true },
+            },
+          }
+        : {}),
+    },
+    where: {
+      upvotes: {
+        some: {
+          user: { username },
+        },
+      },
+    },
+  })
+
+  const data = suggestions.map((suggestion) => {
+    const viewerHasUpvoted =
+      user && "upvotes" in suggestion ? suggestion.upvotes.length > 0 : false
+    const { upvotes: _upvotes, ...suggestionData } = suggestion
+
+    return {
+      ...suggestionData,
       viewerHasUpvoted,
     }
   })
