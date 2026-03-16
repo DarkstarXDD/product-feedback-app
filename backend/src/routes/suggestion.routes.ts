@@ -44,9 +44,10 @@ suggestionRoutes.get("/", resolveAuthUser, async (c) => {
   const data = suggestions.map((suggestion) => {
     const viewerHasUpvoted =
       user && "upvotes" in suggestion ? suggestion.upvotes.length > 0 : false
+    const { upvotes: _upvotes, ...suggestionData } = suggestion
 
     return {
-      ...suggestion,
+      ...suggestionData,
       viewerHasUpvoted,
     }
   })
@@ -84,12 +85,13 @@ suggestionRoutes.get("/:slug", resolveAuthUser, async (c) => {
 
   const viewerHasUpvoted =
     user && "upvotes" in suggestion ? suggestion.upvotes.length > 0 : false
+  const { upvotes: _upvotes, ...suggestionData } = suggestion
 
   return jsonSuccess(
     c,
     {
       data: {
-        ...suggestion,
+        ...suggestionData,
         viewerHasUpvoted,
       },
     },

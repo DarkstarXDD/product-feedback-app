@@ -142,9 +142,10 @@ userRoutes.get("/:username/suggestions", resolveAuthUser, async (c) => {
   const data = suggestions.map((suggestion) => {
     const viewerHasUpvoted =
       user && "upvotes" in suggestion ? suggestion.upvotes.length > 0 : false
+    const { upvotes: _upvotes, ...suggestionData } = suggestion
 
     return {
-      ...suggestion,
+      ...suggestionData,
       viewerHasUpvoted,
     }
   })
@@ -181,9 +182,10 @@ userRoutes.get("/:username/upvotes", resolveAuthUser, async (c) => {
   const data = suggestions.map((suggestion) => {
     const viewerHasUpvoted =
       user && "upvotes" in suggestion ? suggestion.upvotes.length > 0 : false
+    const { upvotes: _upvotes, ...suggestionData } = suggestion
 
     return {
-      ...suggestion,
+      ...suggestionData,
       viewerHasUpvoted,
     }
   })
