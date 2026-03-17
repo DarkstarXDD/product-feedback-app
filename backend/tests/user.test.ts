@@ -6,13 +6,14 @@ import type {
   PublicUser,
 } from "@/lib/selects/user.selects"
 import type { SuggestionListItemResponse } from "@/lib/selects/suggestion.selects"
-import type { JsonSuccessBody, JsonErrorBody } from "@/lib/utils"
+import type { JsonSuccessBody, JsonErrorBody, Pagination } from "@/lib/utils"
 import type { Comment } from "@/lib/selects/comments.select"
 
 import {
   createSuggestionScenario,
   createCommentScenario,
   createUserSession,
+  createSuggestion,
   createDummyUser,
   createUpvote,
 } from "./utils"
@@ -423,13 +424,63 @@ describe("GET /api/v1/users/:username/suggestions", () => {
 
       const resBody = (await res.json()) as JsonSuccessBody<
         SuggestionListItemResponse[]
-      >
+      > & {
+        meta: { pagination: Pagination }
+      }
 
       expect(res.status).toBe(200)
       expect(resBody.data.some((item) => item.id === suggestion.id)).toBe(true)
       expect(resBody.data[0]).toHaveProperty("viewerHasUpvoted")
+      expect(resBody.meta.pagination).toEqual({
+        hasPreviousPage: false,
+        hasNextPage: false,
+        totalItems: 1,
+        totalPages: 1,
+        pageSize: 10,
+        page: 1,
+      })
     } finally {
       await suggestionScenarioCleanup().catch(() => {})
+      await userCleanup().catch(() => {})
+    }
+  })
+
+  test("returns correct pagination metadata when multiple pages exist", async () => {
+    const { userCleanup, user } = await createDummyUser("USER")
+    const suggestionCleanups: Array<() => Promise<void>> = []
+
+    try {
+      for (let i = 0; i < 20; i++) {
+        const { suggestionCleanup } = await createSuggestion({
+          ownerId: user.id,
+        })
+        suggestionCleanups.push(suggestionCleanup)
+      }
+
+      const res = await app.request(
+        `/api/v1/users/${user.username}/suggestions?page=2&pageSize=10`
+      )
+
+      const resBody = (await res.json()) as JsonSuccessBody<
+        SuggestionListItemResponse[]
+      > & {
+        meta: { pagination: Pagination }
+      }
+
+      expect(res.status).toBe(200)
+      expect(resBody.data).toHaveLength(10)
+      expect(resBody.meta.pagination).toEqual({
+        hasPreviousPage: true,
+        hasNextPage: false,
+        totalItems: 20,
+        totalPages: 2,
+        pageSize: 10,
+        page: 2,
+      })
+    } finally {
+      for (const cleanup of suggestionCleanups.reverse()) {
+        await cleanup().catch(() => {})
+      }
       await userCleanup().catch(() => {})
     }
   })

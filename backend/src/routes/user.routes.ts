@@ -7,11 +7,17 @@ import {
   privateUserSelect,
   publicUserSelect,
 } from "@/lib/selects/user.selects"
+import {
+  type Pagination,
+  formatZodErrors,
+  jsonSuccess,
+  jsonError,
+} from "@/lib/utils"
 import { withTargetAccess } from "@/middlewares/with-target-access.middleware"
 import { resolveAuthUser } from "@/middlewares/resolve-auth-user.middleware"
 import { suggestionListSelect } from "@/lib/selects/suggestion.selects"
-import { formatZodErrors, jsonSuccess, jsonError } from "@/lib/utils"
 import { requireRole } from "@/middlewares/require-role.middleware"
+import { paginationSchema } from "@/schemas/pagination.schema"
 import { commentSelect } from "@/lib/selects/comments.select"
 import { getTargetUserOrThrow } from "@/lib/context-helpers"
 import { userUpdateSchema } from "@/schemas/user.schema"
@@ -123,21 +129,47 @@ userRoutes.patch(
 userRoutes.get("/:username/suggestions", resolveAuthUser, async (c) => {
   const username = c.req.param("username")
   const user = c.get("user")
+  const query = c.req.query()
+  const parsedQuery = paginationSchema.safeParse(query)
 
-  const suggestions = await prisma.suggestion.findMany({
-    select: {
-      ...suggestionListSelect,
-      ...(user
-        ? {
-            upvotes: {
-              where: { userId: user.id },
-              select: { id: true },
-            },
-          }
-        : {}),
-    },
-    where: { user: { username } },
-  })
+  if (!parsedQuery.success) {
+    return jsonError(
+      c,
+      {
+        errors: formatZodErrors(parsedQuery.error),
+        message: "Server validation fails",
+        code: "VALIDATION_ERROR",
+      },
+      { status: 400 }
+    )
+  }
+
+  const { pageSize, page } = parsedQuery.data
+  const skip = (page - 1) * pageSize
+
+  const [totalItems, suggestions] = await Promise.all([
+    prisma.suggestion.count({
+      where: { user: { username } },
+    }),
+    prisma.suggestion.findMany({
+      select: {
+        ...suggestionListSelect,
+        ...(user
+          ? {
+              upvotes: {
+                where: { userId: user.id },
+                select: { id: true },
+              },
+            }
+          : {}),
+      },
+      where: { user: { username } },
+      take: pageSize,
+      skip,
+    }),
+  ])
+
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
 
   const data = suggestions.map((suggestion) => {
     const viewerHasUpvoted =
@@ -150,7 +182,16 @@ userRoutes.get("/:username/suggestions", resolveAuthUser, async (c) => {
     }
   })
 
-  return jsonSuccess(c, { data }, { status: 200 })
+  const pagination: Pagination = {
+    hasNextPage: page < totalPages,
+    hasPreviousPage: page > 1,
+    totalItems,
+    totalPages,
+    pageSize,
+    page,
+  }
+
+  return jsonSuccess(c, { meta: { pagination }, data }, { status: 200 })
 })
 
 // ---------------------------- Get All Upvoted Suggestions of a User -------------------------
