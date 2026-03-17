@@ -7,6 +7,7 @@ import {
 } from "@/lib/selects/suggestion.selects"
 import {
   formatZodErrors,
+  type Pagination,
   generateSlug,
   jsonSuccess,
   jsonError,
@@ -15,6 +16,7 @@ import { resolveAuthUser } from "@/middlewares/resolve-auth-user.middleware"
 import { suggestionCreateSchema } from "@/schemas/suggestion.schema"
 import { requireRole } from "@/middlewares/require-role.middleware"
 import { commentCreateSchema } from "@/schemas/comments.schema"
+import { paginationSchema } from "@/schemas/pagination.schema"
 import { commentSelect } from "@/lib/selects/comments.select"
 import { upvoteSelect } from "@/lib/selects/upvote.selects"
 import { getUserOrThrow } from "@/lib/context-helpers"
@@ -26,20 +28,44 @@ const suggestionRoutes = new Hono()
 // ------------------------------- GET All Suggestions --------------------------------
 suggestionRoutes.get("/", resolveAuthUser, async (c) => {
   const user = c.get("user")
+  const query = c.req.query()
+  const parsedQuery = paginationSchema.safeParse(query)
 
-  const suggestions = await prisma.suggestion.findMany({
-    select: {
-      ...suggestionListSelect,
-      ...(user
-        ? {
-            upvotes: {
-              where: { userId: user.id },
-              select: { id: true },
-            },
-          }
-        : {}),
-    },
-  })
+  if (!parsedQuery.success) {
+    return jsonError(
+      c,
+      {
+        errors: formatZodErrors(parsedQuery.error),
+        message: "Server validation fails",
+        code: "VALIDATION_ERROR",
+      },
+      { status: 400 }
+    )
+  }
+
+  const { pageSize, page } = parsedQuery.data
+  const skip = (page - 1) * pageSize
+
+  const [totalItems, suggestions] = await Promise.all([
+    prisma.suggestion.count(),
+    prisma.suggestion.findMany({
+      select: {
+        ...suggestionListSelect,
+        ...(user
+          ? {
+              upvotes: {
+                where: { userId: user.id },
+                select: { id: true },
+              },
+            }
+          : {}),
+      },
+      take: pageSize,
+      skip,
+    }),
+  ])
+
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
 
   const data = suggestions.map((suggestion) => {
     const viewerHasUpvoted =
@@ -52,7 +78,16 @@ suggestionRoutes.get("/", resolveAuthUser, async (c) => {
     }
   })
 
-  return jsonSuccess(c, { data }, { status: 200 })
+  const pagination: Pagination = {
+    hasNextPage: page < totalPages,
+    hasPreviousPage: page > 1,
+    totalItems,
+    totalPages,
+    pageSize,
+    page,
+  }
+
+  return jsonSuccess(c, { meta: { pagination }, data }, { status: 200 })
 })
 
 // ------------------------------- GET a Suggestion --------------------------------

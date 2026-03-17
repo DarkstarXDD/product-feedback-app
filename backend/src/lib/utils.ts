@@ -16,6 +16,15 @@ export interface JsonSuccessBody<T> {
   data: T
 }
 
+export type Pagination = {
+  hasPreviousPage: boolean
+  hasNextPage: boolean
+  totalItems: number
+  totalPages: number
+  pageSize: number
+  page: number
+}
+
 type JsonSuccessOptions = {
   status: Exclude<SuccessStatusCode, ContentlessStatusCode>
 }

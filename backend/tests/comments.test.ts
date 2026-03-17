@@ -1,9 +1,15 @@
 import { describe, expect, test } from "vitest"
 import { faker } from "@faker-js/faker"
 
-import type { JsonSuccessBody, JsonErrorBody } from "@/lib/utils"
+import type { JsonSuccessBody, JsonErrorBody, Pagination } from "@/lib/utils"
+import type { Comment } from "@/lib/selects/comments.select"
 
-import { createCommentScenario, createUserSession } from "./utils"
+import {
+  createSuggestionScenario,
+  createCommentScenario,
+  createUserSession,
+  createComment,
+} from "./utils"
 import app from "../main"
 
 describe("GET /api/v1/comments", () => {
@@ -48,15 +54,70 @@ describe("GET /api/v1/comments", () => {
       headers: { cookie: `token=${token}` },
     })
 
-    const resBody = (await res.json()) as JsonSuccessBody<
-      Array<Record<string, unknown>>
-    >
+    const resBody = (await res.json()) as {
+      meta: { pagination: Pagination }
+    } & JsonSuccessBody<Comment[]>
 
     expect(res.status).toBe(200)
     expect(resBody.data.some((item) => item.id === comment.id)).toBe(true)
+    expect(resBody.meta.pagination).toEqual({
+      hasPreviousPage: false,
+      hasNextPage: false,
+      totalItems: 1,
+      totalPages: 1,
+      pageSize: 10,
+      page: 1,
+    })
 
     await userCleanup()
     await commentScenarioCleanup()
+  })
+
+  test("return 200 and correct pagination metadata when multiple pages exist", async () => {
+    const { userCleanup, token, user } = await createUserSession("ADMIN")
+    const suggestionScenarioCleanups: Array<() => Promise<unknown>> = []
+    const commentCleanups: Array<() => Promise<unknown>> = []
+
+    try {
+      for (let i = 0; i < 20; i++) {
+        const { suggestionScenarioCleanup, suggestion } =
+          await createSuggestionScenario()
+        suggestionScenarioCleanups.push(suggestionScenarioCleanup)
+
+        const { commentCleanup } = await createComment({
+          suggestionId: suggestion.id,
+          ownerId: user.id,
+        })
+        commentCleanups.push(commentCleanup)
+      }
+
+      const res = await app.request("/api/v1/comments?page=2&pageSize=10", {
+        headers: { cookie: `token=${token}` },
+      })
+
+      const resBody = (await res.json()) as {
+        meta: { pagination: Pagination }
+      } & JsonSuccessBody<Comment[]>
+
+      expect(res.status).toBe(200)
+      expect(resBody.data).toHaveLength(10)
+      expect(resBody.meta.pagination).toEqual({
+        hasPreviousPage: true,
+        hasNextPage: false,
+        totalItems: 20,
+        totalPages: 2,
+        pageSize: 10,
+        page: 2,
+      })
+    } finally {
+      for (const cleanup of commentCleanups.reverse()) {
+        await cleanup().catch(() => {})
+      }
+      for (const cleanup of suggestionScenarioCleanups.reverse()) {
+        await cleanup().catch(() => {})
+      }
+      await userCleanup().catch(() => {})
+    }
   })
 })
 

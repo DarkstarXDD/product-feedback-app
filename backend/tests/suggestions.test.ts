@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest"
 
-import type { JsonSuccessBody, JsonErrorBody } from "@/lib/utils"
+import type { JsonSuccessBody, JsonErrorBody, Pagination } from "@/lib/utils"
 
 import {
   type SuggestionListItemResponse,
@@ -16,6 +16,8 @@ import {
   createCommentScenario,
   getRandomCategoryId,
   createUserSession,
+  createSuggestion,
+  createDummyUser,
   createUpvote,
 } from "./utils"
 import app from "../main"
@@ -36,6 +38,85 @@ describe("GET /api/v1/suggestions", () => {
     expect(resBody.data[0]).toHaveProperty("viewerHasUpvoted")
 
     await suggestionScenarioCleanup()
+  })
+
+  test("returns pagination metadata with defaults", async () => {
+    const { suggestionScenarioCleanup } = await createSuggestionScenario()
+
+    try {
+      const res = await app.request("/api/v1/suggestions")
+
+      const resBody = (await res.json()) as JsonSuccessBody<
+        SuggestionListItemResponse[]
+      > & {
+        meta: { pagination: Pagination }
+      }
+
+      expect(res.status).toBe(200)
+      expect(resBody).toHaveProperty("meta.pagination")
+      expect(resBody.meta.pagination).toEqual({
+        hasPreviousPage: false,
+        hasNextPage: false,
+        totalItems: 1,
+        totalPages: 1,
+        pageSize: 10,
+        page: 1,
+      })
+    } finally {
+      await suggestionScenarioCleanup().catch(() => {})
+    }
+  })
+
+  test("returns correct pagination metadata when multiple pages exist", async () => {
+    const { userCleanup, user } = await createDummyUser("USER")
+    const suggestionCleanups: Array<() => Promise<void>> = []
+
+    try {
+      for (let i = 0; i < 20; i++) {
+        const { suggestionCleanup } = await createSuggestion({
+          ownerId: user.id,
+        })
+        suggestionCleanups.push(suggestionCleanup)
+      }
+
+      const res = await app.request("/api/v1/suggestions?page=2&pageSize=10")
+
+      const resBody = (await res.json()) as JsonSuccessBody<
+        SuggestionListItemResponse[]
+      > & {
+        meta: { pagination: Pagination }
+      }
+
+      expect(res.status).toBe(200)
+      expect(resBody.data).toHaveLength(10)
+      expect(resBody.meta.pagination).toEqual({
+        hasPreviousPage: true,
+        hasNextPage: false,
+        totalItems: 20,
+        totalPages: 2,
+        pageSize: 10,
+        page: 2,
+      })
+    } finally {
+      for (const cleanup of suggestionCleanups.reverse()) {
+        await cleanup().catch(() => {})
+      }
+      await userCleanup().catch(() => {})
+    }
+  })
+
+  test("returns 400 with field errors when pagination query params are invalid", async () => {
+    const res = await app.request("/api/v1/suggestions?page=0&pageSize=abc")
+
+    const resBody = (await res.json()) as JsonErrorBody
+
+    expect(res.status).toBe(400)
+    expect(resBody).toMatchObject({
+      message: "Server validation fails",
+      code: "VALIDATION_ERROR",
+    })
+    expect(resBody.errors?.fieldErrors).toHaveProperty("page")
+    expect(resBody.errors?.fieldErrors).toHaveProperty("pageSize")
   })
 })
 
