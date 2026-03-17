@@ -15,6 +15,7 @@ import {
   createUserSession,
   createSuggestion,
   createDummyUser,
+  createComment,
   createUpvote,
 } from "./utils"
 import app from "../main"
@@ -63,12 +64,63 @@ describe("GET /api/v1/users", () => {
         headers: { cookie: `token=${token}` },
       })
 
-      const resBody = (await res.json()) as JsonSuccessBody<AdminUserListItem[]>
+      const resBody = (await res.json()) as JsonSuccessBody<
+        AdminUserListItem[]
+      > & {
+        meta: { pagination: Pagination }
+      }
 
       expect(res.status).toBe(200)
       expect(resBody.data.some((item) => item.id === listedUser.id)).toBe(true)
+      expect(resBody.meta.pagination).toEqual({
+        hasPreviousPage: false,
+        hasNextPage: false,
+        totalItems: 2,
+        totalPages: 1,
+        pageSize: 10,
+        page: 1,
+      })
     } finally {
       await listedUserCleanup().catch(() => {})
+      await adminCleanup().catch(() => {})
+    }
+  })
+
+  test("returns correct pagination metadata when multiple pages exist", async () => {
+    const { userCleanup: adminCleanup, token } =
+      await createUserSession("ADMIN")
+    const userCleanups: Array<() => Promise<unknown>> = []
+
+    try {
+      for (let i = 0; i < 19; i++) {
+        const { userCleanup } = await createDummyUser("USER")
+        userCleanups.push(userCleanup)
+      }
+
+      const res = await app.request("/api/v1/users?page=2&pageSize=10", {
+        headers: { cookie: `token=${token}` },
+      })
+
+      const resBody = (await res.json()) as JsonSuccessBody<
+        AdminUserListItem[]
+      > & {
+        meta: { pagination: Pagination }
+      }
+
+      expect(res.status).toBe(200)
+      expect(resBody.data).toHaveLength(10)
+      expect(resBody.meta.pagination).toEqual({
+        hasPreviousPage: true,
+        hasNextPage: false,
+        totalItems: 20,
+        totalPages: 2,
+        pageSize: 10,
+        page: 2,
+      })
+    } finally {
+      for (const cleanup of userCleanups.reverse()) {
+        await cleanup().catch(() => {})
+      }
       await adminCleanup().catch(() => {})
     }
   })
@@ -447,7 +499,7 @@ describe("GET /api/v1/users/:username/suggestions", () => {
 
   test("returns correct pagination metadata when multiple pages exist", async () => {
     const { userCleanup, user } = await createDummyUser("USER")
-    const suggestionCleanups: Array<() => Promise<void>> = []
+    const suggestionCleanups: Array<() => Promise<unknown>> = []
 
     try {
       for (let i = 0; i < 20; i++) {
@@ -501,14 +553,73 @@ describe("GET /api/v1/users/:username/upvotes", () => {
 
       const resBody = (await res.json()) as JsonSuccessBody<
         SuggestionListItemResponse[]
-      >
+      > & {
+        meta: { pagination: Pagination }
+      }
 
       expect(res.status).toBe(200)
       expect(resBody.data.some((item) => item.id === suggestion.id)).toBe(true)
       expect(resBody.data[0]).toHaveProperty("viewerHasUpvoted", false)
+      expect(resBody.meta.pagination).toEqual({
+        hasPreviousPage: false,
+        hasNextPage: false,
+        totalItems: 1,
+        totalPages: 1,
+        pageSize: 10,
+        page: 1,
+      })
     } finally {
       await upvoteCleanup().catch(() => {})
       await suggestionScenarioCleanup().catch(() => {})
+      await userCleanup().catch(() => {})
+    }
+  })
+
+  test("returns correct pagination metadata when multiple pages exist", async () => {
+    const { userCleanup, user } = await createDummyUser("USER")
+    const suggestionScenarioCleanups: Array<() => Promise<unknown>> = []
+    const upvoteCleanups: Array<() => Promise<unknown>> = []
+
+    try {
+      for (let i = 0; i < 20; i++) {
+        const { suggestionScenarioCleanup, suggestion } =
+          await createSuggestionScenario()
+        suggestionScenarioCleanups.push(suggestionScenarioCleanup)
+
+        const { upvoteCleanup } = await createUpvote({
+          suggestionId: suggestion.id,
+          ownerId: user.id,
+        })
+        upvoteCleanups.push(upvoteCleanup)
+      }
+
+      const res = await app.request(
+        `/api/v1/users/${user.username}/upvotes?page=2&pageSize=10`
+      )
+
+      const resBody = (await res.json()) as JsonSuccessBody<
+        SuggestionListItemResponse[]
+      > & {
+        meta: { pagination: Pagination }
+      }
+
+      expect(res.status).toBe(200)
+      expect(resBody.data).toHaveLength(10)
+      expect(resBody.meta.pagination).toEqual({
+        hasPreviousPage: true,
+        hasNextPage: false,
+        totalItems: 20,
+        totalPages: 2,
+        pageSize: 10,
+        page: 2,
+      })
+    } finally {
+      for (const cleanup of upvoteCleanups.reverse()) {
+        await cleanup().catch(() => {})
+      }
+      for (const cleanup of suggestionScenarioCleanups.reverse()) {
+        await cleanup().catch(() => {})
+      }
       await userCleanup().catch(() => {})
     }
   })
@@ -524,12 +635,69 @@ describe("GET /api/v1/users/:username/comments", () => {
     try {
       const res = await app.request(`/api/v1/users/${user.username}/comments`)
 
-      const resBody = (await res.json()) as JsonSuccessBody<Comment[]>
+      const resBody = (await res.json()) as {
+        meta: { pagination: Pagination }
+      } & JsonSuccessBody<Comment[]>
 
       expect(res.status).toBe(200)
       expect(resBody.data.some((item) => item.id === comment.id)).toBe(true)
+      expect(resBody.meta.pagination).toEqual({
+        hasPreviousPage: false,
+        hasNextPage: false,
+        totalItems: 1,
+        totalPages: 1,
+        pageSize: 10,
+        page: 1,
+      })
     } finally {
       await commentScenarioCleanup().catch(() => {})
+      await userCleanup().catch(() => {})
+    }
+  })
+
+  test("returns correct pagination metadata when multiple pages exist", async () => {
+    const { userCleanup, user } = await createDummyUser("USER")
+    const suggestionScenarioCleanups: Array<() => Promise<unknown>> = []
+    const commentCleanups: Array<() => Promise<unknown>> = []
+
+    try {
+      for (let i = 0; i < 20; i++) {
+        const { suggestionScenarioCleanup, suggestion } =
+          await createSuggestionScenario()
+        suggestionScenarioCleanups.push(suggestionScenarioCleanup)
+
+        const { commentCleanup } = await createComment({
+          suggestionId: suggestion.id,
+          ownerId: user.id,
+        })
+        commentCleanups.push(commentCleanup)
+      }
+
+      const res = await app.request(
+        `/api/v1/users/${user.username}/comments?page=2&pageSize=10`
+      )
+
+      const resBody = (await res.json()) as {
+        meta: { pagination: Pagination }
+      } & JsonSuccessBody<Comment[]>
+
+      expect(res.status).toBe(200)
+      expect(resBody.data).toHaveLength(10)
+      expect(resBody.meta.pagination).toEqual({
+        hasPreviousPage: true,
+        hasNextPage: false,
+        totalItems: 20,
+        totalPages: 2,
+        pageSize: 10,
+        page: 2,
+      })
+    } finally {
+      for (const cleanup of commentCleanups.reverse()) {
+        await cleanup().catch(() => {})
+      }
+      for (const cleanup of suggestionScenarioCleanups.reverse()) {
+        await cleanup().catch(() => {})
+      }
       await userCleanup().catch(() => {})
     }
   })

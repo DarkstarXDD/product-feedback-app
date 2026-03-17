@@ -27,10 +27,45 @@ const userRoutes = new Hono<AppContext>()
 
 // ------------------------------- Get All Users --------------------------------
 userRoutes.get("/", resolveAuthUser, requireRole("ADMIN"), async (c) => {
-  const users = await prisma.user.findMany({
-    select: adminUserListSelect,
-  })
-  return jsonSuccess(c, { data: users })
+  const query = c.req.query()
+  const parsedQuery = paginationSchema.safeParse(query)
+
+  if (!parsedQuery.success) {
+    return jsonError(
+      c,
+      {
+        errors: formatZodErrors(parsedQuery.error),
+        message: "Server validation fails",
+        code: "VALIDATION_ERROR",
+      },
+      { status: 400 }
+    )
+  }
+
+  const { pageSize, page } = parsedQuery.data
+  const skip = (page - 1) * pageSize
+
+  const [totalItems, users] = await Promise.all([
+    prisma.user.count(),
+    prisma.user.findMany({
+      select: adminUserListSelect,
+      take: pageSize,
+      skip,
+    }),
+  ])
+
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
+
+  const pagination: Pagination = {
+    hasNextPage: page < totalPages,
+    hasPreviousPage: page > 1,
+    totalItems,
+    totalPages,
+    pageSize,
+    page,
+  }
+
+  return jsonSuccess(c, { meta: { pagination }, data: users })
 })
 
 // ------------------------------- Get a User ----------------------------------
@@ -198,27 +233,53 @@ userRoutes.get("/:username/suggestions", resolveAuthUser, async (c) => {
 userRoutes.get("/:username/upvotes", resolveAuthUser, async (c) => {
   const username = c.req.param("username")
   const user = c.get("user")
+  const query = c.req.query()
+  const parsedQuery = paginationSchema.safeParse(query)
 
-  const suggestions = await prisma.suggestion.findMany({
-    select: {
-      ...suggestionListSelect,
-      ...(user
-        ? {
-            upvotes: {
-              where: { userId: user.id },
-              select: { id: true },
-            },
-          }
-        : {}),
-    },
-    where: {
-      upvotes: {
-        some: {
-          user: { username },
-        },
+  if (!parsedQuery.success) {
+    return jsonError(
+      c,
+      {
+        errors: formatZodErrors(parsedQuery.error),
+        message: "Server validation fails",
+        code: "VALIDATION_ERROR",
+      },
+      { status: 400 }
+    )
+  }
+
+  const { pageSize, page } = parsedQuery.data
+  const skip = (page - 1) * pageSize
+
+  const where = {
+    upvotes: {
+      some: {
+        user: { username },
       },
     },
-  })
+  } as const
+
+  const [totalItems, suggestions] = await Promise.all([
+    prisma.suggestion.count({ where }),
+    prisma.suggestion.findMany({
+      select: {
+        ...suggestionListSelect,
+        ...(user
+          ? {
+              upvotes: {
+                where: { userId: user.id },
+                select: { id: true },
+              },
+            }
+          : {}),
+      },
+      take: pageSize,
+      where,
+      skip,
+    }),
+  ])
+
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
 
   const data = suggestions.map((suggestion) => {
     const viewerHasUpvoted =
@@ -231,19 +292,66 @@ userRoutes.get("/:username/upvotes", resolveAuthUser, async (c) => {
     }
   })
 
-  return jsonSuccess(c, { data }, { status: 200 })
+  const pagination: Pagination = {
+    hasNextPage: page < totalPages,
+    hasPreviousPage: page > 1,
+    totalItems,
+    totalPages,
+    pageSize,
+    page,
+  }
+
+  return jsonSuccess(c, { meta: { pagination }, data }, { status: 200 })
 })
 
 // ------------------------------- GET All Comments of a User --------------------------------
 userRoutes.get("/:username/comments", async (c) => {
   const username = c.req.param("username")
+  const query = c.req.query()
+  const parsedQuery = paginationSchema.safeParse(query)
 
-  const comments = await prisma.comment.findMany({
-    where: { user: { username } },
-    select: commentSelect,
-  })
+  if (!parsedQuery.success) {
+    return jsonError(
+      c,
+      {
+        errors: formatZodErrors(parsedQuery.error),
+        message: "Server validation fails",
+        code: "VALIDATION_ERROR",
+      },
+      { status: 400 }
+    )
+  }
 
-  return jsonSuccess(c, { data: comments }, { status: 200 })
+  const { pageSize, page } = parsedQuery.data
+  const skip = (page - 1) * pageSize
+  const where = { user: { username } } as const
+
+  const [totalItems, comments] = await Promise.all([
+    prisma.comment.count({ where }),
+    prisma.comment.findMany({
+      select: commentSelect,
+      take: pageSize,
+      where,
+      skip,
+    }),
+  ])
+
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
+
+  const pagination: Pagination = {
+    hasNextPage: page < totalPages,
+    hasPreviousPage: page > 1,
+    totalItems,
+    totalPages,
+    pageSize,
+    page,
+  }
+
+  return jsonSuccess(
+    c,
+    { meta: { pagination }, data: comments },
+    { status: 200 }
+  )
 })
 
 export default userRoutes
