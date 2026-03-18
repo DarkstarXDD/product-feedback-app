@@ -3,8 +3,7 @@ import { describe, expect, test } from "vitest"
 import type { JsonSuccessBody } from "@/lib/utils"
 
 import { type Status } from "@/lib/selects/status.selects"
-
-import app from "../main"
+import app from "@/app"
 
 describe("GET /api/v1/statuses", () => {
   test("returns 200 and status list", async () => {

@@ -9,6 +9,8 @@ import type { SuggestionListItemResponse } from "@/lib/selects/suggestion.select
 import type { JsonSuccessBody, JsonErrorBody, Pagination } from "@/lib/utils"
 import type { Comment } from "@/lib/selects/comments.select"
 
+import app from "@/app"
+
 import {
   createSuggestionScenario,
   createCommentScenario,
@@ -18,7 +20,6 @@ import {
   createComment,
   createUpvote,
 } from "./utils"
-import app from "../main"
 
 describe("GET /api/v1/users", () => {
   test("returns 401 when unauthenticated", async () => {

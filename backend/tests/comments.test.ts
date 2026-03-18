@@ -4,13 +4,14 @@ import { faker } from "@faker-js/faker"
 import type { JsonSuccessBody, JsonErrorBody, Pagination } from "@/lib/utils"
 import type { Comment } from "@/lib/selects/comments.select"
 
+import app from "@/app"
+
 import {
   createSuggestionScenario,
   createCommentScenario,
   createUserSession,
   createComment,
 } from "./utils"
-import app from "../main"
 
 describe("GET /api/v1/comments", () => {
   /** Only admins can access the full comment list  */
