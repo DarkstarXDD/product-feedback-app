@@ -10,6 +10,7 @@ import {
 import { type Comment } from "@/lib/selects/comments.select"
 import { type Upvote } from "@/lib/selects/upvote.selects"
 import { prisma } from "@/db/client"
+import app from "@/app"
 
 import {
   createSuggestionScenario,
@@ -20,7 +21,6 @@ import {
   createDummyUser,
   createUpvote,
 } from "./utils"
-import app from "../main"
 
 describe("GET /api/v1/suggestions", () => {
   test("returns 200 and suggestion list when suggestions exist", async () => {

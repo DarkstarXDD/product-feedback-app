@@ -3,9 +3,9 @@ import { describe, expect, test } from "vitest"
 import type { JsonSuccessBody, JsonErrorBody } from "@/lib/utils"
 
 import { prisma } from "@/db/client"
+import app from "@/app"
 
 import { createDummyUserData, createDummyUser } from "./utils"
-import app from "../main"
 
 type SignupResponse = {
   createdAt: string
