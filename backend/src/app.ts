@@ -15,7 +15,11 @@ import userRoutes from "@/routes/user.routes"
 import { jsonError } from "@/lib/utils"
 
 const p = pino({
-  transport: { target: "pino-pretty" },
+  ...(process.env.NODE_ENV !== "production"
+    ? {
+        transport: { target: "pino-pretty" },
+      }
+    : {}),
   level: "trace", // Enable all log levels
 })
 
