@@ -98,6 +98,7 @@ export function jsonError(
 ): never {
   throw new HTTPException(options?.status, {
     res: c.json(body, options?.status),
+    message: body.message,
   })
 }
 
