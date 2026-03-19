@@ -1,7 +1,10 @@
+import { type HonoLogLayerVariables, honoLogLayer } from "@loglayer/hono"
+import { PinoTransport } from "@loglayer/transport-pino"
 import { HTTPException } from "hono/http-exception"
 import { poweredBy } from "hono/powered-by"
-import { logger } from "hono/logger"
+import { LogLayer } from "loglayer"
 import { Hono } from "hono"
+import { pino } from "pino"
 
 import suggestionRoutes from "@/routes/suggestion.routes"
 import categoryRoutes from "@/routes/category.routes"
@@ -11,11 +14,22 @@ import authRoutes from "@/routes/auth.routes"
 import userRoutes from "@/routes/user.routes"
 import { jsonError } from "@/lib/utils"
 
-const app = new Hono()
+const p = pino({
+  transport: { target: "pino-pretty" },
+  level: "trace", // Enable all log levels
+})
+
+const logLayer = new LogLayer({
+  transport: new PinoTransport({
+    logger: p,
+  }),
+})
+
+const app = new Hono<{ Variables: HonoLogLayerVariables }>()
 const api = new Hono()
 
 app.use(poweredBy())
-app.use(logger())
+app.use(honoLogLayer({ instance: logLayer }))
 
 /** By default Hono returns a text response for notFound. I wanted a JSON response. */
 app.notFound((c) => {
@@ -28,11 +42,13 @@ app.notFound((c) => {
 
 /** Global error handler. */
 app.onError((err, c) => {
+  const logger = c.get("logger")
+  logger.errorOnly(err)
+
   if (err instanceof HTTPException) {
-    console.log(err)
     return err.getResponse()
   }
-  console.log(err)
+
   return c.json({ message: "Something went wrong." }, 500)
 })
 
