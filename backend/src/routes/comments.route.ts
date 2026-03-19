@@ -132,6 +132,8 @@ commentsRouter.patch(
           { status: 404 }
         )
       }
+
+      throw e
     }
   }
 )

@@ -217,6 +217,8 @@ suggestionRoutes.patch(
           { status: 404 }
         )
       }
+
+      throw e
     }
   }
 )
@@ -320,6 +322,8 @@ suggestionRoutes.post(
           { status: 409 }
         )
       }
+
+      throw e
     }
   }
 )
