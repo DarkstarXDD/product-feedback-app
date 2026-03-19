@@ -121,7 +121,6 @@ commentsRouter.patch(
 
       return jsonSuccess(c, { data: comment }, { status: 200 })
     } catch (e) {
-      console.log(e)
       if (
         e instanceof Prisma.PrismaClientKnownRequestError &&
         e.code === "P2025"
