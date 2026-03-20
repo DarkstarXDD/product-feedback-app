@@ -7,66 +7,55 @@ import {
   privateUserSelect,
   publicUserSelect,
 } from "@/lib/selects/user.selects"
-import {
-  type Pagination,
-  formatZodErrors,
-  jsonSuccess,
-  jsonError,
-} from "@/lib/utils"
 import { withTargetAccess } from "@/middlewares/with-target-access.middleware"
 import { resolveAuthUser } from "@/middlewares/resolve-auth-user.middleware"
 import { suggestionListSelect } from "@/lib/selects/suggestion.selects"
+import { type Pagination, jsonSuccess, jsonError } from "@/lib/utils"
 import { requireRole } from "@/middlewares/require-role.middleware"
 import { paginationSchema } from "@/schemas/pagination.schema"
 import { commentSelect } from "@/lib/selects/comments.select"
 import { getTargetUserOrThrow } from "@/lib/context-helpers"
+import { zodValidator } from "@/middlewares/zod-validator"
 import { userUpdateSchema } from "@/schemas/user.schema"
 import { prisma } from "@/db/client"
 
 const userRoutes = new Hono<AppContext>()
 
 // ------------------------------- Get All Users --------------------------------
-userRoutes.get("/", resolveAuthUser, requireRole("ADMIN"), async (c) => {
-  const query = c.req.query()
-  const parsedQuery = paginationSchema.safeParse(query)
+userRoutes.get(
+  "/",
+  resolveAuthUser,
+  requireRole("ADMIN"),
+  zodValidator("query", paginationSchema),
+  async (c) => {
+    const parsedQuery = c.req.valid("query")
 
-  if (!parsedQuery.success) {
-    return jsonError(
-      c,
-      {
-        errors: formatZodErrors(parsedQuery.error),
-        message: "Server validation fails",
-        code: "VALIDATION_ERROR",
-      },
-      { status: 400 }
-    )
+    const { pageSize, page } = parsedQuery
+    const skip = (page - 1) * pageSize
+
+    const [totalItems, users] = await Promise.all([
+      prisma.user.count(),
+      prisma.user.findMany({
+        select: adminUserListSelect,
+        take: pageSize,
+        skip,
+      }),
+    ])
+
+    const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
+
+    const pagination: Pagination = {
+      hasNextPage: page < totalPages,
+      hasPreviousPage: page > 1,
+      totalItems,
+      totalPages,
+      pageSize,
+      page,
+    }
+
+    return jsonSuccess(c, { meta: { pagination }, data: users })
   }
-
-  const { pageSize, page } = parsedQuery.data
-  const skip = (page - 1) * pageSize
-
-  const [totalItems, users] = await Promise.all([
-    prisma.user.count(),
-    prisma.user.findMany({
-      select: adminUserListSelect,
-      take: pageSize,
-      skip,
-    }),
-  ])
-
-  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
-
-  const pagination: Pagination = {
-    hasNextPage: page < totalPages,
-    hasPreviousPage: page > 1,
-    totalItems,
-    totalPages,
-    pageSize,
-    page,
-  }
-
-  return jsonSuccess(c, { meta: { pagination }, data: users })
-})
+)
 
 // ------------------------------- Get a User ----------------------------------
 userRoutes.get("/:username", resolveAuthUser, withTargetAccess(), async (c) => {
@@ -99,29 +88,17 @@ userRoutes.patch(
   "/:username",
   resolveAuthUser,
   withTargetAccess({ requireSelfOrAdmin: true }),
+  zodValidator("json", userUpdateSchema),
   async (c) => {
     const targetUser = getTargetUserOrThrow(c)
-
-    const payload = (await c.req.json()) as unknown
-    const parsed = userUpdateSchema.safeParse(payload)
-
-    if (!parsed.success)
-      return jsonError(
-        c,
-        {
-          errors: formatZodErrors(parsed.error),
-          message: "Server validation fails",
-          code: "VALIDATION_ERROR",
-        },
-        { status: 400 }
-      )
+    const parsedData = c.req.valid("json")
 
     // Check conflicts only for fields being updated, excluding target user
     const conflict = await prisma.user.findFirst({
       where: {
         OR: [
-          ...(parsed.data.email ? [{ email: parsed.data.email }] : []),
-          ...(parsed.data.username ? [{ username: parsed.data.username }] : []),
+          ...(parsedData.email ? [{ email: parsedData.email }] : []),
+          ...(parsedData.username ? [{ username: parsedData.username }] : []),
         ],
         id: { not: targetUser.id },
       },
@@ -131,10 +108,10 @@ userRoutes.patch(
     if (conflict) {
       const fieldErrors: Record<string, string[]> = {}
 
-      if (parsed.data.email && conflict.email === parsed.data.email) {
+      if (parsedData.email && conflict.email === parsedData.email) {
         fieldErrors.email = ["Email already exists"]
       }
-      if (parsed.data.username && conflict.username === parsed.data.username) {
+      if (parsedData.username && conflict.username === parsedData.username) {
         fieldErrors.username = [
           "Username taken. Please pick a different username",
         ]
@@ -154,204 +131,179 @@ userRoutes.patch(
     const user = await prisma.user.update({
       where: { id: targetUser.id },
       select: privateUserSelect,
-      data: parsed.data,
+      data: parsedData,
     })
     return jsonSuccess(c, { data: user })
   }
 )
 
 // ---------------------------- Get All Suggestions of a User -------------------------
-userRoutes.get("/:username/suggestions", resolveAuthUser, async (c) => {
-  const username = c.req.param("username")
-  const user = c.get("user")
-  const query = c.req.query()
-  const parsedQuery = paginationSchema.safeParse(query)
+userRoutes.get(
+  "/:username/suggestions",
+  resolveAuthUser,
+  zodValidator("query", paginationSchema),
+  async (c) => {
+    const username = c.req.param("username")
+    const user = c.get("user")
+    const parsedQuery = c.req.valid("query")
 
-  if (!parsedQuery.success) {
-    return jsonError(
-      c,
-      {
-        errors: formatZodErrors(parsedQuery.error),
-        message: "Server validation fails",
-        code: "VALIDATION_ERROR",
-      },
-      { status: 400 }
-    )
-  }
+    const { pageSize, page } = parsedQuery
+    const skip = (page - 1) * pageSize
 
-  const { pageSize, page } = parsedQuery.data
-  const skip = (page - 1) * pageSize
+    const [totalItems, suggestions] = await Promise.all([
+      prisma.suggestion.count({
+        where: { user: { username } },
+      }),
+      prisma.suggestion.findMany({
+        select: {
+          ...suggestionListSelect,
+          ...(user
+            ? {
+                upvotes: {
+                  where: { userId: user.id },
+                  select: { id: true },
+                },
+              }
+            : {}),
+        },
+        where: { user: { username } },
+        take: pageSize,
+        skip,
+      }),
+    ])
 
-  const [totalItems, suggestions] = await Promise.all([
-    prisma.suggestion.count({
-      where: { user: { username } },
-    }),
-    prisma.suggestion.findMany({
-      select: {
-        ...suggestionListSelect,
-        ...(user
-          ? {
-              upvotes: {
-                where: { userId: user.id },
-                select: { id: true },
-              },
-            }
-          : {}),
-      },
-      where: { user: { username } },
-      take: pageSize,
-      skip,
-    }),
-  ])
+    const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
 
-  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
+    const data = suggestions.map((suggestion) => {
+      const viewerHasUpvoted =
+        user && "upvotes" in suggestion ? suggestion.upvotes.length > 0 : false
+      const { upvotes: _upvotes, ...suggestionData } = suggestion
 
-  const data = suggestions.map((suggestion) => {
-    const viewerHasUpvoted =
-      user && "upvotes" in suggestion ? suggestion.upvotes.length > 0 : false
-    const { upvotes: _upvotes, ...suggestionData } = suggestion
+      return {
+        ...suggestionData,
+        viewerHasUpvoted,
+      }
+    })
 
-    return {
-      ...suggestionData,
-      viewerHasUpvoted,
+    const pagination: Pagination = {
+      hasNextPage: page < totalPages,
+      hasPreviousPage: page > 1,
+      totalItems,
+      totalPages,
+      pageSize,
+      page,
     }
-  })
 
-  const pagination: Pagination = {
-    hasNextPage: page < totalPages,
-    hasPreviousPage: page > 1,
-    totalItems,
-    totalPages,
-    pageSize,
-    page,
+    return jsonSuccess(c, { meta: { pagination }, data }, { status: 200 })
   }
-
-  return jsonSuccess(c, { meta: { pagination }, data }, { status: 200 })
-})
+)
 
 // ---------------------------- Get All Upvoted Suggestions of a User -------------------------
-userRoutes.get("/:username/upvotes", resolveAuthUser, async (c) => {
-  const username = c.req.param("username")
-  const user = c.get("user")
-  const query = c.req.query()
-  const parsedQuery = paginationSchema.safeParse(query)
+userRoutes.get(
+  "/:username/upvotes",
+  resolveAuthUser,
+  zodValidator("query", paginationSchema),
+  async (c) => {
+    const username = c.req.param("username")
+    const user = c.get("user")
+    const parsedQuery = c.req.valid("query")
 
-  if (!parsedQuery.success) {
-    return jsonError(
-      c,
-      {
-        errors: formatZodErrors(parsedQuery.error),
-        message: "Server validation fails",
-        code: "VALIDATION_ERROR",
+    const { pageSize, page } = parsedQuery
+    const skip = (page - 1) * pageSize
+
+    const where = {
+      upvotes: {
+        some: {
+          user: { username },
+        },
       },
-      { status: 400 }
-    )
-  }
+    } as const
 
-  const { pageSize, page } = parsedQuery.data
-  const skip = (page - 1) * pageSize
+    const [totalItems, suggestions] = await Promise.all([
+      prisma.suggestion.count({ where }),
+      prisma.suggestion.findMany({
+        select: {
+          ...suggestionListSelect,
+          ...(user
+            ? {
+                upvotes: {
+                  where: { userId: user.id },
+                  select: { id: true },
+                },
+              }
+            : {}),
+        },
+        take: pageSize,
+        where,
+        skip,
+      }),
+    ])
 
-  const where = {
-    upvotes: {
-      some: {
-        user: { username },
-      },
-    },
-  } as const
+    const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
 
-  const [totalItems, suggestions] = await Promise.all([
-    prisma.suggestion.count({ where }),
-    prisma.suggestion.findMany({
-      select: {
-        ...suggestionListSelect,
-        ...(user
-          ? {
-              upvotes: {
-                where: { userId: user.id },
-                select: { id: true },
-              },
-            }
-          : {}),
-      },
-      take: pageSize,
-      where,
-      skip,
-    }),
-  ])
+    const data = suggestions.map((suggestion) => {
+      const viewerHasUpvoted =
+        user && "upvotes" in suggestion ? suggestion.upvotes.length > 0 : false
+      const { upvotes: _upvotes, ...suggestionData } = suggestion
 
-  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
+      return {
+        ...suggestionData,
+        viewerHasUpvoted,
+      }
+    })
 
-  const data = suggestions.map((suggestion) => {
-    const viewerHasUpvoted =
-      user && "upvotes" in suggestion ? suggestion.upvotes.length > 0 : false
-    const { upvotes: _upvotes, ...suggestionData } = suggestion
-
-    return {
-      ...suggestionData,
-      viewerHasUpvoted,
+    const pagination: Pagination = {
+      hasNextPage: page < totalPages,
+      hasPreviousPage: page > 1,
+      totalItems,
+      totalPages,
+      pageSize,
+      page,
     }
-  })
 
-  const pagination: Pagination = {
-    hasNextPage: page < totalPages,
-    hasPreviousPage: page > 1,
-    totalItems,
-    totalPages,
-    pageSize,
-    page,
+    return jsonSuccess(c, { meta: { pagination }, data }, { status: 200 })
   }
-
-  return jsonSuccess(c, { meta: { pagination }, data }, { status: 200 })
-})
+)
 
 // ------------------------------- GET All Comments of a User --------------------------------
-userRoutes.get("/:username/comments", async (c) => {
-  const username = c.req.param("username")
-  const query = c.req.query()
-  const parsedQuery = paginationSchema.safeParse(query)
+userRoutes.get(
+  "/:username/comments",
+  zodValidator("query", paginationSchema),
+  async (c) => {
+    const username = c.req.param("username")
+    const parsedQuery = c.req.valid("query")
 
-  if (!parsedQuery.success) {
-    return jsonError(
+    const { pageSize, page } = parsedQuery
+    const skip = (page - 1) * pageSize
+    const where = { user: { username } } as const
+
+    const [totalItems, comments] = await Promise.all([
+      prisma.comment.count({ where }),
+      prisma.comment.findMany({
+        select: commentSelect,
+        take: pageSize,
+        where,
+        skip,
+      }),
+    ])
+
+    const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
+
+    const pagination: Pagination = {
+      hasNextPage: page < totalPages,
+      hasPreviousPage: page > 1,
+      totalItems,
+      totalPages,
+      pageSize,
+      page,
+    }
+
+    return jsonSuccess(
       c,
-      {
-        errors: formatZodErrors(parsedQuery.error),
-        message: "Server validation fails",
-        code: "VALIDATION_ERROR",
-      },
-      { status: 400 }
+      { meta: { pagination }, data: comments },
+      { status: 200 }
     )
   }
-
-  const { pageSize, page } = parsedQuery.data
-  const skip = (page - 1) * pageSize
-  const where = { user: { username } } as const
-
-  const [totalItems, comments] = await Promise.all([
-    prisma.comment.count({ where }),
-    prisma.comment.findMany({
-      select: commentSelect,
-      take: pageSize,
-      where,
-      skip,
-    }),
-  ])
-
-  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
-
-  const pagination: Pagination = {
-    hasNextPage: page < totalPages,
-    hasPreviousPage: page > 1,
-    totalItems,
-    totalPages,
-    pageSize,
-    page,
-  }
-
-  return jsonSuccess(
-    c,
-    { meta: { pagination }, data: comments },
-    { status: 200 }
-  )
-})
+)
 
 export default userRoutes
