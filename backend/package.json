@@ -21,6 +21,7 @@
     "test:watch": "vitest watch"
   },
   "dependencies": {
+    "@hono/zod-validator": "0.7.6",
     "@loglayer/hono": "2.1.0",
     "@loglayer/transport-pino": "3.0.2",
     "@prisma/adapter-libsql": "7.4.2",
