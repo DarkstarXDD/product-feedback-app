@@ -3,8 +3,9 @@ import { compare, hash } from "bcryptjs"
 import { sign } from "hono/jwt"
 import { Hono } from "hono"
 
-import { formatZodErrors, jsonSuccess, jsonError } from "@/lib/utils"
 import { signUpSchema, signInSchema } from "@/schemas/auth.schema"
+import { zodValidator } from "@/middlewares/zod-validator"
+import { jsonSuccess, jsonError } from "@/lib/utils"
 import { prisma } from "@/db/client"
 
 const JWT_SECRET = process.env.JWT_SECRET
@@ -16,24 +17,11 @@ export const JWT_TTL_SECONDS = 60 * 60 * 24 * 7
 const authRoutes = new Hono()
 
 // ------------------------------- Sign Up --------------------------------
-authRoutes.post("/signup", async (c) => {
-  const data = (await c.req.json()) as unknown
-  const parsed = signUpSchema.safeParse(data)
+authRoutes.post("/signup", zodValidator("json", signUpSchema), async (c) => {
+  const parsedData = c.req.valid("json")
 
-  if (!parsed.success)
-    return jsonError(
-      c,
-      {
-        errors: formatZodErrors(parsed.error),
-        message: "Server validation fails",
-        code: "VALIDATION_ERROR",
-      },
-      { status: 400 }
-    )
-
-  const hashedPassword = await hash(parsed.data.password, 10)
-
-  const { username, email, name } = parsed.data
+  const hashedPassword = await hash(parsedData.password, 10)
+  const { username, email, name } = parsedData
 
   /**
    * Prisma doesn't provide a way to retreive the exact field name that violates the unique constraint.
@@ -93,21 +81,8 @@ authRoutes.post("/signup", async (c) => {
 })
 
 // ------------------------------- Sign In --------------------------------
-authRoutes.post("/signin", async (c) => {
-  const data = (await c.req.json()) as unknown
-  const parsed = signInSchema.safeParse(data)
-
-  if (!parsed.success) {
-    return jsonError(
-      c,
-      {
-        errors: formatZodErrors(parsed.error),
-        message: "Server validation fails",
-        code: "VALIDATION_ERROR",
-      },
-      { status: 400 }
-    )
-  }
+authRoutes.post("/signin", zodValidator("json", signInSchema), async (c) => {
+  const parsedData = c.req.valid("json")
 
   const user = await prisma.user.findUnique({
     select: {
@@ -118,7 +93,7 @@ authRoutes.post("/signin", async (c) => {
       name: true,
       id: true,
     },
-    where: { email: parsed.data.email },
+    where: { email: parsedData.email },
   })
 
   if (!user)
@@ -134,7 +109,7 @@ authRoutes.post("/signin", async (c) => {
       { status: 401 }
     )
 
-  const isPasswordValid = await compare(parsed.data.password, user.password)
+  const isPasswordValid = await compare(parsedData.password, user.password)
 
   if (!isPasswordValid)
     return jsonError(
