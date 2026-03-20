@@ -6,7 +6,6 @@ import {
   suggestionSelect,
 } from "@/lib/selects/suggestion.selects"
 import {
-  formatZodErrors,
   type Pagination,
   generateSlug,
   jsonSuccess,
@@ -19,6 +18,7 @@ import { commentCreateSchema } from "@/schemas/comments.schema"
 import { paginationSchema } from "@/schemas/pagination.schema"
 import { commentSelect } from "@/lib/selects/comments.select"
 import { upvoteSelect } from "@/lib/selects/upvote.selects"
+import { zodValidator } from "@/middlewares/zod-validator"
 import { getUserOrThrow } from "@/lib/context-helpers"
 import { Prisma } from "@/db/client"
 import { prisma } from "@/db/client"
@@ -26,69 +26,61 @@ import { prisma } from "@/db/client"
 const suggestionRoutes = new Hono()
 
 // ------------------------------- GET All Suggestions --------------------------------
-suggestionRoutes.get("/", resolveAuthUser, async (c) => {
-  const user = c.get("user")
-  const query = c.req.query()
-  const parsedQuery = paginationSchema.safeParse(query)
+suggestionRoutes.get(
+  "/",
+  resolveAuthUser,
+  zodValidator("query", paginationSchema),
+  async (c) => {
+    const user = c.get("user")
+    const parsedQuery = c.req.valid("query")
 
-  if (!parsedQuery.success) {
-    return jsonError(
-      c,
-      {
-        errors: formatZodErrors(parsedQuery.error),
-        message: "Server validation fails",
-        code: "VALIDATION_ERROR",
-      },
-      { status: 400 }
-    )
-  }
+    const { pageSize, page } = parsedQuery
+    const skip = (page - 1) * pageSize
 
-  const { pageSize, page } = parsedQuery.data
-  const skip = (page - 1) * pageSize
+    const [totalItems, suggestions] = await Promise.all([
+      prisma.suggestion.count(),
+      prisma.suggestion.findMany({
+        select: {
+          ...suggestionListSelect,
+          ...(user
+            ? {
+                upvotes: {
+                  where: { userId: user.id },
+                  select: { id: true },
+                },
+              }
+            : {}),
+        },
+        take: pageSize,
+        skip,
+      }),
+    ])
 
-  const [totalItems, suggestions] = await Promise.all([
-    prisma.suggestion.count(),
-    prisma.suggestion.findMany({
-      select: {
-        ...suggestionListSelect,
-        ...(user
-          ? {
-              upvotes: {
-                where: { userId: user.id },
-                select: { id: true },
-              },
-            }
-          : {}),
-      },
-      take: pageSize,
-      skip,
-    }),
-  ])
+    const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
 
-  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
+    const data = suggestions.map((suggestion) => {
+      const viewerHasUpvoted =
+        user && "upvotes" in suggestion ? suggestion.upvotes.length > 0 : false
+      const { upvotes: _upvotes, ...suggestionData } = suggestion
 
-  const data = suggestions.map((suggestion) => {
-    const viewerHasUpvoted =
-      user && "upvotes" in suggestion ? suggestion.upvotes.length > 0 : false
-    const { upvotes: _upvotes, ...suggestionData } = suggestion
+      return {
+        ...suggestionData,
+        viewerHasUpvoted,
+      }
+    })
 
-    return {
-      ...suggestionData,
-      viewerHasUpvoted,
+    const pagination: Pagination = {
+      hasNextPage: page < totalPages,
+      hasPreviousPage: page > 1,
+      totalItems,
+      totalPages,
+      pageSize,
+      page,
     }
-  })
 
-  const pagination: Pagination = {
-    hasNextPage: page < totalPages,
-    hasPreviousPage: page > 1,
-    totalItems,
-    totalPages,
-    pageSize,
-    page,
+    return jsonSuccess(c, { meta: { pagination }, data }, { status: 200 })
   }
-
-  return jsonSuccess(c, { meta: { pagination }, data }, { status: 200 })
-})
+)
 
 // ------------------------------- GET a Suggestion --------------------------------
 suggestionRoutes.get("/:slug", resolveAuthUser, async (c) => {
@@ -139,27 +131,15 @@ suggestionRoutes.post(
   "/",
   resolveAuthUser,
   requireRole("ADMIN", "USER"),
+  zodValidator("json", suggestionCreateSchema),
   async (c) => {
     const user = getUserOrThrow(c)
-    const payload = (await c.req.json()) as unknown
-    const parsed = suggestionCreateSchema.safeParse(payload)
-
-    if (!parsed.success) {
-      return jsonError(
-        c,
-        {
-          errors: formatZodErrors(parsed.error),
-          message: "Server validation fails",
-          code: "VALIDATION_ERROR",
-        },
-        { status: 400 }
-      )
-    }
+    const parsedData = c.req.valid("json")
 
     const suggestion = await prisma.suggestion.create({
       data: {
-        ...parsed.data,
-        slug: generateSlug(parsed.data.title),
+        ...parsedData,
+        slug: generateSlug(parsedData.title),
         userId: user.id,
       },
       select: suggestionCreateSelect,
@@ -174,31 +154,18 @@ suggestionRoutes.patch(
   "/:slug",
   resolveAuthUser,
   requireRole("ADMIN", "USER"),
+  zodValidator("json", suggestionCreateSchema),
   async (c) => {
     const user = getUserOrThrow(c)
-
     const slug = c.req.param("slug")
-    const payload = (await c.req.json()) as unknown
-    const parsed = suggestionCreateSchema.safeParse(payload)
-
-    if (!parsed.success) {
-      return jsonError(
-        c,
-        {
-          errors: formatZodErrors(parsed.error),
-          message: "Server validation fails",
-          code: "VALIDATION_ERROR",
-        },
-        { status: 400 }
-      )
-    }
+    const parsedData = c.req.valid("json")
 
     const where = user.role === "ADMIN" ? { slug } : { userId: user.id, slug }
 
     try {
       const suggestion = await prisma.suggestion.update({
         select: suggestionCreateSelect,
-        data: { ...parsed.data },
+        data: { ...parsedData },
         where,
       })
 
@@ -228,24 +195,11 @@ suggestionRoutes.post(
   "/:slug/comments",
   resolveAuthUser,
   requireRole("ADMIN", "USER"),
+  zodValidator("json", commentCreateSchema),
   async (c) => {
     const slug = c.req.param("slug")
-
     const user = getUserOrThrow(c)
-    const payload = (await c.req.json()) as unknown
-    const parsed = commentCreateSchema.safeParse(payload)
-
-    if (!parsed.success) {
-      return jsonError(
-        c,
-        {
-          errors: formatZodErrors(parsed.error),
-          message: "Server validation fails",
-          code: "VALIDATION_ERROR",
-        },
-        { status: 400 }
-      )
-    }
+    const parsedData = c.req.valid("json")
 
     /** Can't use connect if at least one foreign key is used directly.
      *  So both suggestion and user needs to use the `connect` appraoch.
@@ -255,7 +209,7 @@ suggestionRoutes.post(
       data: {
         user: { connect: { id: user.id } },
         suggestion: { connect: { slug } },
-        content: parsed.data.content,
+        content: parsedData.content,
       },
       select: commentSelect,
     })
