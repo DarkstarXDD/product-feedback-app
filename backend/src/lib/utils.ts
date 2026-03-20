@@ -103,7 +103,7 @@ export function jsonError(
 }
 
 /** Formats the given zod error object using flattenError and return fieldErrors and formErrors in a client friendly manner. */
-export function formatZodErrors(errorObj: z.ZodError) {
+export function formatZodErrors(errorObj: z.core.$ZodError) {
   return z.flattenError(errorObj)
 }
 
