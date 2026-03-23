@@ -1,6 +1,7 @@
 import { type HonoLogLayerVariables, honoLogLayer } from "@loglayer/hono"
 import { PinoTransport } from "@loglayer/transport-pino"
 import { HTTPException } from "hono/http-exception"
+import { Scalar } from "@scalar/hono-api-reference"
 import { openAPIRouteHandler } from "hono-openapi"
 import { poweredBy } from "hono/powered-by"
 import { LogLayer } from "loglayer"
@@ -69,6 +70,8 @@ app.get(
     },
   })
 )
+
+app.get("/scalar", Scalar({ url: "/openapi.json" }))
 
 api.route("/auth", authRoutes)
 api.route("/users", userRoutes)

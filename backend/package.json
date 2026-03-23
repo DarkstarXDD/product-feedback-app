@@ -28,6 +28,7 @@
     "@prisma/adapter-libsql": "7.4.2",
     "@prisma/adapter-neon": "7.4.2",
     "@prisma/client": "7.4.2",
+    "@scalar/hono-api-reference": "0.10.4",
     "bcryptjs": "3.0.3",
     "hono": "4.12.5",
     "hono-openapi": "1.3.0",
