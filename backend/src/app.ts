@@ -1,6 +1,7 @@
 import { type HonoLogLayerVariables, honoLogLayer } from "@loglayer/hono"
 import { PinoTransport } from "@loglayer/transport-pino"
 import { HTTPException } from "hono/http-exception"
+import { openAPIRouteHandler } from "hono-openapi"
 import { poweredBy } from "hono/powered-by"
 import { LogLayer } from "loglayer"
 import { Hono } from "hono"
@@ -55,6 +56,19 @@ app.onError((err, c) => {
 
   return c.json({ message: "Something went wrong." }, 500)
 })
+
+app.get(
+  "/openapi.json",
+  openAPIRouteHandler(api, {
+    documentation: {
+      info: {
+        description: "REST API for a Product Feedback App",
+        title: "Product Feedback App",
+        version: "1.0.0",
+      },
+    },
+  })
+)
 
 api.route("/auth", authRoutes)
 api.route("/users", userRoutes)
