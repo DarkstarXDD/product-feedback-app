@@ -1,7 +1,9 @@
+import { describeRoute, resolver } from "hono-openapi"
 import { deleteCookie, setCookie } from "hono/cookie"
 import { compare, hash } from "bcryptjs"
 import { sign } from "hono/jwt"
 import { Hono } from "hono"
+import * as z from "zod"
 
 import { signUpSchema, signInSchema } from "@/schemas/auth.schema"
 import { zodValidator } from "@/middlewares/zod-validator"
@@ -16,69 +18,89 @@ export const JWT_TTL_SECONDS = 60 * 60 * 24 * 7
 
 const authRoutes = new Hono()
 
+const tempSigUpResponseSchema = z.object({
+  username: z.string(),
+  name: z.string(),
+})
+
 // ------------------------------- Sign Up --------------------------------
-authRoutes.post("/signup", zodValidator("json", signUpSchema), async (c) => {
-  const parsedData = c.req.valid("json")
+authRoutes.post(
+  "/signup",
+  zodValidator("json", signUpSchema),
+  describeRoute({
+    responses: {
+      200: {
+        content: {
+          "application/json": { schema: resolver(tempSigUpResponseSchema) },
+        },
+        description: "Successfully created a user",
+      },
+    },
+    description: "Register a User",
+  }),
+  async (c) => {
+    const parsedData = c.req.valid("json")
 
-  const hashedPassword = await hash(parsedData.password, 10)
-  const { username, email, name } = parsedData
+    const hashedPassword = await hash(parsedData.password, 10)
+    const { username, email, name } = parsedData
 
-  /**
-   * Prisma doesn't provide a way to retreive the exact field name that violates the unique constraint.
-   * So we need to manually check whether there are existing entries for the given unique fields.
-   */
-  const existingUser = await prisma.user.findFirst({
-    where: { OR: [{ username }, { email }] },
-    select: { username: true, email: true },
-  })
+    /**
+     * Prisma doesn't provide a way to retreive the exact field name that violates the unique constraint.
+     * So we need to manually check whether there are existing entries for the given unique fields.
+     */
+    const existingUser = await prisma.user.findFirst({
+      where: { OR: [{ username }, { email }] },
+      select: { username: true, email: true },
+    })
 
-  if (existingUser) {
-    const fieldErrors: Record<string, string[]> = {}
+    if (existingUser) {
+      const fieldErrors: Record<string, string[]> = {}
 
-    if (existingUser.email === email) {
-      fieldErrors.email = ["Email already exists"]
-    } else if (existingUser.username === username) {
-      fieldErrors.username = [
-        "Username taken. Please pick a different username",
-      ]
+      if (existingUser.email === email) {
+        fieldErrors.email = ["Email already exists"]
+      } else if (existingUser.username === username) {
+        fieldErrors.username = [
+          "Username taken. Please pick a different username",
+        ]
+      }
+
+      return jsonError(
+        c,
+        {
+          message: "Unique constraint violation",
+          errors: { fieldErrors },
+          code: "CONFLICT",
+        },
+        { status: 409 }
+      )
     }
 
-    return jsonError(
-      c,
-      {
-        message: "Unique constraint violation",
-        errors: { fieldErrors },
-        code: "CONFLICT",
+    const user = await prisma.user.create({
+      select: {
+        createdAt: true,
+        username: true,
+        email: true,
+        name: true,
+        id: true,
       },
-      { status: 409 }
-    )
+      data: { password: hashedPassword, username, email, name },
+    })
+
+    const exp = Math.floor(Date.now() / 1000) + JWT_TTL_SECONDS
+
+    const token = await sign({ userId: user.id, exp }, JWT_SECRET, "HS256")
+
+    setCookie(c, "token", token, {
+      maxAge: JWT_TTL_SECONDS,
+      sameSite: "Lax",
+      httpOnly: true,
+      secure: true,
+      path: "/",
+    })
+
+    return jsonSuccess(c, { data: user }, { status: 201 })
   }
-
-  const user = await prisma.user.create({
-    select: {
-      createdAt: true,
-      username: true,
-      email: true,
-      name: true,
-      id: true,
-    },
-    data: { password: hashedPassword, username, email, name },
-  })
-
-  const exp = Math.floor(Date.now() / 1000) + JWT_TTL_SECONDS
-
-  const token = await sign({ userId: user.id, exp }, JWT_SECRET, "HS256")
-
-  setCookie(c, "token", token, {
-    maxAge: JWT_TTL_SECONDS,
-    sameSite: "Lax",
-    httpOnly: true,
-    secure: true,
-    path: "/",
-  })
-
-  return jsonSuccess(c, { data: user }, { status: 201 })
-})
+)
 
 // ------------------------------- Sign In --------------------------------
 authRoutes.post("/signin", zodValidator("json", signInSchema), async (c) => {
