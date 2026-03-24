@@ -5,12 +5,14 @@ import { userSchema } from "@/schemas/user.schema"
 // --------------------- SignUp Schema -----------------------
 export const signUpSchema = userSchema
   .extend({
+    password: z
+      .string("Invalid password")
+      .min(8, "Password must be at least 8 characters long")
+      .describe("User's password")
+      .meta({ example: "John1234" }),
     confirmPassword: z
       .string("Invalid confirm password")
       .min(1, "Confirm password can't be empty"),
-    password: z
-      .string("Invalid password")
-      .min(8, "Password must be at least 8 characters long"),
   })
   .refine((data) => data.password === data.confirmPassword, {
     error: "Passwords don't match",
