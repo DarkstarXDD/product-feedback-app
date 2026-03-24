@@ -69,6 +69,7 @@ app.get(
         version: "1.0.0",
       },
     },
+    includeEmptyPaths: true,
   })
 )
 
