@@ -12,7 +12,7 @@ import { JWT_TTL_SECONDS } from "@/lib/consts"
 import { prisma } from "@/db/client"
 import env from "@/lib/env"
 
-const authRoutes = new Hono()
+const authRouter = new Hono()
 
 const tempSigUpResponseSchema = z.object({
   username: z.string(),
@@ -20,7 +20,7 @@ const tempSigUpResponseSchema = z.object({
 })
 
 // ------------------------------- Sign Up --------------------------------
-authRoutes.post(
+authRouter.post(
   "/signup",
   zodValidator("json", signUpSchema),
   describeRoute({
@@ -100,7 +100,7 @@ authRoutes.post(
 )
 
 // ------------------------------- Sign In --------------------------------
-authRoutes.post("/signin", zodValidator("json", signInSchema), async (c) => {
+authRouter.post("/signin", zodValidator("json", signInSchema), async (c) => {
   const parsedData = c.req.valid("json")
 
   const user = await prisma.user.findUnique({
@@ -165,10 +165,10 @@ authRoutes.post("/signin", zodValidator("json", signInSchema), async (c) => {
 })
 
 // ------------------------------- Sign Out --------------------------------
-authRoutes.post("/signout", (c) => {
+authRouter.post("/signout", (c) => {
   deleteCookie(c, "token", { httpOnly: true, secure: true, path: "/" })
   // Abstract into a helper function called `jsonNoContent` if used in one more place.
   return c.body(null, 204)
 })
 
-export default authRoutes
+export default authRouter

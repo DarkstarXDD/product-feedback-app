@@ -12,7 +12,7 @@ import suggestionRoutes from "@/routes/suggestion.routes"
 import categoryRoutes from "@/routes/category.routes"
 import commentsRouter from "@/routes/comments.route"
 import statusRoutes from "@/routes/status.routes"
-import authRoutes from "@/routes/auth.routes"
+import authRouter from "@/routes/auth.routes"
 import userRoutes from "@/routes/user.routes"
 import { jsonError } from "@/lib/utils"
 import env from "@/lib/env"
@@ -76,7 +76,7 @@ app.get(
 
 app.get("/scalar", Scalar({ url: "/openapi.json" }))
 
-api.route("/auth", authRoutes)
+api.route("/auth", authRouter)
 api.route("/users", userRoutes)
 api.route("/categories", categoryRoutes)
 api.route("/statuses", statusRoutes)
