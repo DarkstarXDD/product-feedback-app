@@ -1,11 +1,11 @@
 import type { ValidationTargets } from "hono"
 
-import { zValidator } from "@hono/zod-validator"
+import { validator } from "hono-openapi"
 import * as z from "zod"
 
 import { formatZodErrors, jsonError } from "@/lib/utils"
 
-/** An abstraction on top of '@hono/zod-validator'.
+/** An abstraction on top of 'validator` from `hono-openapi'.
  * Accepts the `target` and a `schema`.
  * Grabs the value from the target on the incoming request and validates it using the schema.
  * If validation fails, returns a `jsonError`.
@@ -16,12 +16,14 @@ export function zodValidator<
   T extends z.ZodType,
   Target extends keyof ValidationTargets,
 >(target: Target, schema: T) {
-  return zValidator(target, schema, (value, c) => {
+  return validator(target, schema, (value, c) => {
     if (!value.success) {
       return jsonError(
         c,
         {
-          errors: formatZodErrors(value.error),
+          errors: formatZodErrors(
+            new z.ZodError(value.error as z.core.$ZodIssue[])
+          ),
           message: "Server validation fails",
           code: "VALIDATION_ERROR",
         },
@@ -30,3 +32,12 @@ export function zodValidator<
     }
   })
 }
+
+/**
+ * `formatZodErrors expect a `z.ZodError` object.
+ * But `validator` from `hono-openapi` only give the `issues[]` array of the zod error.
+ * Not the entire `zodError` object.
+ * Probably because thats the lowest common denominator shape that every validation library in the standard schema can conform to.
+ * So we can't do this: `errors: formatZodErrors(value.error)`.
+ * Instead we have to recreate a ZodError object using that errors array and pass it.
+ */
