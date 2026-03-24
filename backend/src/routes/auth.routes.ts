@@ -6,6 +6,7 @@ import { Hono } from "hono"
 import * as z from "zod"
 
 import { signUpSchema, signInSchema } from "@/schemas/auth.schema"
+import { privateUserSelect } from "@/lib/selects/user.selects"
 import { zodValidator } from "@/middlewares/zod-validator"
 import { jsonSuccess, jsonError } from "@/lib/utils"
 import { JWT_TTL_SECONDS } from "@/lib/consts"
@@ -73,13 +74,7 @@ authRouter.post(
     }
 
     const user = await prisma.user.create({
-      select: {
-        createdAt: true,
-        username: true,
-        email: true,
-        name: true,
-        id: true,
-      },
+      select: privateUserSelect,
       data: { password: hashedPassword, username, email, name },
     })
 
@@ -104,14 +99,7 @@ authRouter.post("/signin", zodValidator("json", signInSchema), async (c) => {
   const parsedData = c.req.valid("json")
 
   const user = await prisma.user.findUnique({
-    select: {
-      createdAt: true,
-      password: true,
-      username: true,
-      email: true,
-      name: true,
-      id: true,
-    },
+    select: { ...privateUserSelect, password: true },
     where: { email: parsedData.email },
   })
 
