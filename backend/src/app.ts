@@ -15,10 +15,11 @@ import statusRoutes from "@/routes/status.routes"
 import authRoutes from "@/routes/auth.routes"
 import userRoutes from "@/routes/user.routes"
 import { jsonError } from "@/lib/utils"
+import env from "@/lib/env"
 
 // Turn off Pino pretty when in production
 const p = pino({
-  ...(process.env.NODE_ENV !== "production"
+  ...(env.NODE_ENV !== "production"
     ? {
         transport: { target: "pino-pretty" },
       }

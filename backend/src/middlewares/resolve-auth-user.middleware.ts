@@ -7,9 +7,7 @@ import type { AppContext } from "@/lib/types"
 import type { JwtPayload } from "@/lib/types"
 
 import { prisma } from "@/db/client"
-
-const JWT_SECRET = process.env.JWT_SECRET
-if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined.")
+import env from "@/lib/env"
 
 /**
  * Resolves the authenticated user from the JWT cookie and hydrates `user` in context.
@@ -28,7 +26,7 @@ export const resolveAuthUser: MiddlewareHandler<AppContext> = async (
 
   let jwtPayload: JwtPayload
   try {
-    jwtPayload = (await verify(token, JWT_SECRET, {
+    jwtPayload = (await verify(token, env.JWT_SECRET, {
       alg: "HS256",
     })) as JwtPayload
   } catch {

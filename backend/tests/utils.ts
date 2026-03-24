@@ -4,11 +4,10 @@ import { sign } from "hono/jwt"
 
 import type { Role } from "@/lib/types"
 
-import { JWT_TTL_SECONDS } from "@/routes/auth.routes"
+import { JWT_TTL_SECONDS } from "@/lib/consts"
 import { generateSlug } from "@/lib/utils"
 import { prisma } from "@/db/client"
-
-const JWT_SECRET = process.env.JWT_SECRET
+import env from "@/lib/env"
 
 export function createDummyUserData() {
   const password = faker.internet.password()
@@ -45,12 +44,10 @@ export async function createDummyUser(role: Role) {
 }
 
 export async function createUserSession(role: Role) {
-  if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined.")
-
   const { userCleanup, user } = await createDummyUser(role)
 
   const exp = Math.floor(Date.now() / 1000) + JWT_TTL_SECONDS
-  const token = await sign({ userId: user.id, exp }, JWT_SECRET, "HS256")
+  const token = await sign({ userId: user.id, exp }, env.JWT_SECRET, "HS256")
 
   return {
     userCleanup,
