@@ -1,17 +1,19 @@
 import { describeRoute, resolver } from "hono-openapi"
-import { deleteCookie, setCookie } from "hono/cookie"
-import { sign } from "hono/jwt"
+import { deleteCookie } from "hono/cookie"
 import { Hono } from "hono"
 import * as z from "zod"
 
+import {
+  verifyPassword,
+  setAuthCookie,
+  hashPassword,
+  createJWT,
+} from "@/lib/session"
 import { signUpSchema, signInSchema } from "@/schemas/auth.schema"
 import { privateUserSelect } from "@/lib/selects/user.selects"
-import { verifyPassword, hashPassword } from "@/lib/session"
 import { zodValidator } from "@/middlewares/zod-validator"
 import { jsonSuccess, jsonError } from "@/lib/utils"
-import { JWT_TTL_SECONDS } from "@/lib/consts"
 import { prisma } from "@/db/client"
-import env from "@/lib/env"
 
 const authRouter = new Hono()
 
@@ -77,17 +79,8 @@ authRouter.post(
       data: { password: hashedPassword, username, email, name },
     })
 
-    const exp = Math.floor(Date.now() / 1000) + JWT_TTL_SECONDS
-
-    const token = await sign({ userId: user.id, exp }, env.JWT_SECRET, "HS256")
-
-    setCookie(c, "token", token, {
-      maxAge: JWT_TTL_SECONDS,
-      sameSite: "Lax",
-      httpOnly: true,
-      secure: true,
-      path: "/",
-    })
+    const token = await createJWT(user.id)
+    setAuthCookie(c, token)
 
     return jsonSuccess(c, { data: user }, { status: 201 })
   }
@@ -128,17 +121,8 @@ authRouter.post("/signin", zodValidator("json", signInSchema), async (c) => {
       { status: 401 }
     )
 
-  const exp = Math.floor(Date.now() / 1000) + JWT_TTL_SECONDS
-
-  const token = await sign({ userId: user.id, exp }, env.JWT_SECRET, "HS256")
-
-  setCookie(c, "token", token, {
-    maxAge: JWT_TTL_SECONDS,
-    sameSite: "Lax",
-    httpOnly: true,
-    secure: true,
-    path: "/",
-  })
+  const token = await createJWT(user.id)
+  setAuthCookie(c, token)
 
   return jsonSuccess(c, {
     data: {

@@ -1,13 +1,10 @@
 import { faker } from "@faker-js/faker"
-import { sign } from "hono/jwt"
 
 import type { Role } from "@/lib/types"
 
-import { JWT_TTL_SECONDS } from "@/lib/consts"
-import { hashPassword } from "@/lib/session"
+import { hashPassword, createJWT } from "@/lib/session"
 import { generateSlug } from "@/lib/utils"
 import { prisma } from "@/db/client"
-import env from "@/lib/env"
 
 export function createDummyUserData() {
   const password = faker.internet.password()
@@ -45,9 +42,7 @@ export async function createDummyUser(role: Role) {
 
 export async function createUserSession(role: Role) {
   const { userCleanup, user } = await createDummyUser(role)
-
-  const exp = Math.floor(Date.now() / 1000) + JWT_TTL_SECONDS
-  const token = await sign({ userId: user.id, exp }, env.JWT_SECRET, "HS256")
+  const token = await createJWT(user.id)
 
   return {
     userCleanup,
