@@ -28,7 +28,7 @@ authRouter.post(
     summary: "Create a User",
     description: "Create a new User",
     responses: {
-      200: {
+      201: {
         content: {
           "application/json": { schema: resolver(tempSigUpResponseSchema) },
         },
