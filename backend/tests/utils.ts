@@ -4,7 +4,7 @@ import { sign } from "hono/jwt"
 
 import type { Role } from "@/lib/types"
 
-import { JWT_TTL_SECONDS } from "@/routes/auth.routes"
+import { JWT_TTL_SECONDS } from "@/lib/consts"
 import { generateSlug } from "@/lib/utils"
 import { prisma } from "@/db/client"
 

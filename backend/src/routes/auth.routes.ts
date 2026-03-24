@@ -8,13 +8,11 @@ import * as z from "zod"
 import { signUpSchema, signInSchema } from "@/schemas/auth.schema"
 import { zodValidator } from "@/middlewares/zod-validator"
 import { jsonSuccess, jsonError } from "@/lib/utils"
+import { JWT_TTL_SECONDS } from "@/lib/consts"
 import { prisma } from "@/db/client"
 
 const JWT_SECRET = process.env.JWT_SECRET
 if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined.")
-
-/** Set JWT and Cookie expiration for 7 days. */
-export const JWT_TTL_SECONDS = 60 * 60 * 24 * 7
 
 const authRoutes = new Hono()
 
