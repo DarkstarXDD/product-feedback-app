@@ -17,7 +17,7 @@ import {
 } from "@/lib/utils"
 import { resolveAuthUser } from "@/middlewares/resolve-auth-user.middleware"
 import { requireRole } from "@/middlewares/require-role.middleware"
-import { commentCreateSchema } from "@/schemas/comments.schema"
+import { commentCreateSchema } from "@/schemas/comment.schema"
 import { paginationSchema } from "@/schemas/pagination.schema"
 import { commentSelect } from "@/lib/selects/comments.select"
 import { upvoteSelect } from "@/lib/selects/upvote.selects"
