@@ -6,15 +6,18 @@ import {
   suggestionSelect,
 } from "@/lib/selects/suggestion.selects"
 import {
+  suggestionCreateSchema,
+  suggestionUpdateSchema,
+} from "@/schemas/suggestion.schema"
+import {
   type Pagination,
   generateSlug,
   jsonSuccess,
   jsonError,
 } from "@/lib/utils"
 import { resolveAuthUser } from "@/middlewares/resolve-auth-user.middleware"
-import { suggestionCreateSchema } from "@/schemas/suggestion.schema"
 import { requireRole } from "@/middlewares/require-role.middleware"
-import { commentCreateSchema } from "@/schemas/comments.schema"
+import { commentCreateSchema } from "@/schemas/comment.schema"
 import { paginationSchema } from "@/schemas/pagination.schema"
 import { commentSelect } from "@/lib/selects/comments.select"
 import { upvoteSelect } from "@/lib/selects/upvote.selects"
@@ -154,7 +157,7 @@ suggestionRoutes.patch(
   "/:slug",
   resolveAuthUser,
   requireRole("ADMIN", "USER"),
-  zodValidator("json", suggestionCreateSchema),
+  zodValidator("json", suggestionUpdateSchema),
   async (c) => {
     const user = getUserOrThrow(c)
     const slug = c.req.param("slug")

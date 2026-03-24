@@ -1,4 +1,4 @@
-import { describeRoute, validator, resolver } from "hono-openapi"
+import { describeRoute, resolver } from "hono-openapi"
 import { deleteCookie, setCookie } from "hono/cookie"
 import { compare, hash } from "bcryptjs"
 import { sign } from "hono/jwt"
@@ -40,7 +40,6 @@ authRoutes.post(
       },
     },
   }),
-  validator("json", signUpSchema),
   async (c) => {
     const parsedData = c.req.valid("json")
 

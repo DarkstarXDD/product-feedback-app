@@ -10,12 +10,22 @@ export const paginationSchema = z.object({
     .int("pageSize must be a whole number")
     .min(1, "pageSize must be at least 1")
     .max(MAX_PAGE_SIZE, `pageSize cannot be more than ${String(MAX_PAGE_SIZE)}`)
-    .default(DEFAULT_PAGE_SIZE),
+    .default(DEFAULT_PAGE_SIZE)
+    .meta({
+      example: DEFAULT_PAGE_SIZE,
+      description: "Number of items to return per page.",
+      "x-order": 1,
+    }),
   page: z.coerce
     .number("Invalid page")
     .int("page must be a whole number")
     .min(1, "page must be at least 1")
-    .default(DEFAULT_PAGE),
+    .default(DEFAULT_PAGE)
+    .meta({
+      example: DEFAULT_PAGE,
+      description: "Page number to return.",
+      "x-order": 2,
+    }),
 })
 
 export type PaginationQuery = z.infer<typeof paginationSchema>
