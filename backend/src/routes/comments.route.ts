@@ -3,7 +3,7 @@ import { Hono } from "hono"
 import { resolveAuthUser } from "@/middlewares/resolve-auth-user.middleware"
 import { type Pagination, jsonSuccess, jsonError } from "@/lib/utils"
 import { requireRole } from "@/middlewares/require-role.middleware"
-import { commentCreateSchema } from "@/schemas/comment.schema"
+import { commentUpdateSchema } from "@/schemas/comment.schema"
 import { paginationSchema } from "@/schemas/pagination.schema"
 import { commentSelect } from "@/lib/selects/comments.select"
 import { zodValidator } from "@/middlewares/zod-validator"
@@ -77,7 +77,7 @@ commentsRouter.patch(
   "/:id",
   resolveAuthUser,
   requireRole("ADMIN", "USER"),
-  zodValidator("json", commentCreateSchema),
+  zodValidator("json", commentUpdateSchema),
   async (c) => {
     const commentId = c.req.param("id")
     const user = getUserOrThrow(c)

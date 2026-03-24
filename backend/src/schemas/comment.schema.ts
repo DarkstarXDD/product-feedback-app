@@ -11,3 +11,6 @@ export const commentCreateSchema = z.object({
       description: "Comment content.",
     }),
 })
+
+// --------------------- Update Comment Schema -----------------------
+export const commentUpdateSchema = commentCreateSchema
