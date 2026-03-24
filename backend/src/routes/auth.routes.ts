@@ -1,4 +1,4 @@
-import { describeRoute, resolver } from "hono-openapi"
+import { describeRoute, validator, resolver } from "hono-openapi"
 import { deleteCookie, setCookie } from "hono/cookie"
 import { compare, hash } from "bcryptjs"
 import { sign } from "hono/jwt"
@@ -28,6 +28,9 @@ authRoutes.post(
   "/signup",
   zodValidator("json", signUpSchema),
   describeRoute({
+    tags: ["Auth"],
+    summary: "Create a User",
+    description: "Create a new User",
     responses: {
       200: {
         content: {
@@ -36,8 +39,8 @@ authRoutes.post(
         description: "Successfully created a user",
       },
     },
-    description: "Register a User",
   }),
+  validator("json", signUpSchema),
   async (c) => {
     const parsedData = c.req.valid("json")
 

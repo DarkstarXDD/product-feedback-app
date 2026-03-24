@@ -16,6 +16,7 @@ import authRoutes from "@/routes/auth.routes"
 import userRoutes from "@/routes/user.routes"
 import { jsonError } from "@/lib/utils"
 
+// Turn off Pino pretty when in production
 const p = pino({
   ...(process.env.NODE_ENV !== "production"
     ? {
@@ -60,7 +61,7 @@ app.onError((err, c) => {
 
 app.get(
   "/openapi.json",
-  openAPIRouteHandler(api, {
+  openAPIRouteHandler(app, {
     documentation: {
       info: {
         description: "REST API for a Product Feedback App",

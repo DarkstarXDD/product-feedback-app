@@ -6,7 +6,7 @@ import eslint from "@eslint/js"
 export default defineConfig(
   eslint.configs.recommended,
   tseslint.configs.strictTypeChecked,
-  perfectionist.configs["recommended-line-length"],
+  perfectionist.configs["recommended-line-length"], // https://perfectionist.dev/configs/recommended-line-length
   {
     rules: {
       "@typescript-eslint/no-unused-vars": [
@@ -18,6 +18,7 @@ export default defineConfig(
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
       ],
       "perfectionist/sort-modules": "off",
+      "perfectionist/sort-objects": "off",
     },
 
     languageOptions: {
