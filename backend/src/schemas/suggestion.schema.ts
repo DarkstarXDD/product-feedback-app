@@ -28,3 +28,6 @@ export const suggestionCreateSchema = z.object({
       "x-order": 3,
     }),
 })
+
+// --------------------- Update Suggestion Schema -----------------------
+export const suggestionUpdateSchema = suggestionCreateSchema
