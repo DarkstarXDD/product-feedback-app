@@ -1,10 +1,10 @@
 import { faker } from "@faker-js/faker"
-import { hash } from "bcryptjs"
 import { sign } from "hono/jwt"
 
 import type { Role } from "@/lib/types"
 
 import { JWT_TTL_SECONDS } from "@/lib/consts"
+import { hashPassword } from "@/lib/session"
 import { generateSlug } from "@/lib/utils"
 import { prisma } from "@/db/client"
 import env from "@/lib/env"
@@ -23,7 +23,7 @@ export function createDummyUserData() {
 
 export async function createDummyUser(role: Role) {
   const userData = createDummyUserData()
-  const hashedPassword = await hash(userData.password, 10)
+  const hashedPassword = await hashPassword(userData.password)
 
   const user = await prisma.user.create({
     data: {

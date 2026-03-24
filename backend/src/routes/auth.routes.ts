@@ -1,12 +1,12 @@
 import { describeRoute, resolver } from "hono-openapi"
 import { deleteCookie, setCookie } from "hono/cookie"
-import { compare, hash } from "bcryptjs"
 import { sign } from "hono/jwt"
 import { Hono } from "hono"
 import * as z from "zod"
 
 import { signUpSchema, signInSchema } from "@/schemas/auth.schema"
 import { privateUserSelect } from "@/lib/selects/user.selects"
+import { verifyPassword, hashPassword } from "@/lib/session"
 import { zodValidator } from "@/middlewares/zod-validator"
 import { jsonSuccess, jsonError } from "@/lib/utils"
 import { JWT_TTL_SECONDS } from "@/lib/consts"
@@ -39,8 +39,7 @@ authRouter.post(
   }),
   async (c) => {
     const { username, email, name, password } = c.req.valid("json")
-
-    const hashedPassword = await hash(password, 10)
+    const hashedPassword = await hashPassword(password)
 
     /**
      * Prisma doesn't provide a way to retreive the exact field name that violates the unique constraint.
@@ -96,11 +95,11 @@ authRouter.post(
 
 // ------------------------------- Sign In --------------------------------
 authRouter.post("/signin", zodValidator("json", signInSchema), async (c) => {
-  const parsedData = c.req.valid("json")
+  const { email, password } = c.req.valid("json")
 
   const user = await prisma.user.findUnique({
     select: { ...privateUserSelect, password: true },
-    where: { email: parsedData.email },
+    where: { email },
   })
 
   if (!user)
@@ -116,7 +115,7 @@ authRouter.post("/signin", zodValidator("json", signInSchema), async (c) => {
       { status: 401 }
     )
 
-  const isPasswordValid = await compare(parsedData.password, user.password)
+  const isPasswordValid = await verifyPassword(password, user.password)
 
   if (!isPasswordValid)
     return jsonError(
