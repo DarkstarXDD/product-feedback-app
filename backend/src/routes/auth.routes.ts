@@ -1,18 +1,21 @@
 import { describeRoute, resolver } from "hono-openapi"
-import { deleteCookie, setCookie } from "hono/cookie"
-import { compare, hash } from "bcryptjs"
-import { sign } from "hono/jwt"
+import { deleteCookie } from "hono/cookie"
 import { Hono } from "hono"
 import * as z from "zod"
 
+import {
+  verifyPassword,
+  setAuthCookie,
+  hashPassword,
+  createJWT,
+} from "@/lib/session"
 import { signUpSchema, signInSchema } from "@/schemas/auth.schema"
+import { privateUserSelect } from "@/lib/selects/user.selects"
 import { zodValidator } from "@/middlewares/zod-validator"
 import { jsonSuccess, jsonError } from "@/lib/utils"
-import { JWT_TTL_SECONDS } from "@/lib/consts"
 import { prisma } from "@/db/client"
-import env from "@/lib/env"
 
-const authRoutes = new Hono()
+const authRouter = new Hono()
 
 const tempSigUpResponseSchema = z.object({
   username: z.string(),
@@ -20,7 +23,7 @@ const tempSigUpResponseSchema = z.object({
 })
 
 // ------------------------------- Sign Up --------------------------------
-authRoutes.post(
+authRouter.post(
   "/signup",
   zodValidator("json", signUpSchema),
   describeRoute({
@@ -28,7 +31,7 @@ authRoutes.post(
     summary: "Create a User",
     description: "Create a new User",
     responses: {
-      200: {
+      201: {
         content: {
           "application/json": { schema: resolver(tempSigUpResponseSchema) },
         },
@@ -37,10 +40,8 @@ authRoutes.post(
     },
   }),
   async (c) => {
-    const parsedData = c.req.valid("json")
-
-    const hashedPassword = await hash(parsedData.password, 10)
-    const { username, email, name } = parsedData
+    const { username, email, name, password } = c.req.valid("json")
+    const hashedPassword = await hashPassword(password)
 
     /**
      * Prisma doesn't provide a way to retreive the exact field name that violates the unique constraint.
@@ -74,46 +75,24 @@ authRoutes.post(
     }
 
     const user = await prisma.user.create({
-      select: {
-        createdAt: true,
-        username: true,
-        email: true,
-        name: true,
-        id: true,
-      },
+      select: privateUserSelect,
       data: { password: hashedPassword, username, email, name },
     })
 
-    const exp = Math.floor(Date.now() / 1000) + JWT_TTL_SECONDS
-
-    const token = await sign({ userId: user.id, exp }, env.JWT_SECRET, "HS256")
-
-    setCookie(c, "token", token, {
-      maxAge: JWT_TTL_SECONDS,
-      sameSite: "Lax",
-      httpOnly: true,
-      secure: true,
-      path: "/",
-    })
+    const token = await createJWT(user.id)
+    setAuthCookie(c, token)
 
     return jsonSuccess(c, { data: user }, { status: 201 })
   }
 )
 
 // ------------------------------- Sign In --------------------------------
-authRoutes.post("/signin", zodValidator("json", signInSchema), async (c) => {
-  const parsedData = c.req.valid("json")
+authRouter.post("/signin", zodValidator("json", signInSchema), async (c) => {
+  const { email, password } = c.req.valid("json")
 
   const user = await prisma.user.findUnique({
-    select: {
-      createdAt: true,
-      password: true,
-      username: true,
-      email: true,
-      name: true,
-      id: true,
-    },
-    where: { email: parsedData.email },
+    select: { ...privateUserSelect, password: true },
+    where: { email },
   })
 
   if (!user)
@@ -129,7 +108,7 @@ authRoutes.post("/signin", zodValidator("json", signInSchema), async (c) => {
       { status: 401 }
     )
 
-  const isPasswordValid = await compare(parsedData.password, user.password)
+  const isPasswordValid = await verifyPassword(password, user.password)
 
   if (!isPasswordValid)
     return jsonError(
@@ -142,17 +121,8 @@ authRoutes.post("/signin", zodValidator("json", signInSchema), async (c) => {
       { status: 401 }
     )
 
-  const exp = Math.floor(Date.now() / 1000) + JWT_TTL_SECONDS
-
-  const token = await sign({ userId: user.id, exp }, env.JWT_SECRET, "HS256")
-
-  setCookie(c, "token", token, {
-    maxAge: JWT_TTL_SECONDS,
-    sameSite: "Lax",
-    httpOnly: true,
-    secure: true,
-    path: "/",
-  })
+  const token = await createJWT(user.id)
+  setAuthCookie(c, token)
 
   return jsonSuccess(c, {
     data: {
@@ -166,10 +136,10 @@ authRoutes.post("/signin", zodValidator("json", signInSchema), async (c) => {
 })
 
 // ------------------------------- Sign Out --------------------------------
-authRoutes.post("/signout", (c) => {
+authRouter.post("/signout", (c) => {
   deleteCookie(c, "token", { httpOnly: true, secure: true, path: "/" })
   // Abstract into a helper function called `jsonNoContent` if used in one more place.
   return c.body(null, 204)
 })
 
-export default authRoutes
+export default authRouter

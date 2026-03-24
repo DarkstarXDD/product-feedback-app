@@ -1,8 +1,8 @@
 import { describe, expect, test } from "vitest"
 
 import type {
+  PrivateUserResponse,
   AdminUserListItem,
-  PrivateUser,
   PublicUser,
 } from "@/lib/selects/user.selects"
 import type { SuggestionListItemResponse } from "@/lib/selects/suggestion.selects"
@@ -193,7 +193,7 @@ describe("PATCH /api/v1/users/:username", () => {
         method: "PATCH",
       })
 
-      const resBody = (await res.json()) as JsonSuccessBody<PrivateUser>
+      const resBody = (await res.json()) as JsonSuccessBody<PrivateUserResponse>
 
       expect(res.status).toBe(200)
       expect(resBody.data).toMatchObject({
@@ -229,7 +229,7 @@ describe("PATCH /api/v1/users/:username", () => {
         method: "PATCH",
       })
 
-      const resBody = (await res.json()) as JsonSuccessBody<PrivateUser>
+      const resBody = (await res.json()) as JsonSuccessBody<PrivateUserResponse>
 
       expect(res.status).toBe(200)
       expect(resBody.data).toMatchObject({
@@ -403,7 +403,7 @@ describe("GET /api/v1/users/:username", () => {
         headers: { cookie: `token=${token}` },
       })
 
-      const resBody = (await res.json()) as JsonSuccessBody<PrivateUser>
+      const resBody = (await res.json()) as JsonSuccessBody<PrivateUserResponse>
 
       expect(res.status).toBe(200)
       expect(resBody.data).toMatchObject({
@@ -432,7 +432,7 @@ describe("GET /api/v1/users/:username", () => {
         headers: { cookie: `token=${token}` },
       })
 
-      const resBody = (await res.json()) as JsonSuccessBody<PrivateUser>
+      const resBody = (await res.json()) as JsonSuccessBody<PrivateUserResponse>
 
       expect(res.status).toBe(200)
       expect(resBody.data).toMatchObject({
