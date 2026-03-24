@@ -37,10 +37,9 @@ authRoutes.post(
     },
   }),
   async (c) => {
-    const parsedData = c.req.valid("json")
+    const { username, email, name, password } = c.req.valid("json")
 
-    const hashedPassword = await hash(parsedData.password, 10)
-    const { username, email, name } = parsedData
+    const hashedPassword = await hash(password, 10)
 
     /**
      * Prisma doesn't provide a way to retreive the exact field name that violates the unique constraint.
