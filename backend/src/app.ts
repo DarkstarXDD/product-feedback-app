@@ -61,7 +61,7 @@ app.onError((err, c) => {
 
 app.get(
   "/openapi.json",
-  openAPIRouteHandler(api, {
+  openAPIRouteHandler(app, {
     documentation: {
       info: {
         description: "REST API for a Product Feedback App",
