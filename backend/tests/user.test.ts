@@ -2,8 +2,7 @@ import { describe, expect, test } from "vitest"
 
 import type {
   PrivateUserResponse,
-  AdminUserListItem,
-  PublicUser,
+  PublicUserResponse,
 } from "@/lib/selects/user.selects"
 import type { SuggestionListItemResponse } from "@/lib/selects/suggestion.selects"
 import type { JsonSuccessBody, JsonErrorBody, Pagination } from "@/lib/utils"
@@ -66,7 +65,7 @@ describe("GET /api/v1/users", () => {
       })
 
       const resBody = (await res.json()) as JsonSuccessBody<
-        AdminUserListItem[]
+        PrivateUserResponse[]
       > & {
         meta: { pagination: Pagination }
       }
@@ -103,7 +102,7 @@ describe("GET /api/v1/users", () => {
       })
 
       const resBody = (await res.json()) as JsonSuccessBody<
-        AdminUserListItem[]
+        PrivateUserResponse[]
       > & {
         meta: { pagination: Pagination }
       }
@@ -377,7 +376,7 @@ describe("GET /api/v1/users/:username", () => {
     try {
       const res = await app.request(`/api/v1/users/${user.username}`)
 
-      const resBody = (await res.json()) as JsonSuccessBody<PublicUser>
+      const resBody = (await res.json()) as JsonSuccessBody<PublicUserResponse>
 
       expect(res.status).toBe(200)
       expect(resBody.data).toMatchObject({

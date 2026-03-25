@@ -1,15 +1,20 @@
 import { describeRoute, resolver } from "hono-openapi"
 import { deleteCookie } from "hono/cookie"
 import { Hono } from "hono"
-import * as z from "zod"
 
+import {
+  signInResponseSchema,
+  signUpResponseSchema,
+  signUpSchema,
+  signInSchema,
+} from "@/schemas/auth.schema"
 import {
   verifyPassword,
   setAuthCookie,
   hashPassword,
   createJWT,
 } from "@/lib/session"
-import { signUpSchema, signInSchema } from "@/schemas/auth.schema"
+import { jsonSuccessSchema, jsonErrorSchema } from "@/schemas/shared.schema"
 import { privateUserSelect } from "@/lib/selects/user.selects"
 import { zodValidator } from "@/middlewares/zod-validator"
 import { jsonSuccess, jsonError } from "@/lib/utils"
@@ -17,28 +22,43 @@ import { prisma } from "@/db/client"
 
 const authRouter = new Hono()
 
-const tempSigUpResponseSchema = z.object({
-  username: z.string(),
-  name: z.string(),
-})
-
 // ------------------------------- Sign Up --------------------------------
 authRouter.post(
   "/signup",
-  zodValidator("json", signUpSchema),
   describeRoute({
     tags: ["Auth"],
-    summary: "Create a User",
-    description: "Create a new User",
+    summary: "Sign Up",
+    description: "Create a new User.",
     responses: {
       201: {
         content: {
-          "application/json": { schema: resolver(tempSigUpResponseSchema) },
+          "application/json": {
+            schema: resolver(jsonSuccessSchema(signUpResponseSchema)),
+          },
         },
-        description: "Successfully created a user",
+        description: "Successfully created a user.",
+      },
+      400: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description:
+          "Bad Request. This error occurs when the request body fails validation.",
+      },
+      409: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description:
+          "Conflict. This error occurs when the provided email or username already exists in the database.",
       },
     },
   }),
+  zodValidator("json", signUpSchema),
   async (c) => {
     const { username, email, name, password } = c.req.valid("json")
     const hashedPassword = await hashPassword(password)
@@ -87,59 +107,102 @@ authRouter.post(
 )
 
 // ------------------------------- Sign In --------------------------------
-authRouter.post("/signin", zodValidator("json", signInSchema), async (c) => {
-  const { email, password } = c.req.valid("json")
-
-  const user = await prisma.user.findUnique({
-    select: { ...privateUserSelect, password: true },
-    where: { email },
-  })
-
-  if (!user)
-    return jsonError(
-      c,
-      {
-        errors: {
-          formErrors: ["Invalid email or password"],
+authRouter.post(
+  "/signin",
+  describeRoute({
+    tags: ["Auth"],
+    summary: "Sign In",
+    description: "Sign in to your account.",
+    responses: {
+      200: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonSuccessSchema(signInResponseSchema)),
+          },
         },
-        message: "Invalid email or password",
-        code: "UNAUTHORIZED",
+        description: "Successfully signed in.",
       },
-      { status: 401 }
-    )
-
-  const isPasswordValid = await verifyPassword(password, user.password)
-
-  if (!isPasswordValid)
-    return jsonError(
-      c,
-      {
-        errors: { formErrors: ["Invalid email or password"] },
-        message: "Invalid email or password",
-        code: "UNAUTHORIZED",
+      400: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description:
+          "Bad Request. This error occurs when the request body fails validation.",
       },
-      { status: 401 }
-    )
-
-  const token = await createJWT(user.id)
-  setAuthCookie(c, token)
-
-  return jsonSuccess(c, {
-    data: {
-      createdAt: user.createdAt,
-      username: user.username,
-      email: user.email,
-      name: user.name,
-      id: user.id,
+      401: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description:
+          "Unauthorized. This error occurs when the email or password is invalid.",
+      },
     },
-  })
-})
+  }),
+  zodValidator("json", signInSchema),
+  async (c) => {
+    const { email, password } = c.req.valid("json")
+
+    const user = await prisma.user.findUnique({
+      select: { ...privateUserSelect, password: true },
+      where: { email },
+    })
+
+    if (!user)
+      return jsonError(
+        c,
+        {
+          errors: {
+            formErrors: ["Invalid email or password"],
+          },
+          message: "Invalid email or password",
+          code: "UNAUTHORIZED",
+        },
+        { status: 401 }
+      )
+
+    const isPasswordValid = await verifyPassword(password, user.password)
+
+    if (!isPasswordValid)
+      return jsonError(
+        c,
+        {
+          errors: { formErrors: ["Invalid email or password"] },
+          message: "Invalid email or password",
+          code: "UNAUTHORIZED",
+        },
+        { status: 401 }
+      )
+
+    const token = await createJWT(user.id)
+    setAuthCookie(c, token)
+
+    const { password: _, ...userWithoutPassword } = user
+    return jsonSuccess(c, { data: userWithoutPassword }, { status: 200 })
+  }
+)
 
 // ------------------------------- Sign Out --------------------------------
-authRouter.post("/signout", (c) => {
-  deleteCookie(c, "token", { httpOnly: true, secure: true, path: "/" })
-  // Abstract into a helper function called `jsonNoContent` if used in one more place.
-  return c.body(null, 204)
-})
+authRouter.post(
+  "/signout",
+  describeRoute({
+    tags: ["Auth"],
+    summary: "Sign Out",
+    description: "Sign out of your account.",
+    responses: {
+      204: {
+        description: "Successfully signed out.",
+      },
+    },
+  }),
+  (c) => {
+    deleteCookie(c, "token", { httpOnly: true, secure: true, path: "/" })
+    // Abstract into a helper function called `jsonNoContent` if used in one more place.
+    return c.body(null, 204)
+  }
+)
 
 export default authRouter

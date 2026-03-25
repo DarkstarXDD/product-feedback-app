@@ -2,11 +2,7 @@ import { Hono } from "hono"
 
 import type { AppContext } from "@/lib/types"
 
-import {
-  adminUserListSelect,
-  privateUserSelect,
-  publicUserSelect,
-} from "@/lib/selects/user.selects"
+import { privateUserSelect, publicUserSelect } from "@/lib/selects/user.selects"
 import { withTargetAccess } from "@/middlewares/with-target-access.middleware"
 import { resolveAuthUser } from "@/middlewares/resolve-auth-user.middleware"
 import { suggestionListSelect } from "@/lib/selects/suggestion.selects"
@@ -36,7 +32,7 @@ userRoutes.get(
     const [totalItems, users] = await Promise.all([
       prisma.user.count(),
       prisma.user.findMany({
-        select: adminUserListSelect,
+        select: privateUserSelect,
         take: pageSize,
         skip,
       }),

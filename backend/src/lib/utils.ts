@@ -10,6 +10,8 @@ import { HTTPException } from "hono/http-exception"
 import { randomUUID } from "node:crypto"
 import * as z from "zod"
 
+import { ERROR_CODES } from "@/lib/consts"
+
 // ------------------------- Success Response ----------------------------
 export interface JsonSuccessBody<T> {
   meta?: Record<string, unknown>
@@ -60,20 +62,11 @@ export function jsonSuccess<T>(
 }
 
 // ------------------------- Error Response ----------------------------
-type ErrorCodes =
-  | "VALIDATION_ERROR"
-  | "NOT_IMPLEMENTED"
-  | "INTERNAL_ERROR"
-  | "UNAUTHORIZED"
-  | "RATE_LIMITED"
-  | "INVALID_ID"
-  | "NOT_FOUND"
-  | "FORBIDDEN"
-  | "CONFLICT"
+export type ErrorCode = (typeof ERROR_CODES)[number]
 
 export type JsonErrorBody = {
   errors?: { fieldErrors?: Record<string, string[]>; formErrors?: string[] }
-  code: ErrorCodes
+  code: ErrorCode
   message: string
 }
 
