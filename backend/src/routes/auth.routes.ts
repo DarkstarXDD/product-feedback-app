@@ -186,10 +186,23 @@ authRouter.post(
 )
 
 // ------------------------------- Sign Out --------------------------------
-authRouter.post("/signout", (c) => {
-  deleteCookie(c, "token", { httpOnly: true, secure: true, path: "/" })
-  // Abstract into a helper function called `jsonNoContent` if used in one more place.
-  return c.body(null, 204)
-})
+authRouter.post(
+  "/signout",
+  describeRoute({
+    tags: ["Auth"],
+    summary: "Sign Out",
+    description: "Sign out of your account.",
+    responses: {
+      204: {
+        description: "Successfully signed out.",
+      },
+    },
+  }),
+  (c) => {
+    deleteCookie(c, "token", { httpOnly: true, secure: true, path: "/" })
+    // Abstract into a helper function called `jsonNoContent` if used in one more place.
+    return c.body(null, 204)
+  }
+)
 
 export default authRouter
