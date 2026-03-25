@@ -14,8 +14,8 @@ import {
   hashPassword,
   createJWT,
 } from "@/lib/session"
+import { jsonSuccessSchema, jsonErrorSchema } from "@/schemas/shared.schema"
 import { privateUserSelect } from "@/lib/selects/user.selects"
-import { jsonSuccessSchema } from "@/schemas/shared.schema"
 import { zodValidator } from "@/middlewares/zod-validator"
 import { jsonSuccess, jsonError } from "@/lib/utils"
 import { prisma } from "@/db/client"
@@ -37,6 +37,24 @@ authRouter.post(
           },
         },
         description: "Successfully created a user.",
+      },
+      400: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description:
+          "Bad Request. This error occurs when the request body fails validation.",
+      },
+      409: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description:
+          "Conflict. This error occurs when the provided email or username already exists in the database.",
       },
     },
   }),
@@ -103,6 +121,24 @@ authRouter.post(
           },
         },
         description: "Successfully signed in.",
+      },
+      400: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description:
+          "Bad Request. This error occurs when the request body fails validation.",
+      },
+      401: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description:
+          "Unauthorized. This error occurs when the email or password is invalid.",
       },
     },
   }),
