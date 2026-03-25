@@ -3,18 +3,18 @@ import { deleteCookie } from "hono/cookie"
 import { Hono } from "hono"
 
 import {
+  signInResponseSchema,
+  signUpResponseSchema,
+  signUpSchema,
+  signInSchema,
+} from "@/schemas/auth.schema"
+import {
   verifyPassword,
   setAuthCookie,
   hashPassword,
   createJWT,
 } from "@/lib/session"
-import {
-  signInResponseSchema,
-  signUpSchema,
-  signInSchema,
-} from "@/schemas/auth.schema"
 import { privateUserSelect } from "@/lib/selects/user.selects"
-import { signUpResponseSchema } from "@/schemas/auth.schema"
 import { zodValidator } from "@/middlewares/zod-validator"
 import { jsonSuccess, jsonError } from "@/lib/utils"
 import { prisma } from "@/db/client"
