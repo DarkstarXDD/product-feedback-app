@@ -24,7 +24,6 @@ const authRouter = new Hono()
 // ------------------------------- Sign Up --------------------------------
 authRouter.post(
   "/signup",
-  zodValidator("json", signUpSchema),
   describeRoute({
     tags: ["Auth"],
     summary: "Sign Up",
@@ -38,6 +37,7 @@ authRouter.post(
       },
     },
   }),
+  zodValidator("json", signUpSchema),
   async (c) => {
     const { username, email, name, password } = c.req.valid("json")
     const hashedPassword = await hashPassword(password)
