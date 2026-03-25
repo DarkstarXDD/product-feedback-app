@@ -1,7 +1,6 @@
 import { describeRoute, resolver } from "hono-openapi"
 import { deleteCookie } from "hono/cookie"
 import { Hono } from "hono"
-import * as z from "zod"
 
 import {
   verifyPassword,
@@ -11,16 +10,12 @@ import {
 } from "@/lib/session"
 import { signUpSchema, signInSchema } from "@/schemas/auth.schema"
 import { privateUserSelect } from "@/lib/selects/user.selects"
+import { signUpResponseSchema } from "@/schemas/auth.schema"
 import { zodValidator } from "@/middlewares/zod-validator"
 import { jsonSuccess, jsonError } from "@/lib/utils"
 import { prisma } from "@/db/client"
 
 const authRouter = new Hono()
-
-const tempSigUpResponseSchema = z.object({
-  username: z.string(),
-  name: z.string(),
-})
 
 // ------------------------------- Sign Up --------------------------------
 authRouter.post(
@@ -33,7 +28,7 @@ authRouter.post(
     responses: {
       201: {
         content: {
-          "application/json": { schema: resolver(tempSigUpResponseSchema) },
+          "application/json": { schema: resolver(signUpResponseSchema) },
         },
         description: "Successfully created a user",
       },

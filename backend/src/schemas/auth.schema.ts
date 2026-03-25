@@ -1,5 +1,6 @@
 import * as z from "zod"
 
+import { privateUserResponseSchema } from "@/schemas/user.schema"
 import { userSchema } from "@/schemas/user.schema"
 
 // --------------------- SignUp Schema -----------------------
@@ -26,6 +27,9 @@ export const signUpSchema = userSchema
     error: "Passwords don't match",
     path: ["confirmPassword"],
   })
+
+// --------------------- SignUp Response Schema -----------------------
+export const signUpResponseSchema = privateUserResponseSchema
 
 // ------------------------ SignIn Schema ---------------------
 export const signInSchema = z.object({
