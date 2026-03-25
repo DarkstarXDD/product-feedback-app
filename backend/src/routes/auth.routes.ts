@@ -15,6 +15,7 @@ import {
   createJWT,
 } from "@/lib/session"
 import { privateUserSelect } from "@/lib/selects/user.selects"
+import { jsonSuccessSchema } from "@/schemas/shared.schema"
 import { zodValidator } from "@/middlewares/zod-validator"
 import { jsonSuccess, jsonError } from "@/lib/utils"
 import { prisma } from "@/db/client"
@@ -31,7 +32,9 @@ authRouter.post(
     responses: {
       201: {
         content: {
-          "application/json": { schema: resolver(signUpResponseSchema) },
+          "application/json": {
+            schema: resolver(jsonSuccessSchema(signUpResponseSchema)),
+          },
         },
         description: "Successfully created a user.",
       },
@@ -95,7 +98,9 @@ authRouter.post(
     responses: {
       200: {
         content: {
-          "application/json": { schema: resolver(signInResponseSchema) },
+          "application/json": {
+            schema: resolver(jsonSuccessSchema(signInResponseSchema)),
+          },
         },
         description: "Successfully signed in.",
       },
