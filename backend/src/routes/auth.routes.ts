@@ -8,7 +8,11 @@ import {
   hashPassword,
   createJWT,
 } from "@/lib/session"
-import { signUpSchema, signInSchema } from "@/schemas/auth.schema"
+import {
+  signInResponseSchema,
+  signUpSchema,
+  signInSchema,
+} from "@/schemas/auth.schema"
 import { privateUserSelect } from "@/lib/selects/user.selects"
 import { signUpResponseSchema } from "@/schemas/auth.schema"
 import { zodValidator } from "@/middlewares/zod-validator"
@@ -23,14 +27,14 @@ authRouter.post(
   zodValidator("json", signUpSchema),
   describeRoute({
     tags: ["Auth"],
-    summary: "Create a User",
-    description: "Create a new User",
+    summary: "Sign Up",
+    description: "Create a new User.",
     responses: {
       201: {
         content: {
           "application/json": { schema: resolver(signUpResponseSchema) },
         },
-        description: "Successfully created a user",
+        description: "Successfully created a user.",
       },
     },
   }),
@@ -82,53 +86,63 @@ authRouter.post(
 )
 
 // ------------------------------- Sign In --------------------------------
-authRouter.post("/signin", zodValidator("json", signInSchema), async (c) => {
-  const { email, password } = c.req.valid("json")
-
-  const user = await prisma.user.findUnique({
-    select: { ...privateUserSelect, password: true },
-    where: { email },
-  })
-
-  if (!user)
-    return jsonError(
-      c,
-      {
-        errors: {
-          formErrors: ["Invalid email or password"],
+authRouter.post(
+  "/signin",
+  describeRoute({
+    tags: ["Auth"],
+    summary: "Sign In",
+    description: "Sign in to your account.",
+    responses: {
+      200: {
+        content: {
+          "application/json": { schema: resolver(signInResponseSchema) },
         },
-        message: "Invalid email or password",
-        code: "UNAUTHORIZED",
+        description: "Successfully signed in.",
       },
-      { status: 401 }
-    )
-
-  const isPasswordValid = await verifyPassword(password, user.password)
-
-  if (!isPasswordValid)
-    return jsonError(
-      c,
-      {
-        errors: { formErrors: ["Invalid email or password"] },
-        message: "Invalid email or password",
-        code: "UNAUTHORIZED",
-      },
-      { status: 401 }
-    )
-
-  const token = await createJWT(user.id)
-  setAuthCookie(c, token)
-
-  return jsonSuccess(c, {
-    data: {
-      createdAt: user.createdAt,
-      username: user.username,
-      email: user.email,
-      name: user.name,
-      id: user.id,
     },
-  })
-})
+  }),
+  zodValidator("json", signInSchema),
+  async (c) => {
+    const { email, password } = c.req.valid("json")
+
+    const user = await prisma.user.findUnique({
+      select: { ...privateUserSelect, password: true },
+      where: { email },
+    })
+
+    if (!user)
+      return jsonError(
+        c,
+        {
+          errors: {
+            formErrors: ["Invalid email or password"],
+          },
+          message: "Invalid email or password",
+          code: "UNAUTHORIZED",
+        },
+        { status: 401 }
+      )
+
+    const isPasswordValid = await verifyPassword(password, user.password)
+
+    if (!isPasswordValid)
+      return jsonError(
+        c,
+        {
+          errors: { formErrors: ["Invalid email or password"] },
+          message: "Invalid email or password",
+          code: "UNAUTHORIZED",
+        },
+        { status: 401 }
+      )
+
+    const token = await createJWT(user.id)
+    setAuthCookie(c, token)
+
+    const { password: _, ...userWithoutPassword } = user
+    return jsonSuccess(c, { data: userWithoutPassword }, { status: 200 })
+  }
+)
 
 // ------------------------------- Sign Out --------------------------------
 authRouter.post("/signout", (c) => {

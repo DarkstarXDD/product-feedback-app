@@ -48,3 +48,6 @@ export const signInSchema = z.object({
       "x-order": 2,
     }),
 })
+
+// --------------------- SignIn Response Schema -----------------------
+export const signInResponseSchema = privateUserResponseSchema
