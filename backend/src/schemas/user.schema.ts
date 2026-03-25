@@ -40,10 +40,16 @@ export const userUpdateSchema = userSchema
 // --------------------- PrivateUser Response Schema -----------------------
 export const privateUserResponseSchema: z.ZodType<PrivateUserResponse> =
   z.object({
-    id: z.string().meta({ example: "cmlubyi3l000094r6fw9v8djs", "x-order": 1 }),
+    id: z.cuid().meta({
+      pattern: undefined,
+      example: "cmlubyi3l000094r6fw9v8djs",
+      "x-order": 1,
+    }),
     name: z.string().meta({ example: "John Doe", "x-order": 2 }),
     username: z.string().meta({ example: "johndoe", "x-order": 3 }),
-    email: z.string().meta({ example: "johndoe@email.com", "x-order": 4 }),
+    email: z
+      .email()
+      .meta({ pattern: undefined, example: "johndoe@email.com", "x-order": 4 }),
     role: z.enum(["USER", "ADMIN"]).meta({ example: "USER", "x-order": 5 }),
     createdAt: z.date().meta({
       example: "2026-01-01T00:00:00.000Z",
