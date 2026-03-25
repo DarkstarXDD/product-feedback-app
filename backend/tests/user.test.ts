@@ -3,7 +3,6 @@ import { describe, expect, test } from "vitest"
 import type {
   PrivateUserResponse,
   PublicUserResponse,
-  AdminUserListItem,
 } from "@/lib/selects/user.selects"
 import type { SuggestionListItemResponse } from "@/lib/selects/suggestion.selects"
 import type { JsonSuccessBody, JsonErrorBody, Pagination } from "@/lib/utils"
@@ -66,7 +65,7 @@ describe("GET /api/v1/users", () => {
       })
 
       const resBody = (await res.json()) as JsonSuccessBody<
-        AdminUserListItem[]
+        PrivateUserResponse[]
       > & {
         meta: { pagination: Pagination }
       }
@@ -103,7 +102,7 @@ describe("GET /api/v1/users", () => {
       })
 
       const resBody = (await res.json()) as JsonSuccessBody<
-        AdminUserListItem[]
+        PrivateUserResponse[]
       > & {
         meta: { pagination: Pagination }
       }

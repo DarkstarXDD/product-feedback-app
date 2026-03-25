@@ -25,20 +25,3 @@ export const privateUserSelect = {
 export type PrivateUserResponse = Prisma.UserGetPayload<{
   select: typeof privateUserSelect
 }>
-
-export const adminUserListSelect = {
-  suggestions: true,
-  createdAt: true,
-  username: true,
-  comments: true,
-  upvotes: true,
-  _count: true,
-  email: true,
-  role: true,
-  name: true,
-  id: true,
-} as const satisfies Prisma.UserSelect
-
-export type AdminUserListItem = Prisma.UserGetPayload<{
-  select: typeof adminUserListSelect
-}>
