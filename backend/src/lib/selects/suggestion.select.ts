@@ -9,7 +9,7 @@ export const suggestionSelect = {
   description: true,
   createdAt: true,
   updatedAt: true,
-  _count: true,
+  _count: { select: { comments: true, upvotes: true } },
   category: { select: { id: true, name: true, slug: true } },
   status: { select: { id: true, name: true, slug: true } },
   user: { select: { id: true, username: true, name: true } },
@@ -62,3 +62,33 @@ export const suggestionUpdateSelect = suggestionSelect
 export type SuggestionUpdateResponse = Prisma.SuggestionGetPayload<{
   select: typeof suggestionCreateSelect
 }>
+
+// ------------------------------- Suggestions with Upvote field --------------------------------
+/** Base fields for a Suggestion with upvote field. Excludes the comments list. */
+export const suggestionWithViewerUpvoteSelect = (userId: string) =>
+  ({
+    ...suggestionSelect,
+    upvotes: {
+      where: { userId },
+      select: { id: true },
+    },
+  }) as const satisfies Prisma.SuggestionSelect
+
+export type SuggestionWithViewerUpvote = Prisma.SuggestionGetPayload<{
+  select: ReturnType<typeof suggestionWithViewerUpvoteSelect>
+}>
+
+/** Extends `suggestionWithCommentsSelect` to include upvote field. */
+export const suggestionWithCommentsAndViewerUpvoteSelect = (userId: string) =>
+  ({
+    ...suggestionWithCommentsSelect,
+    upvotes: {
+      where: { userId },
+      select: { id: true },
+    },
+  }) as const satisfies Prisma.SuggestionSelect
+
+export type SuggestionWithCommentsAndViewerUpvote =
+  Prisma.SuggestionGetPayload<{
+    select: ReturnType<typeof suggestionWithCommentsAndViewerUpvoteSelect>
+  }>
