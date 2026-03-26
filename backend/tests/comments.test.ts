@@ -2,7 +2,7 @@ import { describe, expect, test } from "vitest"
 import { faker } from "@faker-js/faker"
 
 import type { JsonSuccessBody, JsonErrorBody, Pagination } from "@/lib/utils"
-import type { Comment } from "@/lib/selects/comment.select"
+import type { CommentResponse } from "@/lib/selects/comment.select"
 
 import app from "@/app"
 
@@ -57,7 +57,7 @@ describe("GET /api/v1/comments", () => {
 
     const resBody = (await res.json()) as {
       meta: { pagination: Pagination }
-    } & JsonSuccessBody<Comment[]>
+    } & JsonSuccessBody<CommentResponse[]>
 
     expect(res.status).toBe(200)
     expect(resBody.data.some((item) => item.id === comment.id)).toBe(true)
@@ -98,7 +98,7 @@ describe("GET /api/v1/comments", () => {
 
       const resBody = (await res.json()) as {
         meta: { pagination: Pagination }
-      } & JsonSuccessBody<Comment[]>
+      } & JsonSuccessBody<CommentResponse[]>
 
       expect(res.status).toBe(200)
       expect(resBody.data).toHaveLength(10)

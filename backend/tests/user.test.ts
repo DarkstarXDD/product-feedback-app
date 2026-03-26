@@ -6,7 +6,7 @@ import type {
 } from "@/lib/selects/user.select"
 import type { JsonSuccessBody, JsonErrorBody, Pagination } from "@/lib/utils"
 import type { SuggestionResponse } from "@/lib/selects/suggestion.select"
-import type { Comment } from "@/lib/selects/comment.select"
+import type { CommentResponse } from "@/lib/selects/comment.select"
 
 import app from "@/app"
 
@@ -629,7 +629,7 @@ describe("GET /api/v1/users/:username/comments", () => {
 
       const resBody = (await res.json()) as {
         meta: { pagination: Pagination }
-      } & JsonSuccessBody<Comment[]>
+      } & JsonSuccessBody<CommentResponse[]>
 
       expect(res.status).toBe(200)
       expect(resBody.data.some((item) => item.id === comment.id)).toBe(true)
@@ -671,7 +671,7 @@ describe("GET /api/v1/users/:username/comments", () => {
 
       const resBody = (await res.json()) as {
         meta: { pagination: Pagination }
-      } & JsonSuccessBody<Comment[]>
+      } & JsonSuccessBody<CommentResponse[]>
 
       expect(res.status).toBe(200)
       expect(resBody.data).toHaveLength(10)

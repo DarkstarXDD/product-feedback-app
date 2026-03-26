@@ -7,8 +7,8 @@ import {
   type SuggestionCreateResponse,
   type SuggestionResponse,
 } from "@/lib/selects/suggestion.select"
+import { type CommentResponse } from "@/lib/selects/comment.select"
 import { type UpvoteResponse } from "@/lib/selects/upvote.select"
-import { type Comment } from "@/lib/selects/comment.select"
 import { prisma } from "@/db/client"
 import app from "@/app"
 
@@ -486,7 +486,7 @@ describe("POST /api/v1/suggestions/:slug/comments", () => {
       }
     )
 
-    const resBody = (await res.json()) as JsonSuccessBody<Comment>
+    const resBody = (await res.json()) as JsonSuccessBody<CommentResponse>
 
     expect(res.status).toBe(201)
     expect(resBody.data).toHaveProperty("content", payload.content)
@@ -547,7 +547,7 @@ describe("GET /api/v1/suggestions/:slug/comments", () => {
       `/api/v1/suggestions/${suggestion.slug}/comments`
     )
 
-    const resBody = (await res.json()) as JsonSuccessBody<Comment[]>
+    const resBody = (await res.json()) as JsonSuccessBody<CommentResponse[]>
 
     expect(res.status).toBe(200)
     expect(resBody.data.some((item) => item.id === comment.id)).toBe(true)

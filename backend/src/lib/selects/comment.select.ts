@@ -1,14 +1,15 @@
 import type { Prisma } from "@/db/client"
 
+/** Fields that are included when a Comment is fetched. */
 export const commentSelect = {
-  suggestion: { select: { title: true, slug: true, id: true } },
-  user: { select: { username: true, name: true, id: true } },
+  id: true,
+  content: true,
   createdAt: true,
   updatedAt: true,
-  content: true,
-  id: true,
+  suggestion: { select: { id: true, slug: true, title: true } },
+  user: { select: { id: true, username: true, name: true } },
 } as const satisfies Prisma.CommentSelect
 
-export type Comment = Prisma.CommentGetPayload<{
+export type CommentResponse = Prisma.CommentGetPayload<{
   select: typeof commentSelect
 }>
