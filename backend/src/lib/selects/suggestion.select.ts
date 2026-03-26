@@ -60,7 +60,7 @@ export type SuggestionCreateResponse = Prisma.SuggestionGetPayload<{
 export const suggestionUpdateSelect = suggestionSelect
 
 export type SuggestionUpdateResponse = Prisma.SuggestionGetPayload<{
-  select: typeof suggestionCreateSelect
+  select: typeof suggestionUpdateSelect
 }>
 
 // ------------------------------- Suggestions with Upvote field --------------------------------
