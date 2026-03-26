@@ -6,9 +6,9 @@ import {
   type SuggestionWithCommentsResponse,
   type SuggestionCreateResponse,
   type SuggestionResponse,
-} from "@/lib/selects/suggestion.selects"
-import { type Comment } from "@/lib/selects/comments.select"
-import { type Upvote } from "@/lib/selects/upvote.selects"
+} from "@/lib/selects/suggestion.select"
+import { type Comment } from "@/lib/selects/comment.select"
+import { type Upvote } from "@/lib/selects/upvote.select"
 import { prisma } from "@/db/client"
 import app from "@/app"
 

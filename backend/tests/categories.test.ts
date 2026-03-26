@@ -2,7 +2,7 @@ import { describe, expect, test } from "vitest"
 
 import type { JsonSuccessBody } from "@/lib/utils"
 
-import { type Category } from "@/lib/selects/category.selects"
+import { type Category } from "@/lib/selects/category.select"
 import app from "@/app"
 
 describe("GET /api/v1/categories", () => {

@@ -3,10 +3,10 @@ import { describe, expect, test } from "vitest"
 import type {
   PrivateUserResponse,
   PublicUserResponse,
-} from "@/lib/selects/user.selects"
+} from "@/lib/selects/user.select"
 import type { JsonSuccessBody, JsonErrorBody, Pagination } from "@/lib/utils"
-import type { SuggestionResponse } from "@/lib/selects/suggestion.selects"
-import type { Comment } from "@/lib/selects/comments.select"
+import type { SuggestionResponse } from "@/lib/selects/suggestion.select"
+import type { Comment } from "@/lib/selects/comment.select"
 
 import app from "@/app"
 

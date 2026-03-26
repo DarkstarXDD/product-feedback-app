@@ -2,7 +2,7 @@ import { describe, expect, test } from "vitest"
 import { faker } from "@faker-js/faker"
 
 import type { JsonSuccessBody, JsonErrorBody, Pagination } from "@/lib/utils"
-import type { Comment } from "@/lib/selects/comments.select"
+import type { Comment } from "@/lib/selects/comment.select"
 
 import app from "@/app"
 
