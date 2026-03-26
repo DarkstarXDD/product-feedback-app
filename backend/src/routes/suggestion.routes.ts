@@ -27,10 +27,10 @@ import { getUserOrThrow } from "@/lib/context-helpers"
 import { Prisma } from "@/db/client"
 import { prisma } from "@/db/client"
 
-const suggestionRoutes = new Hono()
+const suggestionRouter = new Hono()
 
 // ------------------------------- GET All Suggestions --------------------------------
-suggestionRoutes.get(
+suggestionRouter.get(
   "/",
   resolveAuthUser,
   zodValidator("query", paginationSchema),
@@ -87,7 +87,7 @@ suggestionRoutes.get(
 )
 
 // ------------------------------- GET a Suggestion --------------------------------
-suggestionRoutes.get("/:slug", resolveAuthUser, async (c) => {
+suggestionRouter.get("/:slug", resolveAuthUser, async (c) => {
   const slug = c.req.param("slug")
   const user = c.get("user")
 
@@ -131,7 +131,7 @@ suggestionRoutes.get("/:slug", resolveAuthUser, async (c) => {
 })
 
 // ------------------------------- Create a Suggestion --------------------------------
-suggestionRoutes.post(
+suggestionRouter.post(
   "/",
   resolveAuthUser,
   requireRole("ADMIN", "USER"),
@@ -154,7 +154,7 @@ suggestionRoutes.post(
 )
 
 // ------------------------------- Update a Suggestion --------------------------------
-suggestionRoutes.patch(
+suggestionRouter.patch(
   "/:slug",
   resolveAuthUser,
   requireRole("ADMIN", "USER"),
@@ -195,7 +195,7 @@ suggestionRoutes.patch(
 )
 
 // ------------------------------- Create a Comment for a Suggestion --------------------------------
-suggestionRoutes.post(
+suggestionRouter.post(
   "/:slug/comments",
   resolveAuthUser,
   requireRole("ADMIN", "USER"),
@@ -223,7 +223,7 @@ suggestionRoutes.post(
 )
 
 // ------------------------------- Get All Comments for a Suggestion --------------------------------
-suggestionRoutes.get("/:slug/comments", async (c) => {
+suggestionRouter.get("/:slug/comments", async (c) => {
   const slug = c.req.param("slug")
 
   const comments = await prisma.comment.findMany({
@@ -235,7 +235,7 @@ suggestionRoutes.get("/:slug/comments", async (c) => {
 })
 
 // ------------------------------- Create an Upvote for a Suggestion --------------------------------
-suggestionRoutes.post(
+suggestionRouter.post(
   "/:slug/upvotes",
   resolveAuthUser,
   requireRole("ADMIN", "USER"),
@@ -287,7 +287,7 @@ suggestionRoutes.post(
 )
 
 // ------------------------------- Delete an Upvote for a Suggestion --------------------------------
-suggestionRoutes.delete(
+suggestionRouter.delete(
   "/:slug/upvotes",
   resolveAuthUser,
   requireRole("ADMIN", "USER"),
@@ -322,4 +322,4 @@ suggestionRoutes.delete(
 
 // Delete suggestion is not yet implemented.
 
-export default suggestionRoutes
+export default suggestionRouter

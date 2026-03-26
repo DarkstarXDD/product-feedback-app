@@ -8,7 +8,7 @@ import { LogLayer } from "loglayer"
 import { Hono } from "hono"
 import { pino } from "pino"
 
-import suggestionRoutes from "@/routes/suggestion.routes"
+import suggestionRouter from "@/routes/suggestion.routes"
 import categoryRoutes from "@/routes/category.routes"
 import commentsRouter from "@/routes/comments.route"
 import statusRoutes from "@/routes/status.routes"
@@ -80,7 +80,7 @@ api.route("/auth", authRouter)
 api.route("/users", userRoutes)
 api.route("/categories", categoryRoutes)
 api.route("/statuses", statusRoutes)
-api.route("/suggestions", suggestionRoutes)
+api.route("/suggestions", suggestionRouter)
 api.route("/comments", commentsRouter)
 
 /** Mount API instance on app. */
