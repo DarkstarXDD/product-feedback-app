@@ -1,13 +1,12 @@
 import type { Prisma } from "@/db/client"
 
+/** Fields that are included when a Category is fetched. */
 export const categorySelect = {
-  createdAt: true,
-  updatedAt: true,
+  id: true,
   slug: true,
   name: true,
-  id: true,
 } as const satisfies Prisma.CategorySelect
 
-export type Category = Prisma.CategoryGetPayload<{
+export type CategoryResponse = Prisma.CategoryGetPayload<{
   select: typeof categorySelect
 }>
