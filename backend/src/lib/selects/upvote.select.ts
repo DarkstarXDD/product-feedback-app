@@ -1,12 +1,13 @@
 import type { Prisma } from "@/db/client"
 
+/** Fields that are included when an Upvote is fetched. */
 export const upvoteSelect = {
-  suggestionId: true,
+  id: true,
   createdAt: true,
   userId: true,
-  id: true,
+  suggestionId: true,
 } as const satisfies Prisma.UpvoteSelect
 
-export type Upvote = Prisma.UpvoteGetPayload<{
+export type UpvoteResponse = Prisma.UpvoteGetPayload<{
   select: typeof upvoteSelect
 }>

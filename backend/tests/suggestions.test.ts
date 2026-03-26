@@ -7,8 +7,8 @@ import {
   type SuggestionCreateResponse,
   type SuggestionResponse,
 } from "@/lib/selects/suggestion.select"
+import { type UpvoteResponse } from "@/lib/selects/upvote.select"
 import { type Comment } from "@/lib/selects/comment.select"
-import { type Upvote } from "@/lib/selects/upvote.select"
 import { prisma } from "@/db/client"
 import app from "@/app"
 
@@ -595,7 +595,7 @@ describe("POST /api/v1/suggestions/:slug/upvotes", () => {
       }
     )
 
-    const resBody = (await res.json()) as JsonSuccessBody<Upvote>
+    const resBody = (await res.json()) as JsonSuccessBody<UpvoteResponse>
 
     expect(res.status).toBe(201)
     expect(resBody.data).toHaveProperty("userId", user.id)
