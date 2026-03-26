@@ -1,6 +1,6 @@
 import type { Prisma } from "@/db/client"
 
-/** Fields that are included when a public user data. */
+/** Fields that are included when public requests user data. */
 export const publicUserSelect = {
   username: true,
   name: true,
