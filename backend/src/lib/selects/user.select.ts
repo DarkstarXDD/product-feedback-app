@@ -2,8 +2,8 @@ import type { Prisma } from "@/db/client"
 
 /** Fields that are included when public requests user data. */
 export const publicUserSelect = {
-  username: true,
   name: true,
+  username: true,
 } as const satisfies Prisma.UserSelect
 
 export type PublicUserResponse = Prisma.UserGetPayload<{
@@ -12,14 +12,14 @@ export type PublicUserResponse = Prisma.UserGetPayload<{
 
 /** Fields that are included when an admin or own user requests user data. Excludes password and relation fields. */
 export const privateUserSelect = {
-  createdAt: true,
-  updatedAt: true,
+  id: true,
+  name: true,
   username: true,
-  _count: true,
   email: true,
   role: true,
-  name: true,
-  id: true,
+  createdAt: true,
+  updatedAt: true,
+  _count: true,
 } as const satisfies Prisma.UserSelect
 
 export type PrivateUserResponse = Prisma.UserGetPayload<{
