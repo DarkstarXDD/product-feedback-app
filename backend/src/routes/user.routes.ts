@@ -5,7 +5,6 @@ import type { AppContext } from "@/lib/types"
 import { privateUserSelect, publicUserSelect } from "@/lib/selects/user.select"
 import { withTargetAccess } from "@/middlewares/with-target-access.middleware"
 import { resolveAuthUser } from "@/middlewares/resolve-auth-user.middleware"
-import { type Pagination, jsonSuccess, jsonError } from "@/lib/utils"
 import { requireRole } from "@/middlewares/require-role.middleware"
 import { suggestionSelect } from "@/lib/selects/suggestion.select"
 import { paginationSchema } from "@/schemas/pagination.schema"
@@ -13,6 +12,8 @@ import { commentSelect } from "@/lib/selects/comment.select"
 import { getTargetUserOrThrow } from "@/lib/context-helpers"
 import { zodValidator } from "@/middlewares/zod-validator"
 import { userUpdateSchema } from "@/schemas/user.schema"
+import { jsonSuccess, jsonError } from "@/lib/utils"
+import { buildPagination } from "@/lib/pagination"
 import { prisma } from "@/db/client"
 
 const userRoutes = new Hono<AppContext>()
@@ -24,9 +25,7 @@ userRoutes.get(
   requireRole("ADMIN"),
   zodValidator("query", paginationSchema),
   async (c) => {
-    const parsedQuery = c.req.valid("query")
-
-    const { pageSize, page } = parsedQuery
+    const { pageSize, page } = c.req.valid("query")
     const skip = (page - 1) * pageSize
 
     const [totalItems, users] = await Promise.all([
@@ -38,18 +37,10 @@ userRoutes.get(
       }),
     ])
 
-    const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
-
-    const pagination: Pagination = {
-      hasNextPage: page < totalPages,
-      hasPreviousPage: page > 1,
-      totalItems,
-      totalPages,
-      pageSize,
-      page,
-    }
-
-    return jsonSuccess(c, { meta: { pagination }, data: users })
+    return jsonSuccess(c, {
+      meta: { pagination: buildPagination({ page, pageSize, totalItems }) },
+      data: users,
+    })
   }
 )
 
@@ -141,9 +132,7 @@ userRoutes.get(
   async (c) => {
     const username = c.req.param("username")
     const user = c.get("user")
-    const parsedQuery = c.req.valid("query")
-
-    const { pageSize, page } = parsedQuery
+    const { pageSize, page } = c.req.valid("query")
     const skip = (page - 1) * pageSize
 
     const [totalItems, suggestions] = await Promise.all([
@@ -168,8 +157,6 @@ userRoutes.get(
       }),
     ])
 
-    const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
-
     const data = suggestions.map((suggestion) => {
       const viewerHasUpvoted =
         user && "upvotes" in suggestion ? suggestion.upvotes.length > 0 : false
@@ -181,16 +168,14 @@ userRoutes.get(
       }
     })
 
-    const pagination: Pagination = {
-      hasNextPage: page < totalPages,
-      hasPreviousPage: page > 1,
-      totalItems,
-      totalPages,
-      pageSize,
-      page,
-    }
-
-    return jsonSuccess(c, { meta: { pagination }, data }, { status: 200 })
+    return jsonSuccess(
+      c,
+      {
+        meta: { pagination: buildPagination({ page, pageSize, totalItems }) },
+        data,
+      },
+      { status: 200 }
+    )
   }
 )
 
@@ -202,9 +187,7 @@ userRoutes.get(
   async (c) => {
     const username = c.req.param("username")
     const user = c.get("user")
-    const parsedQuery = c.req.valid("query")
-
-    const { pageSize, page } = parsedQuery
+    const { pageSize, page } = c.req.valid("query")
     const skip = (page - 1) * pageSize
 
     const where = {
@@ -235,8 +218,6 @@ userRoutes.get(
       }),
     ])
 
-    const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
-
     const data = suggestions.map((suggestion) => {
       const viewerHasUpvoted =
         user && "upvotes" in suggestion ? suggestion.upvotes.length > 0 : false
@@ -248,16 +229,14 @@ userRoutes.get(
       }
     })
 
-    const pagination: Pagination = {
-      hasNextPage: page < totalPages,
-      hasPreviousPage: page > 1,
-      totalItems,
-      totalPages,
-      pageSize,
-      page,
-    }
-
-    return jsonSuccess(c, { meta: { pagination }, data }, { status: 200 })
+    return jsonSuccess(
+      c,
+      {
+        meta: { pagination: buildPagination({ page, pageSize, totalItems }) },
+        data,
+      },
+      { status: 200 }
+    )
   }
 )
 
@@ -267,36 +246,25 @@ userRoutes.get(
   zodValidator("query", paginationSchema),
   async (c) => {
     const username = c.req.param("username")
-    const parsedQuery = c.req.valid("query")
-
-    const { pageSize, page } = parsedQuery
+    const { pageSize, page } = c.req.valid("query")
     const skip = (page - 1) * pageSize
-    const where = { user: { username } } as const
 
     const [totalItems, comments] = await Promise.all([
-      prisma.comment.count({ where }),
+      prisma.comment.count({ where: { user: { username } } }),
       prisma.comment.findMany({
         select: commentSelect,
         take: pageSize,
-        where,
+        where: { user: { username } },
         skip,
       }),
     ])
 
-    const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
-
-    const pagination: Pagination = {
-      hasNextPage: page < totalPages,
-      hasPreviousPage: page > 1,
-      totalItems,
-      totalPages,
-      pageSize,
-      page,
-    }
-
     return jsonSuccess(
       c,
-      { meta: { pagination }, data: comments },
+      {
+        meta: { pagination: buildPagination({ page, pageSize, totalItems }) },
+        data: comments,
+      },
       { status: 200 }
     )
   }

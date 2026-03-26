@@ -10,20 +10,16 @@ import {
   suggestionCreateSchema,
   suggestionUpdateSchema,
 } from "@/schemas/suggestion.schema"
-import {
-  type Pagination,
-  generateSlug,
-  jsonSuccess,
-  jsonError,
-} from "@/lib/utils"
 import { resolveAuthUser } from "@/middlewares/resolve-auth-user.middleware"
 import { requireRole } from "@/middlewares/require-role.middleware"
+import { generateSlug, jsonSuccess, jsonError } from "@/lib/utils"
 import { commentCreateSchema } from "@/schemas/comment.schema"
 import { paginationSchema } from "@/schemas/pagination.schema"
 import { commentSelect } from "@/lib/selects/comment.select"
 import { upvoteSelect } from "@/lib/selects/upvote.select"
 import { zodValidator } from "@/middlewares/zod-validator"
 import { getUserOrThrow } from "@/lib/context-helpers"
+import { buildPagination } from "@/lib/pagination"
 import { Prisma } from "@/db/client"
 import { prisma } from "@/db/client"
 
@@ -36,9 +32,8 @@ suggestionRouter.get(
   zodValidator("query", paginationSchema),
   async (c) => {
     const user = c.get("user")
-    const parsedQuery = c.req.valid("query")
+    const { pageSize, page } = c.req.valid("query")
 
-    const { pageSize, page } = parsedQuery
     const skip = (page - 1) * pageSize
 
     const [totalItems, suggestions] = await Promise.all([
@@ -60,8 +55,6 @@ suggestionRouter.get(
       }),
     ])
 
-    const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
-
     const data = suggestions.map((suggestion) => {
       const viewerHasUpvoted =
         user && "upvotes" in suggestion ? suggestion.upvotes.length > 0 : false
@@ -73,16 +66,14 @@ suggestionRouter.get(
       }
     })
 
-    const pagination: Pagination = {
-      hasNextPage: page < totalPages,
-      hasPreviousPage: page > 1,
-      totalItems,
-      totalPages,
-      pageSize,
-      page,
-    }
-
-    return jsonSuccess(c, { meta: { pagination }, data }, { status: 200 })
+    return jsonSuccess(
+      c,
+      {
+        meta: { pagination: buildPagination({ page, pageSize, totalItems }) },
+        data,
+      },
+      { status: 200 }
+    )
   }
 )
 
