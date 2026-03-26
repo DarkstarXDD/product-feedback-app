@@ -1,13 +1,14 @@
 import { Hono } from "hono"
 
 import { resolveAuthUser } from "@/middlewares/resolve-auth-user.middleware"
-import { type Pagination, jsonSuccess, jsonError } from "@/lib/utils"
 import { requireRole } from "@/middlewares/require-role.middleware"
 import { commentUpdateSchema } from "@/schemas/comment.schema"
 import { paginationSchema } from "@/schemas/pagination.schema"
 import { commentSelect } from "@/lib/selects/comment.select"
 import { zodValidator } from "@/middlewares/zod-validator"
 import { getUserOrThrow } from "@/lib/context-helpers"
+import { jsonSuccess, jsonError } from "@/lib/utils"
+import { buildPagination } from "@/lib/pagination"
 import { Prisma, prisma } from "@/db/client"
 
 const commentsRouter = new Hono()
@@ -19,9 +20,7 @@ commentsRouter.get(
   requireRole("ADMIN"),
   zodValidator("query", paginationSchema),
   async (c) => {
-    const parsedQuery = c.req.valid("query")
-
-    const { pageSize, page } = parsedQuery
+    const { pageSize, page } = c.req.valid("query")
     const skip = (page - 1) * pageSize
 
     const [totalItems, comments] = await Promise.all([
@@ -33,20 +32,12 @@ commentsRouter.get(
       }),
     ])
 
-    const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
-
-    const pagination: Pagination = {
-      hasNextPage: page < totalPages,
-      hasPreviousPage: page > 1,
-      totalItems,
-      totalPages,
-      pageSize,
-      page,
-    }
-
     return jsonSuccess(
       c,
-      { meta: { pagination }, data: comments },
+      {
+        meta: { pagination: buildPagination({ page, pageSize, totalItems }) },
+        data: comments,
+      },
       { status: 200 }
     )
   }

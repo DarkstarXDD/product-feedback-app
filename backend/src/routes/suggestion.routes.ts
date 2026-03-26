@@ -10,35 +10,30 @@ import {
   suggestionCreateSchema,
   suggestionUpdateSchema,
 } from "@/schemas/suggestion.schema"
-import {
-  type Pagination,
-  generateSlug,
-  jsonSuccess,
-  jsonError,
-} from "@/lib/utils"
 import { resolveAuthUser } from "@/middlewares/resolve-auth-user.middleware"
 import { requireRole } from "@/middlewares/require-role.middleware"
+import { generateSlug, jsonSuccess, jsonError } from "@/lib/utils"
 import { commentCreateSchema } from "@/schemas/comment.schema"
 import { paginationSchema } from "@/schemas/pagination.schema"
 import { commentSelect } from "@/lib/selects/comment.select"
 import { upvoteSelect } from "@/lib/selects/upvote.select"
 import { zodValidator } from "@/middlewares/zod-validator"
 import { getUserOrThrow } from "@/lib/context-helpers"
+import { buildPagination } from "@/lib/pagination"
 import { Prisma } from "@/db/client"
 import { prisma } from "@/db/client"
 
-const suggestionRoutes = new Hono()
+const suggestionRouter = new Hono()
 
 // ------------------------------- GET All Suggestions --------------------------------
-suggestionRoutes.get(
+suggestionRouter.get(
   "/",
   resolveAuthUser,
   zodValidator("query", paginationSchema),
   async (c) => {
     const user = c.get("user")
-    const parsedQuery = c.req.valid("query")
+    const { pageSize, page } = c.req.valid("query")
 
-    const { pageSize, page } = parsedQuery
     const skip = (page - 1) * pageSize
 
     const [totalItems, suggestions] = await Promise.all([
@@ -60,8 +55,6 @@ suggestionRoutes.get(
       }),
     ])
 
-    const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
-
     const data = suggestions.map((suggestion) => {
       const viewerHasUpvoted =
         user && "upvotes" in suggestion ? suggestion.upvotes.length > 0 : false
@@ -73,21 +66,19 @@ suggestionRoutes.get(
       }
     })
 
-    const pagination: Pagination = {
-      hasNextPage: page < totalPages,
-      hasPreviousPage: page > 1,
-      totalItems,
-      totalPages,
-      pageSize,
-      page,
-    }
-
-    return jsonSuccess(c, { meta: { pagination }, data }, { status: 200 })
+    return jsonSuccess(
+      c,
+      {
+        meta: { pagination: buildPagination({ page, pageSize, totalItems }) },
+        data,
+      },
+      { status: 200 }
+    )
   }
 )
 
 // ------------------------------- GET a Suggestion --------------------------------
-suggestionRoutes.get("/:slug", resolveAuthUser, async (c) => {
+suggestionRouter.get("/:slug", resolveAuthUser, async (c) => {
   const slug = c.req.param("slug")
   const user = c.get("user")
 
@@ -131,7 +122,7 @@ suggestionRoutes.get("/:slug", resolveAuthUser, async (c) => {
 })
 
 // ------------------------------- Create a Suggestion --------------------------------
-suggestionRoutes.post(
+suggestionRouter.post(
   "/",
   resolveAuthUser,
   requireRole("ADMIN", "USER"),
@@ -154,7 +145,7 @@ suggestionRoutes.post(
 )
 
 // ------------------------------- Update a Suggestion --------------------------------
-suggestionRoutes.patch(
+suggestionRouter.patch(
   "/:slug",
   resolveAuthUser,
   requireRole("ADMIN", "USER"),
@@ -195,7 +186,7 @@ suggestionRoutes.patch(
 )
 
 // ------------------------------- Create a Comment for a Suggestion --------------------------------
-suggestionRoutes.post(
+suggestionRouter.post(
   "/:slug/comments",
   resolveAuthUser,
   requireRole("ADMIN", "USER"),
@@ -223,7 +214,7 @@ suggestionRoutes.post(
 )
 
 // ------------------------------- Get All Comments for a Suggestion --------------------------------
-suggestionRoutes.get("/:slug/comments", async (c) => {
+suggestionRouter.get("/:slug/comments", async (c) => {
   const slug = c.req.param("slug")
 
   const comments = await prisma.comment.findMany({
@@ -235,7 +226,7 @@ suggestionRoutes.get("/:slug/comments", async (c) => {
 })
 
 // ------------------------------- Create an Upvote for a Suggestion --------------------------------
-suggestionRoutes.post(
+suggestionRouter.post(
   "/:slug/upvotes",
   resolveAuthUser,
   requireRole("ADMIN", "USER"),
@@ -287,7 +278,7 @@ suggestionRoutes.post(
 )
 
 // ------------------------------- Delete an Upvote for a Suggestion --------------------------------
-suggestionRoutes.delete(
+suggestionRouter.delete(
   "/:slug/upvotes",
   resolveAuthUser,
   requireRole("ADMIN", "USER"),
@@ -322,4 +313,4 @@ suggestionRoutes.delete(
 
 // Delete suggestion is not yet implemented.
 
-export default suggestionRoutes
+export default suggestionRouter

@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest"
 
-import type { JsonSuccessBody, JsonErrorBody, Pagination } from "@/lib/utils"
+import type { JsonSuccessBody, JsonErrorBody } from "@/lib/utils"
+import type { Pagination } from "@/lib/pagination"
 
 import {
   type SuggestionWithCommentsResponse,
