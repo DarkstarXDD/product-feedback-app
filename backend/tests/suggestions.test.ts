@@ -3,12 +3,12 @@ import { describe, expect, test } from "vitest"
 import type { JsonSuccessBody, JsonErrorBody, Pagination } from "@/lib/utils"
 
 import {
-  type SuggestionListItemResponse,
+  type SuggestionWithCommentsResponse,
+  type SuggestionCreateResponse,
   type SuggestionResponse,
-  type SuggestionCreate,
-} from "@/lib/selects/suggestion.selects"
-import { type Comment } from "@/lib/selects/comments.select"
-import { type Upvote } from "@/lib/selects/upvote.selects"
+} from "@/lib/selects/suggestion.select"
+import { type CommentResponse } from "@/lib/selects/comment.select"
+import { type UpvoteResponse } from "@/lib/selects/upvote.select"
 import { prisma } from "@/db/client"
 import app from "@/app"
 
@@ -29,9 +29,7 @@ describe("GET /api/v1/suggestions", () => {
 
     const res = await app.request("/api/v1/suggestions")
 
-    const resBody = (await res.json()) as JsonSuccessBody<
-      SuggestionListItemResponse[]
-    >
+    const resBody = (await res.json()) as JsonSuccessBody<SuggestionResponse[]>
 
     expect(res.status).toBe(200)
     expect(resBody.data.some((item) => item.id === suggestion.id)).toBe(true)
@@ -46,11 +44,9 @@ describe("GET /api/v1/suggestions", () => {
     try {
       const res = await app.request("/api/v1/suggestions")
 
-      const resBody = (await res.json()) as JsonSuccessBody<
-        SuggestionListItemResponse[]
-      > & {
+      const resBody = (await res.json()) as {
         meta: { pagination: Pagination }
-      }
+      } & JsonSuccessBody<SuggestionResponse[]>
 
       expect(res.status).toBe(200)
       expect(resBody).toHaveProperty("meta.pagination")
@@ -82,7 +78,7 @@ describe("GET /api/v1/suggestions", () => {
       const res = await app.request("/api/v1/suggestions?page=2&pageSize=10")
 
       const resBody = (await res.json()) as JsonSuccessBody<
-        SuggestionListItemResponse[]
+        SuggestionResponse[]
       > & {
         meta: { pagination: Pagination }
       }
@@ -127,7 +123,8 @@ describe("GET /api/v1/suggestions/:slug", () => {
 
     const res = await app.request(`/api/v1/suggestions/${suggestion.slug}`)
 
-    const resBody = (await res.json()) as JsonSuccessBody<SuggestionResponse>
+    const resBody =
+      (await res.json()) as JsonSuccessBody<SuggestionWithCommentsResponse>
 
     expect(res.status).toBe(200)
     expect(resBody.data).toHaveProperty("id", suggestion.id)
@@ -198,7 +195,8 @@ describe("POST /api/v1/suggestions", () => {
       method: "POST",
     })
 
-    const resBody = (await res.json()) as JsonSuccessBody<SuggestionCreate>
+    const resBody =
+      (await res.json()) as JsonSuccessBody<SuggestionCreateResponse>
 
     expect(res.status).toBe(201)
     expect(resBody.data).toHaveProperty("title", payload.title)
@@ -296,7 +294,8 @@ describe("PATCH /api/v1/suggestions/:slug", () => {
       method: "PATCH",
     })
 
-    const resBody = (await res.json()) as JsonSuccessBody<SuggestionCreate>
+    const resBody =
+      (await res.json()) as JsonSuccessBody<SuggestionCreateResponse>
 
     expect(res.status).toBe(200)
     expect(resBody.data).toHaveProperty("id", suggestion.id)
@@ -327,7 +326,8 @@ describe("PATCH /api/v1/suggestions/:slug", () => {
       method: "PATCH",
     })
 
-    const resBody = (await res.json()) as JsonSuccessBody<SuggestionCreate>
+    const resBody =
+      (await res.json()) as JsonSuccessBody<SuggestionCreateResponse>
 
     expect(res.status).toBe(200)
     expect(resBody.data).toHaveProperty("id", suggestion.id)
@@ -486,7 +486,7 @@ describe("POST /api/v1/suggestions/:slug/comments", () => {
       }
     )
 
-    const resBody = (await res.json()) as JsonSuccessBody<Comment>
+    const resBody = (await res.json()) as JsonSuccessBody<CommentResponse>
 
     expect(res.status).toBe(201)
     expect(resBody.data).toHaveProperty("content", payload.content)
@@ -547,7 +547,7 @@ describe("GET /api/v1/suggestions/:slug/comments", () => {
       `/api/v1/suggestions/${suggestion.slug}/comments`
     )
 
-    const resBody = (await res.json()) as JsonSuccessBody<Comment[]>
+    const resBody = (await res.json()) as JsonSuccessBody<CommentResponse[]>
 
     expect(res.status).toBe(200)
     expect(resBody.data.some((item) => item.id === comment.id)).toBe(true)
@@ -595,7 +595,7 @@ describe("POST /api/v1/suggestions/:slug/upvotes", () => {
       }
     )
 
-    const resBody = (await res.json()) as JsonSuccessBody<Upvote>
+    const resBody = (await res.json()) as JsonSuccessBody<UpvoteResponse>
 
     expect(res.status).toBe(201)
     expect(resBody.data).toHaveProperty("userId", user.id)

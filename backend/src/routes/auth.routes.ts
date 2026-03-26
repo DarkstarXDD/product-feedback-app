@@ -15,7 +15,7 @@ import {
   createJWT,
 } from "@/lib/session"
 import { jsonSuccessSchema, jsonErrorSchema } from "@/schemas/shared.schema"
-import { privateUserSelect } from "@/lib/selects/user.selects"
+import { privateUserSelect } from "@/lib/selects/user.select"
 import { zodValidator } from "@/middlewares/zod-validator"
 import { jsonSuccess, jsonError } from "@/lib/utils"
 import { prisma } from "@/db/client"

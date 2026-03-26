@@ -1,6 +1,6 @@
 import { Hono } from "hono"
 
-import { statusSelect } from "@/lib/selects/status.selects"
+import { statusSelect } from "@/lib/selects/status.select"
 import { jsonSuccess } from "@/lib/utils"
 import { prisma } from "@/db/client"
 

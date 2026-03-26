@@ -1,10 +1,11 @@
 import { Hono } from "hono"
 
 import {
+  suggestionWithCommentsSelect,
   suggestionCreateSelect,
-  suggestionListSelect,
+  suggestionUpdateSelect,
   suggestionSelect,
-} from "@/lib/selects/suggestion.selects"
+} from "@/lib/selects/suggestion.select"
 import {
   suggestionCreateSchema,
   suggestionUpdateSchema,
@@ -19,8 +20,8 @@ import { resolveAuthUser } from "@/middlewares/resolve-auth-user.middleware"
 import { requireRole } from "@/middlewares/require-role.middleware"
 import { commentCreateSchema } from "@/schemas/comment.schema"
 import { paginationSchema } from "@/schemas/pagination.schema"
-import { commentSelect } from "@/lib/selects/comments.select"
-import { upvoteSelect } from "@/lib/selects/upvote.selects"
+import { commentSelect } from "@/lib/selects/comment.select"
+import { upvoteSelect } from "@/lib/selects/upvote.select"
 import { zodValidator } from "@/middlewares/zod-validator"
 import { getUserOrThrow } from "@/lib/context-helpers"
 import { Prisma } from "@/db/client"
@@ -44,7 +45,7 @@ suggestionRoutes.get(
       prisma.suggestion.count(),
       prisma.suggestion.findMany({
         select: {
-          ...suggestionListSelect,
+          ...suggestionSelect,
           ...(user
             ? {
                 upvotes: {
@@ -92,7 +93,7 @@ suggestionRoutes.get("/:slug", resolveAuthUser, async (c) => {
 
   const suggestion = await prisma.suggestion.findUnique({
     select: {
-      ...suggestionSelect,
+      ...suggestionWithCommentsSelect,
       ...(user
         ? {
             upvotes: {
@@ -167,7 +168,7 @@ suggestionRoutes.patch(
 
     try {
       const suggestion = await prisma.suggestion.update({
-        select: suggestionCreateSelect,
+        select: suggestionUpdateSelect,
         data: { ...parsedData },
         where,
       })

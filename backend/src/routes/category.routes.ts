@@ -1,6 +1,6 @@
 import { Hono } from "hono"
 
-import { categorySelect } from "@/lib/selects/category.selects"
+import { categorySelect } from "@/lib/selects/category.select"
 import { jsonSuccess } from "@/lib/utils"
 import { prisma } from "@/db/client"
 

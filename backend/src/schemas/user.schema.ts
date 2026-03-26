@@ -1,6 +1,6 @@
 import * as z from "zod"
 
-import type { PrivateUserResponse } from "@/lib/selects/user.selects"
+import type { PrivateUserResponse } from "@/lib/selects/user.select"
 
 /** Base schema for user. */
 export const userSchema = z.object({

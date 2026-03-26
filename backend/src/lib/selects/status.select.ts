@@ -1,13 +1,12 @@
 import type { Prisma } from "@/db/client"
 
+/** Fields that are included when a Status is fetched. */
 export const statusSelect = {
-  createdAt: true,
-  updatedAt: true,
+  id: true,
   slug: true,
   name: true,
-  id: true,
 } as const satisfies Prisma.StatusSelect
 
-export type Status = Prisma.StatusGetPayload<{
+export type StatusResponse = Prisma.StatusGetPayload<{
   select: typeof statusSelect
 }>
