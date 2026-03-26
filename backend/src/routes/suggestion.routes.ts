@@ -1,6 +1,8 @@
 import { Hono } from "hono"
 
 import {
+  suggestionWithCommentsAndViewerUpvoteSelect,
+  suggestionWithViewerUpvoteSelect,
   suggestionWithCommentsSelect,
   suggestionCreateSelect,
   suggestionUpdateSelect,
@@ -10,6 +12,7 @@ import {
   suggestionCreateSchema,
   suggestionUpdateSchema,
 } from "@/schemas/suggestion.schema"
+import { mapSuggestionWithUpvoteStatus } from "@/lib/mappers/suggestion.mapper"
 import { resolveAuthUser } from "@/middlewares/resolve-auth-user.middleware"
 import { requireRole } from "@/middlewares/require-role.middleware"
 import { generateSlug, jsonSuccess, jsonError } from "@/lib/utils"
@@ -39,38 +42,19 @@ suggestionRouter.get(
     const [totalItems, suggestions] = await Promise.all([
       prisma.suggestion.count(),
       prisma.suggestion.findMany({
-        select: {
-          ...suggestionSelect,
-          ...(user
-            ? {
-                upvotes: {
-                  where: { userId: user.id },
-                  select: { id: true },
-                },
-              }
-            : {}),
-        },
         take: pageSize,
         skip,
+        select: user
+          ? suggestionWithViewerUpvoteSelect(user.id)
+          : suggestionSelect,
       }),
     ])
-
-    const data = suggestions.map((suggestion) => {
-      const viewerHasUpvoted =
-        user && "upvotes" in suggestion ? suggestion.upvotes.length > 0 : false
-      const { upvotes: _upvotes, ...suggestionData } = suggestion
-
-      return {
-        ...suggestionData,
-        viewerHasUpvoted,
-      }
-    })
 
     return jsonSuccess(
       c,
       {
         meta: { pagination: buildPagination({ page, pageSize, totalItems }) },
-        data,
+        data: suggestions.map(mapSuggestionWithUpvoteStatus),
       },
       { status: 200 }
     )
@@ -83,18 +67,10 @@ suggestionRouter.get("/:slug", resolveAuthUser, async (c) => {
   const user = c.get("user")
 
   const suggestion = await prisma.suggestion.findUnique({
-    select: {
-      ...suggestionWithCommentsSelect,
-      ...(user
-        ? {
-            upvotes: {
-              where: { userId: user.id },
-              select: { id: true },
-            },
-          }
-        : {}),
-    },
     where: { slug },
+    select: user
+      ? suggestionWithCommentsAndViewerUpvoteSelect(user.id)
+      : suggestionWithCommentsSelect,
   })
 
   if (!suggestion) {
@@ -105,17 +81,10 @@ suggestionRouter.get("/:slug", resolveAuthUser, async (c) => {
     )
   }
 
-  const viewerHasUpvoted =
-    user && "upvotes" in suggestion ? suggestion.upvotes.length > 0 : false
-  const { upvotes: _upvotes, ...suggestionData } = suggestion
-
   return jsonSuccess(
     c,
     {
-      data: {
-        ...suggestionData,
-        viewerHasUpvoted,
-      },
+      data: mapSuggestionWithUpvoteStatus(suggestion),
     },
     { status: 200 }
   )
@@ -155,13 +124,11 @@ suggestionRouter.patch(
     const slug = c.req.param("slug")
     const parsedData = c.req.valid("json")
 
-    const where = user.role === "ADMIN" ? { slug } : { userId: user.id, slug }
-
     try {
       const suggestion = await prisma.suggestion.update({
         select: suggestionUpdateSelect,
         data: { ...parsedData },
-        where,
+        where: user.role === "ADMIN" ? { slug } : { userId: user.id, slug },
       })
 
       return jsonSuccess(c, { data: suggestion })
@@ -196,7 +163,7 @@ suggestionRouter.post(
     const user = getUserOrThrow(c)
     const parsedData = c.req.valid("json")
 
-    /** Can't use connect if at least one foreign key is used directly.
+    /** Can't use  foreign key approach if one connect is used.
      *  So both suggestion and user needs to use the `connect` appraoch.
      *  https://www.prisma.io/docs/orm/reference/prisma-client-reference#examples-28
      */
