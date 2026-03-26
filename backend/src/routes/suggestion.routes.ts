@@ -124,13 +124,11 @@ suggestionRouter.patch(
     const slug = c.req.param("slug")
     const parsedData = c.req.valid("json")
 
-    const where = user.role === "ADMIN" ? { slug } : { userId: user.id, slug }
-
     try {
       const suggestion = await prisma.suggestion.update({
         select: suggestionUpdateSelect,
         data: { ...parsedData },
-        where,
+        where: user.role === "ADMIN" ? { slug } : { userId: user.id, slug },
       })
 
       return jsonSuccess(c, { data: suggestion })
@@ -165,7 +163,7 @@ suggestionRouter.post(
     const user = getUserOrThrow(c)
     const parsedData = c.req.valid("json")
 
-    /** Can't use connect if at least one foreign key is used directly.
+    /** Can't use  foreign key approach if one connect is used.
      *  So both suggestion and user needs to use the `connect` appraoch.
      *  https://www.prisma.io/docs/orm/reference/prisma-client-reference#examples-28
      */
