@@ -15,9 +15,9 @@ import {
   createJWT,
 } from "@/lib/session"
 import { jsonSuccessSchema, jsonErrorSchema } from "@/schemas/shared.schema"
+import { unauthorized, jsonSuccess, conflict } from "@/lib/responses"
 import { privateUserSelect } from "@/lib/selects/user.select"
 import { zodValidator } from "@/middlewares/zod-validator"
-import { jsonSuccess, jsonError } from "@/lib/responses"
 import { prisma } from "@/db/client"
 
 const authRouter = new Hono()
@@ -74,7 +74,6 @@ authRouter.post(
 
     if (existingUser) {
       const fieldErrors: Record<string, string[]> = {}
-
       if (existingUser.email === email) {
         fieldErrors.email = ["Email already exists"]
       } else if (existingUser.username === username) {
@@ -82,16 +81,7 @@ authRouter.post(
           "Username taken. Please pick a different username",
         ]
       }
-
-      return jsonError(
-        c,
-        {
-          message: "Unique constraint violation",
-          errors: { fieldErrors },
-          code: "CONFLICT",
-        },
-        { status: 409 }
-      )
+      return conflict(c, "Unique constraint violation", { fieldErrors })
     }
 
     const user = await prisma.user.create({
@@ -152,30 +142,16 @@ authRouter.post(
     })
 
     if (!user)
-      return jsonError(
-        c,
-        {
-          errors: {
-            formErrors: ["Invalid email or password"],
-          },
-          message: "Invalid email or password",
-          code: "UNAUTHORIZED",
-        },
-        { status: 401 }
-      )
+      return unauthorized(c, "Invalid email or password", {
+        formErrors: ["Invalid email or password"],
+      })
 
     const isPasswordValid = await verifyPassword(password, user.password)
 
     if (!isPasswordValid)
-      return jsonError(
-        c,
-        {
-          errors: { formErrors: ["Invalid email or password"] },
-          message: "Invalid email or password",
-          code: "UNAUTHORIZED",
-        },
-        { status: 401 }
-      )
+      return unauthorized(c, "Invalid email or password", {
+        formErrors: ["Invalid email or password"],
+      })
 
     const token = await createJWT(user.id)
     setAuthCookie(c, token)

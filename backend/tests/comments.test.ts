@@ -194,10 +194,10 @@ describe("PATCH /api/v1/comments/:id", () => {
 
     const resBody = (await res.json()) as JsonErrorBody
 
-    expect(res.status).toBe(404)
+    expect(res.status).toBe(403)
     expect(resBody).toMatchObject({
       message: "Not allowed or forbidden",
-      code: "NOT_FOUND",
+      code: "FORBIDDEN",
     })
 
     await userCleanup()
@@ -257,6 +257,27 @@ describe("PATCH /api/v1/comments/:id", () => {
     expect(resBody.data).toHaveProperty("content", updatedComment)
 
     await commentScenarioCleanup()
+    await userCleanup()
+  })
+
+  test("returns 404 when comment id does not exist", async () => {
+    const { userCleanup, token } = await createUserSession("USER")
+    const id = "does-not-exist"
+
+    const res = await app.request(`/api/v1/comments/${id}`, {
+      body: JSON.stringify({ content: "Trying to update a missing comment" }),
+      headers: { "content-type": "application/json", cookie: `token=${token}` },
+      method: "PATCH",
+    })
+
+    const resBody = (await res.json()) as JsonErrorBody
+
+    expect(res.status).toBe(404)
+    expect(resBody).toMatchObject({
+      message: "Comment not found",
+      code: "NOT_FOUND",
+    })
+
     await userCleanup()
   })
 

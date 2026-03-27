@@ -59,3 +59,39 @@ export function jsonError(
     message: body.message,
   })
 }
+
+/** A thin wrapper for `notFound` errors. Returns 404. Wraps `jsonError`. */
+export function notFound(c: Context, message = "Not found"): never {
+  return jsonError(c, { message, code: "NOT_FOUND" }, { status: 404 })
+}
+
+/** A thin wrapper for `unauthorized` errors. Returns 401. Wraps `jsonError`. */
+export function unauthorized(
+  c: Context,
+  message = "Unauthorized",
+  errors?: JsonErrorBody["errors"]
+): never {
+  return jsonError(c, { message, code: "UNAUTHORIZED", errors }, { status: 401 })
+}
+
+/** A thin wrapper for `forbidden` errors. Returns 403. Wraps `jsonError`. */
+export function forbidden(c: Context, message = "Forbidden"): never {
+  return jsonError(c, { message, code: "FORBIDDEN" }, { status: 403 })
+}
+
+/** A thin wrapper for `conflict` errors. Returns 409. Wraps `jsonError`. */
+export function conflict(
+  c: Context,
+  message = "Conflict",
+  errors?: JsonErrorBody["errors"]
+): never {
+  return jsonError(c, { message, code: "CONFLICT", errors }, { status: 409 })
+}
+
+/** A thin wrapper for `internalError` errors. Returns 500. Wraps `jsonError`. */
+export function internalError(
+  c: Context,
+  message = "Internal server error"
+): never {
+  return jsonError(c, { message, code: "INTERNAL_ERROR" }, { status: 500 })
+}

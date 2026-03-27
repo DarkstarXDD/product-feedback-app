@@ -13,6 +13,7 @@ import {
   suggestionUpdateSchema,
 } from "@/schemas/suggestion.schema"
 import { mapSuggestionWithUpvoteStatus } from "@/lib/mappers/suggestion.mapper"
+import { jsonSuccess, forbidden, conflict, notFound } from "@/lib/responses"
 import { resolveAuthUser } from "@/middlewares/resolve-auth-user.middleware"
 import { requireRole } from "@/middlewares/require-role.middleware"
 import { commentCreateSchema } from "@/schemas/comment.schema"
@@ -20,7 +21,6 @@ import { paginationSchema } from "@/schemas/pagination.schema"
 import { commentSelect } from "@/lib/selects/comment.select"
 import { upvoteSelect } from "@/lib/selects/upvote.select"
 import { zodValidator } from "@/middlewares/zod-validator"
-import { jsonSuccess, jsonError } from "@/lib/responses"
 import { getUserOrThrow } from "@/lib/context-helpers"
 import { buildPagination } from "@/lib/pagination"
 import { generateSlug } from "@/lib/utils"
@@ -75,11 +75,7 @@ suggestionRouter.get("/:slug", resolveAuthUser, async (c) => {
   })
 
   if (!suggestion) {
-    return jsonError(
-      c,
-      { message: "Suggestion not found", code: "NOT_FOUND" },
-      { status: 404 }
-    )
+    return notFound(c, "Suggestion not found")
   }
 
   return jsonSuccess(
@@ -125,29 +121,29 @@ suggestionRouter.patch(
     const slug = c.req.param("slug")
     const parsedData = c.req.valid("json")
 
+    const existing = await prisma.suggestion.findUnique({
+      select: { id: true },
+      where: { slug },
+    })
+
+    if (!existing) {
+      return notFound(c, "Suggestion not found")
+    }
+
     try {
       const suggestion = await prisma.suggestion.update({
         select: suggestionUpdateSelect,
         data: { ...parsedData },
         where: user.role === "ADMIN" ? { slug } : { userId: user.id, slug },
       })
-
       return jsonSuccess(c, { data: suggestion })
     } catch (e) {
       if (
         e instanceof Prisma.PrismaClientKnownRequestError &&
-        e.code === "P2025" // https://www.prisma.io/docs/orm/reference/error-reference#p2025
+        e.code === "P2025"
       ) {
-        return jsonError(
-          c,
-          {
-            message: "Not found or forbidden",
-            code: "NOT_FOUND",
-          },
-          { status: 404 }
-        )
+        return forbidden(c, "Not allowed or forbidden")
       }
-
       throw e
     }
   }
@@ -208,11 +204,7 @@ suggestionRouter.post(
     })
 
     if (!suggestion) {
-      return jsonError(
-        c,
-        { message: "Suggestion not found", code: "NOT_FOUND" },
-        { status: 404 }
-      )
+      return notFound(c, "Suggestion not found")
     }
 
     try {
@@ -230,14 +222,7 @@ suggestionRouter.post(
         e instanceof Prisma.PrismaClientKnownRequestError &&
         e.code === "P2002"
       ) {
-        return jsonError(
-          c,
-          {
-            message: "Suggestion already upvoted",
-            code: "CONFLICT",
-          },
-          { status: 409 }
-        )
+        return conflict(c, "Suggestion already upvoted")
       }
 
       throw e
@@ -268,11 +253,7 @@ suggestionRouter.delete(
     })
 
     if (deleted.count === 0) {
-      return jsonError(
-        c,
-        { message: "Upvote not found", code: "NOT_FOUND" },
-        { status: 404 }
-      )
+      return notFound(c, "Upvote not found")
     }
 
     return c.body(null, 204)

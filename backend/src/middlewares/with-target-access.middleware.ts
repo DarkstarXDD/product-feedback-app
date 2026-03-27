@@ -2,7 +2,12 @@ import type { MiddlewareHandler } from "hono"
 
 import type { AppContext } from "@/lib/types"
 
-import { jsonError } from "@/lib/responses"
+import {
+  internalError,
+  unauthorized,
+  forbidden,
+  notFound,
+} from "@/lib/responses"
 import { prisma } from "@/db/client"
 
 type WithTargetAccessOptions = {
@@ -22,11 +27,9 @@ export function withTargetAccess(
     const username = c.req.param("username")
 
     if (!username) {
-      return jsonError(
-        c,
-        { message: "Invalid route configuration", code: "INTERNAL_ERROR" },
-        { status: 500 }
-      )
+      // Should never happen in production.
+      // If it does, this middleware was mounted on a route that does not have a :username param.
+      return internalError(c)
     }
 
     const targetUser = await prisma.user.findUnique({
@@ -35,11 +38,7 @@ export function withTargetAccess(
     })
 
     if (!targetUser) {
-      return jsonError(
-        c,
-        { message: "User not found", code: "NOT_FOUND" },
-        { status: 404 }
-      )
+      return notFound(c, "User not found")
     }
 
     const user = c.get("user")
@@ -51,19 +50,11 @@ export function withTargetAccess(
 
     if (options.requireSelfOrAdmin) {
       if (!user) {
-        return jsonError(
-          c,
-          { message: "Unauthorized", code: "UNAUTHORIZED" },
-          { status: 401 }
-        )
+        return unauthorized(c)
       }
 
       if (!isAdmin && !isSelf) {
-        return jsonError(
-          c,
-          { message: "Forbidden", code: "FORBIDDEN" },
-          { status: 403 }
-        )
+        return forbidden(c)
       }
     }
 

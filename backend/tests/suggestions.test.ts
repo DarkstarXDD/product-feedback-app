@@ -339,7 +339,7 @@ describe("PATCH /api/v1/suggestions/:slug", () => {
     await userCleanup()
   })
 
-  test("returns 404 when a user tries to update another user's suggestion", async () => {
+  test("returns 403 when a user tries to update another user's suggestion", async () => {
     const { userCleanup, token } = await createUserSession("USER")
     const { suggestionScenarioCleanup, suggestion } =
       await createSuggestionScenario()
@@ -361,10 +361,10 @@ describe("PATCH /api/v1/suggestions/:slug", () => {
 
     const resBody = (await res.json()) as JsonErrorBody
 
-    expect(res.status).toBe(404)
+    expect(res.status).toBe(403)
     expect(resBody).toMatchObject({
-      message: "Not found or forbidden",
-      code: "NOT_FOUND",
+      message: "Not allowed or forbidden",
+      code: "FORBIDDEN",
     })
 
     await suggestionScenarioCleanup()
@@ -431,7 +431,7 @@ describe("PATCH /api/v1/suggestions/:slug", () => {
 
     expect(res.status).toBe(404)
     expect(resBody).toMatchObject({
-      message: "Not found or forbidden",
+      message: "Suggestion not found",
       code: "NOT_FOUND",
     })
 

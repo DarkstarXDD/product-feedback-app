@@ -2,11 +2,11 @@ import { Hono } from "hono"
 
 import { resolveAuthUser } from "@/middlewares/resolve-auth-user.middleware"
 import { requireRole } from "@/middlewares/require-role.middleware"
+import { jsonSuccess, forbidden, notFound } from "@/lib/responses"
 import { commentUpdateSchema } from "@/schemas/comment.schema"
 import { paginationSchema } from "@/schemas/pagination.schema"
 import { commentSelect } from "@/lib/selects/comment.select"
 import { zodValidator } from "@/middlewares/zod-validator"
-import { jsonSuccess, jsonError } from "@/lib/responses"
 import { getUserOrThrow } from "@/lib/context-helpers"
 import { buildPagination } from "@/lib/pagination"
 import { Prisma, prisma } from "@/db/client"
@@ -53,11 +53,7 @@ commentsRouter.get("/:id", async (c) => {
   })
 
   if (!comment) {
-    return jsonError(
-      c,
-      { message: "Comment not found", code: "NOT_FOUND" },
-      { status: 404 }
-    )
+    return notFound(c, "Comment not found")
   }
 
   return jsonSuccess(c, { data: comment }, { status: 200 })
@@ -71,19 +67,24 @@ commentsRouter.patch(
   zodValidator("json", commentUpdateSchema),
   async (c) => {
     const commentId = c.req.param("id")
-    const user = getUserOrThrow(c)
+    const { id, role } = getUserOrThrow(c)
     const parsedData = c.req.valid("json")
 
-    const where =
-      user.role === "ADMIN"
-        ? { id: commentId }
-        : { userId: user.id, id: commentId }
+    const existing = await prisma.comment.findUnique({
+      select: { id: true },
+      where: { id: commentId },
+    })
+
+    if (!existing) {
+      return notFound(c, "Comment not found")
+    }
 
     try {
       const comment = await prisma.comment.update({
         data: { content: parsedData.content },
         select: commentSelect,
-        where,
+        where:
+          role === "ADMIN" ? { id: commentId } : { userId: id, id: commentId },
       })
 
       return jsonSuccess(c, { data: comment }, { status: 200 })
@@ -92,13 +93,8 @@ commentsRouter.patch(
         e instanceof Prisma.PrismaClientKnownRequestError &&
         e.code === "P2025"
       ) {
-        return jsonError(
-          c,
-          { message: "Not allowed or forbidden", code: "NOT_FOUND" },
-          { status: 404 }
-        )
+        return forbidden(c, "Not allowed or forbidden")
       }
-
       throw e
     }
   }

@@ -2,7 +2,7 @@ import type { Context } from "hono"
 
 import type { AppContext } from "@/lib/types"
 
-import { jsonError } from "@/lib/responses"
+import { internalError } from "@/lib/responses"
 
 /**
  * Returns the `user` set by middleware (for example `resolveAuthUser`).
@@ -13,13 +13,10 @@ export function getUserOrThrow(c: Context<AppContext>) {
   const user = c.get("user")
 
   if (!user) {
-    return jsonError(
-      c,
-      { message: "Internal server error", code: "INTERNAL_ERROR" },
-      { status: 500 }
-    )
+    // Should never happen in production.
+    // If it does, `resolveAuthUser` middleware was not run before this route handler.
+    return internalError(c)
   }
-
   return user
 }
 
@@ -31,12 +28,9 @@ export function getTargetUserOrThrow(c: Context<AppContext>) {
   const targetUser = c.get("targetUser")
 
   if (!targetUser) {
-    return jsonError(
-      c,
-      { message: "Internal server error", code: "INTERNAL_ERROR" },
-      { status: 500 }
-    )
+    // Should never happen in production.
+    // If it does, `withTargetAccess` middleware was not run before this route handler.
+    return internalError(c)
   }
-
   return targetUser
 }
