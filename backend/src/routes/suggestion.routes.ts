@@ -121,20 +121,28 @@ suggestionRouter.patch(
     const slug = c.req.param("slug")
     const parsedData = c.req.valid("json")
 
+    const existing = await prisma.suggestion.findUnique({
+      select: { id: true },
+      where: { slug },
+    })
+
+    if (!existing) {
+      return notFound(c, "Suggestion not found")
+    }
+
     try {
       const suggestion = await prisma.suggestion.update({
         select: suggestionUpdateSelect,
         data: { ...parsedData },
         where: user.role === "ADMIN" ? { slug } : { userId: user.id, slug },
       })
-
       return jsonSuccess(c, { data: suggestion })
     } catch (e) {
       if (
         e instanceof Prisma.PrismaClientKnownRequestError &&
-        e.code === "P2025" // https://www.prisma.io/docs/orm/reference/error-reference#p2025
+        e.code === "P2025"
       ) {
-        return forbidden(c, "Not found or forbidden")
+        return forbidden(c, "Not allowed or forbidden")
       }
       throw e
     }

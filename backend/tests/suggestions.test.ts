@@ -363,7 +363,7 @@ describe("PATCH /api/v1/suggestions/:slug", () => {
 
     expect(res.status).toBe(403)
     expect(resBody).toMatchObject({
-      message: "Not found or forbidden",
+      message: "Not allowed or forbidden",
       code: "FORBIDDEN",
     })
 
@@ -431,7 +431,7 @@ describe("PATCH /api/v1/suggestions/:slug", () => {
 
     expect(res.status).toBe(404)
     expect(resBody).toMatchObject({
-      message: "Not found or forbidden",
+      message: "Suggestion not found",
       code: "NOT_FOUND",
     })
 
