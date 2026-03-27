@@ -2,7 +2,7 @@ import type { MiddlewareHandler } from "hono"
 
 import type { AppContext } from "@/lib/types"
 
-import { jsonError, notFound } from "@/lib/responses"
+import { unauthorized, jsonError, forbidden, notFound } from "@/lib/responses"
 import { prisma } from "@/db/client"
 
 type WithTargetAccessOptions = {
@@ -47,19 +47,11 @@ export function withTargetAccess(
 
     if (options.requireSelfOrAdmin) {
       if (!user) {
-        return jsonError(
-          c,
-          { message: "Unauthorized", code: "UNAUTHORIZED" },
-          { status: 401 }
-        )
+        return unauthorized(c)
       }
 
       if (!isAdmin && !isSelf) {
-        return jsonError(
-          c,
-          { message: "Forbidden", code: "FORBIDDEN" },
-          { status: 403 }
-        )
+        return forbidden(c)
       }
     }
 

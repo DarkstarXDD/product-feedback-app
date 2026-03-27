@@ -2,7 +2,7 @@ import type { MiddlewareHandler } from "hono"
 
 import type { AppContext, Role } from "@/lib/types"
 
-import { jsonError } from "@/lib/responses"
+import { unauthorized, forbidden } from "@/lib/responses"
 
 /**
  * Requires an authenticated user and enforces that the user's role is one of the allowed roles.
@@ -19,19 +19,11 @@ export function requireRole(
     const user = c.get("user")
 
     if (!user) {
-      return jsonError(
-        c,
-        { message: "Unauthorized", code: "UNAUTHORIZED" },
-        { status: 401 }
-      )
+      return unauthorized(c)
     }
 
     if (!allowedRoles.includes(user.role)) {
-      return jsonError(
-        c,
-        { message: "Forbidden", code: "FORBIDDEN" },
-        { status: 403 }
-      )
+      return forbidden(c)
     }
 
     await next()
