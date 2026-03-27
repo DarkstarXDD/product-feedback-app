@@ -59,3 +59,8 @@ export function jsonError(
     message: body.message,
   })
 }
+
+/** A thin wrapper for `notFound` errors. Wraps `jsonError`. */
+export function notFound(c: Context, message = "Not found"): never {
+  return jsonError(c, { message, code: "NOT_FOUND" }, { status: 404 })
+}
