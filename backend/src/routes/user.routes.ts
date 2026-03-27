@@ -7,12 +7,12 @@ import { withTargetAccess } from "@/middlewares/with-target-access.middleware"
 import { resolveAuthUser } from "@/middlewares/resolve-auth-user.middleware"
 import { requireRole } from "@/middlewares/require-role.middleware"
 import { suggestionSelect } from "@/lib/selects/suggestion.select"
+import { jsonSuccess, jsonError, notFound } from "@/lib/responses"
 import { paginationSchema } from "@/schemas/pagination.schema"
 import { commentSelect } from "@/lib/selects/comment.select"
 import { getTargetUserOrThrow } from "@/lib/context-helpers"
 import { zodValidator } from "@/middlewares/zod-validator"
 import { userUpdateSchema } from "@/schemas/user.schema"
-import { jsonSuccess, jsonError } from "@/lib/responses"
 import { buildPagination } from "@/lib/pagination"
 import { prisma } from "@/db/client"
 
@@ -60,11 +60,7 @@ userRoutes.get("/:username", resolveAuthUser, withTargetAccess(), async (c) => {
   })
 
   if (!user) {
-    return jsonError(
-      c,
-      { message: "User not found", code: "NOT_FOUND" },
-      { status: 404 }
-    )
+    return notFound(c, "User not found")
   }
 
   return jsonSuccess(c, { data: user })

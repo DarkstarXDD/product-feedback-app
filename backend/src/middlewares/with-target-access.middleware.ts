@@ -2,7 +2,7 @@ import type { MiddlewareHandler } from "hono"
 
 import type { AppContext } from "@/lib/types"
 
-import { jsonError } from "@/lib/responses"
+import { jsonError, notFound } from "@/lib/responses"
 import { prisma } from "@/db/client"
 
 type WithTargetAccessOptions = {
@@ -35,11 +35,7 @@ export function withTargetAccess(
     })
 
     if (!targetUser) {
-      return jsonError(
-        c,
-        { message: "User not found", code: "NOT_FOUND" },
-        { status: 404 }
-      )
+      return notFound(c, "User not found")
     }
 
     const user = c.get("user")

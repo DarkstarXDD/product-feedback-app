@@ -194,10 +194,10 @@ describe("PATCH /api/v1/comments/:id", () => {
 
     const resBody = (await res.json()) as JsonErrorBody
 
-    expect(res.status).toBe(404)
+    expect(res.status).toBe(403)
     expect(resBody).toMatchObject({
       message: "Not allowed or forbidden",
-      code: "NOT_FOUND",
+      code: "FORBIDDEN",
     })
 
     await userCleanup()
