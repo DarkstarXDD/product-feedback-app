@@ -8,6 +8,8 @@ node_modules
 backend/src/db/generated/*
 
 todo.md
+/.claude
+/memories
 
 # output
 out
