@@ -60,12 +60,17 @@ export function jsonError(
   })
 }
 
-/** A thin wrapper for `notFound` errors. Wraps `jsonError`. */
+/** A thin wrapper for `notFound` errors. Returns 404. Wraps `jsonError`. */
 export function notFound(c: Context, message = "Not found"): never {
   return jsonError(c, { message, code: "NOT_FOUND" }, { status: 404 })
 }
 
-/** A thin wrapper for `unauthorized` errors. Wraps `jsonError`. */
+/** A thin wrapper for `unauthorized` errors. Returns 401. Wraps `jsonError`. */
 export function unauthorized(c: Context, message = "Unauthorized"): never {
   return jsonError(c, { message, code: "UNAUTHORIZED" }, { status: 401 })
+}
+
+/** A thin wrapper for `forbidden` errors. Returns 403. Wraps `jsonError`. */
+export function forbidden(c: Context, message = "Forbidden"): never {
+  return jsonError(c, { message, code: "FORBIDDEN" }, { status: 403 })
 }
