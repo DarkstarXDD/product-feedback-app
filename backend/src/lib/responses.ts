@@ -74,3 +74,11 @@ export function unauthorized(c: Context, message = "Unauthorized"): never {
 export function forbidden(c: Context, message = "Forbidden"): never {
   return jsonError(c, { message, code: "FORBIDDEN" }, { status: 403 })
 }
+
+/** A thin wrapper for `internalError` errors. Returns 500. Wraps `jsonError`. */
+export function internalError(
+  c: Context,
+  message = "Internal server error"
+): never {
+  return jsonError(c, { message, code: "INTERNAL_ERROR" }, { status: 500 })
+}
