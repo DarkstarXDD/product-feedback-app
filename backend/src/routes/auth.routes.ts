@@ -15,7 +15,7 @@ import {
   createJWT,
 } from "@/lib/session"
 import { jsonSuccessSchema, jsonErrorSchema } from "@/schemas/shared.schema"
-import { jsonSuccess, jsonError, conflict } from "@/lib/responses"
+import { unauthorized, jsonSuccess, conflict } from "@/lib/responses"
 import { privateUserSelect } from "@/lib/selects/user.select"
 import { zodValidator } from "@/middlewares/zod-validator"
 import { prisma } from "@/db/client"
@@ -142,30 +142,16 @@ authRouter.post(
     })
 
     if (!user)
-      return jsonError(
-        c,
-        {
-          errors: {
-            formErrors: ["Invalid email or password"],
-          },
-          message: "Invalid email or password",
-          code: "UNAUTHORIZED",
-        },
-        { status: 401 }
-      )
+      return unauthorized(c, "Invalid email or password", {
+        formErrors: ["Invalid email or password"],
+      })
 
     const isPasswordValid = await verifyPassword(password, user.password)
 
     if (!isPasswordValid)
-      return jsonError(
-        c,
-        {
-          errors: { formErrors: ["Invalid email or password"] },
-          message: "Invalid email or password",
-          code: "UNAUTHORIZED",
-        },
-        { status: 401 }
-      )
+      return unauthorized(c, "Invalid email or password", {
+        formErrors: ["Invalid email or password"],
+      })
 
     const token = await createJWT(user.id)
     setAuthCookie(c, token)

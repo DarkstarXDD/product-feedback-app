@@ -66,8 +66,12 @@ export function notFound(c: Context, message = "Not found"): never {
 }
 
 /** A thin wrapper for `unauthorized` errors. Returns 401. Wraps `jsonError`. */
-export function unauthorized(c: Context, message = "Unauthorized"): never {
-  return jsonError(c, { message, code: "UNAUTHORIZED" }, { status: 401 })
+export function unauthorized(
+  c: Context,
+  message = "Unauthorized",
+  errors?: JsonErrorBody["errors"]
+): never {
+  return jsonError(c, { message, code: "UNAUTHORIZED", errors }, { status: 401 })
 }
 
 /** A thin wrapper for `forbidden` errors. Returns 403. Wraps `jsonError`. */
