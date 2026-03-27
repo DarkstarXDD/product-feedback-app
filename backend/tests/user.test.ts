@@ -5,8 +5,8 @@ import type {
   PublicUserResponse,
 } from "@/lib/selects/user.select"
 import type { SuggestionResponse } from "@/lib/selects/suggestion.select"
+import type { JsonSuccessBody, JsonErrorBody } from "@/lib/responses"
 import type { CommentResponse } from "@/lib/selects/comment.select"
-import type { JsonSuccessBody, JsonErrorBody } from "@/lib/utils"
 import type { Pagination } from "@/lib/pagination"
 
 import app from "@/app"

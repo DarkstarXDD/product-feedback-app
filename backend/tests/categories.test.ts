@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest"
 
-import type { JsonSuccessBody } from "@/lib/utils"
+import type { JsonSuccessBody } from "@/lib/responses"
 
 import { type CategoryResponse } from "@/lib/selects/category.select"
 import app from "@/app"

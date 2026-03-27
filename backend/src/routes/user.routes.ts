@@ -12,7 +12,7 @@ import { commentSelect } from "@/lib/selects/comment.select"
 import { getTargetUserOrThrow } from "@/lib/context-helpers"
 import { zodValidator } from "@/middlewares/zod-validator"
 import { userUpdateSchema } from "@/schemas/user.schema"
-import { jsonSuccess, jsonError } from "@/lib/utils"
+import { jsonSuccess, jsonError } from "@/lib/responses"
 import { buildPagination } from "@/lib/pagination"
 import { prisma } from "@/db/client"
 

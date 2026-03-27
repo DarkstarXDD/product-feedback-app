@@ -2,7 +2,7 @@ import type { MiddlewareHandler } from "hono"
 
 import type { AppContext } from "@/lib/types"
 
-import { jsonError } from "@/lib/utils"
+import { jsonError } from "@/lib/responses"
 
 /** Requires an authenticated user to be present in request context. */
 export const requireAuth: MiddlewareHandler<AppContext> = async (c, next) => {

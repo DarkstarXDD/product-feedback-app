@@ -2,7 +2,7 @@ import type { MiddlewareHandler } from "hono"
 
 import type { AppContext, Role } from "@/lib/types"
 
-import { jsonError } from "@/lib/utils"
+import { jsonError } from "@/lib/responses"
 
 /**
  * Requires an authenticated user and enforces that the user's role is one of the allowed roles.

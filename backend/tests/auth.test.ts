@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest"
 
-import type { JsonSuccessBody, JsonErrorBody } from "@/lib/utils"
+import type { JsonSuccessBody, JsonErrorBody } from "@/lib/responses"
 
 import { prisma } from "@/db/client"
 import app from "@/app"

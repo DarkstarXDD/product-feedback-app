@@ -1,7 +1,7 @@
 import { Hono } from "hono"
 
 import { categorySelect } from "@/lib/selects/category.select"
-import { jsonSuccess } from "@/lib/utils"
+import { jsonSuccess } from "@/lib/responses"
 import { prisma } from "@/db/client"
 
 const categoryRoutes = new Hono()

@@ -3,7 +3,8 @@ import type { ValidationTargets } from "hono"
 import { validator } from "hono-openapi"
 import * as z from "zod"
 
-import { formatZodErrors, jsonError } from "@/lib/utils"
+import { formatZodErrors } from "@/lib/utils"
+import { jsonError } from "@/lib/responses"
 
 /** An abstraction on top of 'validator` from `hono-openapi'.
  * Accepts the `target` and a `schema`.
