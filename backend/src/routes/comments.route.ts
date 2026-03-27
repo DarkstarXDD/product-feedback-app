@@ -67,19 +67,24 @@ commentsRouter.patch(
   zodValidator("json", commentUpdateSchema),
   async (c) => {
     const commentId = c.req.param("id")
-    const user = getUserOrThrow(c)
+    const { id, role } = getUserOrThrow(c)
     const parsedData = c.req.valid("json")
 
-    const where =
-      user.role === "ADMIN"
-        ? { id: commentId }
-        : { userId: user.id, id: commentId }
+    const existing = await prisma.comment.findUnique({
+      select: { id: true },
+      where: { id: commentId },
+    })
+
+    if (!existing) {
+      return notFound(c, "Comment not found")
+    }
 
     try {
       const comment = await prisma.comment.update({
         data: { content: parsedData.content },
         select: commentSelect,
-        where,
+        where:
+          role === "ADMIN" ? { id: commentId } : { userId: id, id: commentId },
       })
 
       return jsonSuccess(c, { data: comment }, { status: 200 })
@@ -90,7 +95,6 @@ commentsRouter.patch(
       ) {
         return forbidden(c, "Not allowed or forbidden")
       }
-
       throw e
     }
   }

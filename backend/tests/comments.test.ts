@@ -260,6 +260,27 @@ describe("PATCH /api/v1/comments/:id", () => {
     await userCleanup()
   })
 
+  test("returns 404 when comment id does not exist", async () => {
+    const { userCleanup, token } = await createUserSession("USER")
+    const id = "does-not-exist"
+
+    const res = await app.request(`/api/v1/comments/${id}`, {
+      body: JSON.stringify({ content: "Trying to update a missing comment" }),
+      headers: { "content-type": "application/json", cookie: `token=${token}` },
+      method: "PATCH",
+    })
+
+    const resBody = (await res.json()) as JsonErrorBody
+
+    expect(res.status).toBe(404)
+    expect(resBody).toMatchObject({
+      message: "Comment not found",
+      code: "NOT_FOUND",
+    })
+
+    await userCleanup()
+  })
+
   /** Comment cannot be empty */
   test("returns 400 and field errors when validation fails", async () => {
     const { userCleanup, token, user } = await createUserSession("USER")
