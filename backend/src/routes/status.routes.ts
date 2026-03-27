@@ -1,7 +1,7 @@
 import { Hono } from "hono"
 
 import { statusSelect } from "@/lib/selects/status.select"
-import { jsonSuccess } from "@/lib/utils"
+import { jsonSuccess } from "@/lib/responses"
 import { prisma } from "@/db/client"
 
 const statusRoutes = new Hono()

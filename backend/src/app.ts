@@ -14,7 +14,7 @@ import commentsRouter from "@/routes/comments.route"
 import statusRoutes from "@/routes/status.routes"
 import authRouter from "@/routes/auth.routes"
 import userRoutes from "@/routes/user.routes"
-import { jsonError } from "@/lib/utils"
+import { jsonError } from "@/lib/responses"
 import env from "@/lib/env"
 
 // Turn off Pino pretty when in production

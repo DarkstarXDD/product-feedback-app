@@ -1,6 +1,6 @@
 import * as z from "zod"
 
-import type { JsonSuccessBody, JsonErrorBody } from "@/lib/utils"
+import type { JsonSuccessBody, JsonErrorBody } from "@/lib/responses"
 
 import { ERROR_CODES } from "@/lib/consts"
 

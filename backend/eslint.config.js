@@ -19,6 +19,7 @@ export default defineConfig(
       ],
       "perfectionist/sort-modules": "off",
       "perfectionist/sort-objects": "off",
+      "perfectionist/sort-interfaces": "off",
     },
 
     languageOptions: {

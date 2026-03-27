@@ -2,7 +2,7 @@ import type { MiddlewareHandler } from "hono"
 
 import type { AppContext } from "@/lib/types"
 
-import { jsonError } from "@/lib/utils"
+import { jsonError } from "@/lib/responses"
 import { prisma } from "@/db/client"
 
 type WithTargetAccessOptions = {

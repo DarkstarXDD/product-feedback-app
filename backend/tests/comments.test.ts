@@ -1,8 +1,8 @@
 import { describe, expect, test } from "vitest"
 import { faker } from "@faker-js/faker"
 
+import type { JsonSuccessBody, JsonErrorBody } from "@/lib/responses"
 import type { CommentResponse } from "@/lib/selects/comment.select"
-import type { JsonSuccessBody, JsonErrorBody } from "@/lib/utils"
 import type { Pagination } from "@/lib/pagination"
 
 import app from "@/app"

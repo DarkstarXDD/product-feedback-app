@@ -17,7 +17,7 @@ import {
 import { jsonSuccessSchema, jsonErrorSchema } from "@/schemas/shared.schema"
 import { privateUserSelect } from "@/lib/selects/user.select"
 import { zodValidator } from "@/middlewares/zod-validator"
-import { jsonSuccess, jsonError } from "@/lib/utils"
+import { jsonSuccess, jsonError } from "@/lib/responses"
 import { prisma } from "@/db/client"
 
 const authRouter = new Hono()

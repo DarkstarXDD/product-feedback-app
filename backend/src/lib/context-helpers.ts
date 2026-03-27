@@ -2,7 +2,7 @@ import type { Context } from "hono"
 
 import type { AppContext } from "@/lib/types"
 
-import { jsonError } from "@/lib/utils"
+import { jsonError } from "@/lib/responses"
 
 /**
  * Returns the `user` set by middleware (for example `resolveAuthUser`).
