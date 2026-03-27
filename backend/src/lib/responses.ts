@@ -75,6 +75,15 @@ export function forbidden(c: Context, message = "Forbidden"): never {
   return jsonError(c, { message, code: "FORBIDDEN" }, { status: 403 })
 }
 
+/** A thin wrapper for `conflict` errors. Returns 409. Wraps `jsonError`. */
+export function conflict(
+  c: Context,
+  message = "Conflict",
+  errors?: JsonErrorBody["errors"]
+): never {
+  return jsonError(c, { message, code: "CONFLICT", errors }, { status: 409 })
+}
+
 /** A thin wrapper for `internalError` errors. Returns 500. Wraps `jsonError`. */
 export function internalError(
   c: Context,
