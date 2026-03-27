@@ -64,3 +64,8 @@ export function jsonError(
 export function notFound(c: Context, message = "Not found"): never {
   return jsonError(c, { message, code: "NOT_FOUND" }, { status: 404 })
 }
+
+/** A thin wrapper for `unauthorized` errors. Wraps `jsonError`. */
+export function unauthorized(c: Context, message = "Unauthorized"): never {
+  return jsonError(c, { message, code: "UNAUTHORIZED" }, { status: 401 })
+}
