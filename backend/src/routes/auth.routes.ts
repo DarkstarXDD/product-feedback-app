@@ -15,9 +15,9 @@ import {
   createJWT,
 } from "@/lib/session"
 import { jsonSuccessSchema, jsonErrorSchema } from "@/schemas/shared.schema"
+import { jsonSuccess, jsonError, conflict } from "@/lib/responses"
 import { privateUserSelect } from "@/lib/selects/user.select"
 import { zodValidator } from "@/middlewares/zod-validator"
-import { jsonSuccess, jsonError } from "@/lib/responses"
 import { prisma } from "@/db/client"
 
 const authRouter = new Hono()
@@ -74,7 +74,6 @@ authRouter.post(
 
     if (existingUser) {
       const fieldErrors: Record<string, string[]> = {}
-
       if (existingUser.email === email) {
         fieldErrors.email = ["Email already exists"]
       } else if (existingUser.username === username) {
@@ -82,16 +81,7 @@ authRouter.post(
           "Username taken. Please pick a different username",
         ]
       }
-
-      return jsonError(
-        c,
-        {
-          message: "Unique constraint violation",
-          errors: { fieldErrors },
-          code: "CONFLICT",
-        },
-        { status: 409 }
-      )
+      return conflict(c, "Unique constraint violation", { fieldErrors })
     }
 
     const user = await prisma.user.create({

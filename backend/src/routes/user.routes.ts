@@ -7,7 +7,7 @@ import { withTargetAccess } from "@/middlewares/with-target-access.middleware"
 import { resolveAuthUser } from "@/middlewares/resolve-auth-user.middleware"
 import { requireRole } from "@/middlewares/require-role.middleware"
 import { suggestionSelect } from "@/lib/selects/suggestion.select"
-import { jsonSuccess, jsonError, notFound } from "@/lib/responses"
+import { jsonSuccess, conflict, notFound } from "@/lib/responses"
 import { paginationSchema } from "@/schemas/pagination.schema"
 import { commentSelect } from "@/lib/selects/comment.select"
 import { getTargetUserOrThrow } from "@/lib/context-helpers"
@@ -77,7 +77,7 @@ userRoutes.patch(
     const parsedData = c.req.valid("json")
 
     // Check conflicts only for fields being updated, excluding target user
-    const conflict = await prisma.user.findFirst({
+    const existing = await prisma.user.findFirst({
       where: {
         OR: [
           ...(parsedData.email ? [{ email: parsedData.email }] : []),
@@ -88,27 +88,17 @@ userRoutes.patch(
       select: { username: true, email: true },
     })
 
-    if (conflict) {
+    if (existing) {
       const fieldErrors: Record<string, string[]> = {}
-
-      if (parsedData.email && conflict.email === parsedData.email) {
+      if (parsedData.email && existing.email === parsedData.email) {
         fieldErrors.email = ["Email already exists"]
       }
-      if (parsedData.username && conflict.username === parsedData.username) {
+      if (parsedData.username && existing.username === parsedData.username) {
         fieldErrors.username = [
           "Username taken. Please pick a different username",
         ]
       }
-
-      return jsonError(
-        c,
-        {
-          message: "Unique constraint violation",
-          errors: { fieldErrors },
-          code: "CONFLICT",
-        },
-        { status: 409 }
-      )
+      return conflict(c, "Unique constraint violation", { fieldErrors })
     }
 
     const user = await prisma.user.update({

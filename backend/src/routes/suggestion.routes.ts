@@ -13,7 +13,7 @@ import {
   suggestionUpdateSchema,
 } from "@/schemas/suggestion.schema"
 import { mapSuggestionWithUpvoteStatus } from "@/lib/mappers/suggestion.mapper"
-import { jsonSuccess, jsonError, forbidden, notFound } from "@/lib/responses"
+import { jsonSuccess, forbidden, conflict, notFound } from "@/lib/responses"
 import { resolveAuthUser } from "@/middlewares/resolve-auth-user.middleware"
 import { requireRole } from "@/middlewares/require-role.middleware"
 import { commentCreateSchema } from "@/schemas/comment.schema"
@@ -222,14 +222,7 @@ suggestionRouter.post(
         e instanceof Prisma.PrismaClientKnownRequestError &&
         e.code === "P2002"
       ) {
-        return jsonError(
-          c,
-          {
-            message: "Suggestion already upvoted",
-            code: "CONFLICT",
-          },
-          { status: 409 }
-        )
+        return conflict(c, "Suggestion already upvoted")
       }
 
       throw e
