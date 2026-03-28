@@ -1,5 +1,11 @@
 import * as z from "zod"
 
+import type {
+  SuggestionWithViewerUpvoteResponse,
+  SuggestionWithCommentsResponse,
+  SuggestionBaseResponse,
+} from "@/lib/selects/suggestion.select"
+
 // --------------------- Create Suggestion Schema -----------------------
 export const suggestionCreateSchema = z.object({
   categoryId: z.cuid("Please pick a valid category").meta({
@@ -31,3 +37,95 @@ export const suggestionCreateSchema = z.object({
 
 // --------------------- Update Suggestion Schema -----------------------
 export const suggestionUpdateSchema = suggestionCreateSchema
+
+// --------------------- Suggestion Response Schema -----------------------
+export const suggestionResponseSchema = z.object({
+  id: z.cuid().meta({
+    pattern: undefined,
+    example: "cmlubyi3l000094r6fw9v8djs",
+    "x-order": 1,
+  }),
+  slug: z.string().meta({ example: "add-dark-mode-support", "x-order": 2 }),
+  title: z.string().meta({ example: "Add dark mode support", "x-order": 3 }),
+  description: z.string().meta({
+    example:
+      "It would be helpful to have a dark mode toggle when reading at night.",
+    "x-order": 4,
+  }),
+  createdAt: z.date().meta({
+    example: "2026-01-01T00:00:00.000Z",
+    "x-order": 5,
+  }),
+  updatedAt: z.date().meta({
+    example: "2026-01-01T00:00:00.000Z",
+    "x-order": 6,
+  }),
+  _count: z
+    .object({
+      comments: z.number(),
+      upvotes: z.number(),
+    })
+    .meta({ "x-order": 7 }),
+  category: z
+    .object({
+      id: z.cuid().meta({ pattern: undefined }),
+      name: z.string().meta({ example: "UI" }),
+      slug: z.string().meta({ example: "ui" }),
+    })
+    .meta({ "x-order": 8 }),
+  status: z
+    .object({
+      id: z.cuid().meta({ pattern: undefined }),
+      name: z.string().meta({ example: "Planned" }),
+      slug: z.string().meta({ example: "planned" }),
+    })
+    .meta({ "x-order": 9 }),
+  user: z
+    .object({
+      id: z.cuid().meta({ pattern: undefined }),
+      username: z.string().meta({ example: "johndoe" }),
+      name: z.string().meta({ example: "John Doe" }),
+    })
+    .meta({ "x-order": 10 }),
+}) satisfies z.ZodType<SuggestionBaseResponse>
+
+// --------------------- Create/Update Suggestion Response Schemas -----------------------
+export const suggestionCreateResponseSchema = suggestionResponseSchema
+export const suggestionUpdateResponseSchema = suggestionResponseSchema
+
+// --------------------- Suggestion With Viewer Upvote Response Schema -----------------------
+export const suggestionWithViewerUpvoteResponseSchema: z.ZodType<SuggestionWithViewerUpvoteResponse> =
+  suggestionResponseSchema.extend({
+    viewerHasUpvoted: z.boolean().meta({ "x-order": 11 }),
+  })
+
+// --------------------- Suggestion With Comments Response Schema -----------------------
+export const suggestionWithCommentsResponseSchema: z.ZodType<SuggestionWithCommentsResponse> =
+  suggestionResponseSchema.extend({
+    viewerHasUpvoted: z.boolean().meta({ "x-order": 11 }),
+    comments: z
+      .array(
+        z.object({
+          id: z.cuid().meta({ pattern: undefined, "x-order": 1 }),
+          content: z
+            .string()
+            .meta({ example: "I would love to see this added.", "x-order": 2 }),
+          createdAt: z.date().meta({
+            example: "2026-01-01T00:00:00.000Z",
+            "x-order": 3,
+          }),
+          updatedAt: z.date().meta({
+            example: "2026-01-01T00:00:00.000Z",
+            "x-order": 4,
+          }),
+          user: z
+            .object({
+              id: z.cuid().meta({ pattern: undefined }),
+              username: z.string().meta({ example: "johndoe" }),
+              name: z.string().meta({ example: "John Doe" }),
+            })
+            .meta({ "x-order": 5 }),
+        })
+      )
+      .meta({ "x-order": 12 }),
+  })
