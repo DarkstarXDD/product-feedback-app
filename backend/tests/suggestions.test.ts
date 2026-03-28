@@ -6,7 +6,7 @@ import type { Pagination } from "@/lib/pagination"
 import {
   type SuggestionWithCommentsResponse,
   type SuggestionCreateResponse,
-  type SuggestionResponse,
+  type SuggestionBaseResponse,
 } from "@/lib/selects/suggestion.select"
 import { type CommentResponse } from "@/lib/selects/comment.select"
 import { type UpvoteResponse } from "@/lib/selects/upvote.select"
@@ -30,7 +30,9 @@ describe("GET /api/v1/suggestions", () => {
 
     const res = await app.request("/api/v1/suggestions")
 
-    const resBody = (await res.json()) as JsonSuccessBody<SuggestionResponse[]>
+    const resBody = (await res.json()) as JsonSuccessBody<
+      SuggestionBaseResponse[]
+    >
 
     expect(res.status).toBe(200)
     expect(resBody.data.some((item) => item.id === suggestion.id)).toBe(true)
@@ -47,7 +49,7 @@ describe("GET /api/v1/suggestions", () => {
 
       const resBody = (await res.json()) as {
         meta: { pagination: Pagination }
-      } & JsonSuccessBody<SuggestionResponse[]>
+      } & JsonSuccessBody<SuggestionBaseResponse[]>
 
       expect(res.status).toBe(200)
       expect(resBody).toHaveProperty("meta.pagination")
@@ -79,7 +81,7 @@ describe("GET /api/v1/suggestions", () => {
       const res = await app.request("/api/v1/suggestions?page=2&pageSize=10")
 
       const resBody = (await res.json()) as JsonSuccessBody<
-        SuggestionResponse[]
+        SuggestionBaseResponse[]
       > & {
         meta: { pagination: Pagination }
       }

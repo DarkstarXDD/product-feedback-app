@@ -6,7 +6,7 @@ import {
   suggestionWithCommentsSelect,
   suggestionCreateSelect,
   suggestionUpdateSelect,
-  suggestionSelect,
+  suggestionBaseSelect,
 } from "@/lib/selects/suggestion.select"
 import {
   suggestionCreateSchema,
@@ -47,7 +47,7 @@ suggestionRouter.get(
         skip,
         select: user
           ? suggestionWithViewerUpvoteSelect(user.id)
-          : suggestionSelect,
+          : suggestionBaseSelect,
       }),
     ])
 

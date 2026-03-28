@@ -1,8 +1,12 @@
 import type { Prisma } from "@/db/client"
 
-// ------------------------------- GET All Suggestions --------------------------------
-/** Base fields for a Suggestion. Excludes the comments list. */
-export const suggestionSelect = {
+interface ViewerHasUpvoted {
+  viewerHasUpvoted: boolean
+}
+
+// ------------------------------- Base Suggestion Response --------------------------------
+/** Base fields for a Suggestion. Excludes the comments list and viewerHasUpvoted. */
+export const suggestionBaseSelect = {
   id: true,
   slug: true,
   title: true,
@@ -15,18 +19,28 @@ export const suggestionSelect = {
   user: { select: { id: true, username: true, name: true } },
 } as const satisfies Prisma.SuggestionSelect
 
-type Suggestion = Prisma.SuggestionGetPayload<{
-  select: typeof suggestionSelect
+export type SuggestionBaseResponse = Prisma.SuggestionGetPayload<{
+  select: typeof suggestionBaseSelect
 }>
 
-export type SuggestionResponse = {
-  viewerHasUpvoted: boolean
-} & Suggestion
+// --------------------------- Get Suggestion with Upvotes Response ---------------------------
+/** Extends `suggestionBaseSelect` to include `upvotes` field. */
+export const suggestionWithViewerUpvoteSelect = (userId: string) =>
+  ({
+    ...suggestionBaseSelect,
+    upvotes: {
+      where: { userId },
+      select: { id: true },
+    },
+  }) as const satisfies Prisma.SuggestionSelect
 
-// ------------------------------- GET a Suggestion --------------------------------
-/** Extends `SuggestionSelect` to include the comments list for that suggestion. */
+export type SuggestionWithViewerUpvoteResponse = SuggestionBaseResponse &
+  ViewerHasUpvoted
+
+// ------------------------- Get Suggestion with Comments Response --------------------------
+/** Extends `suggestionBaseSelect` to include `comments` field. */
 export const suggestionWithCommentsSelect = {
-  ...suggestionSelect,
+  ...suggestionBaseSelect,
   comments: {
     orderBy: { createdAt: "asc" },
     select: {
@@ -39,46 +53,13 @@ export const suggestionWithCommentsSelect = {
   },
 } as const satisfies Prisma.SuggestionSelect
 
-type SuggestionWithCommentsSelect = Prisma.SuggestionGetPayload<{
+export type SuggestionWithCommentsResponse = Prisma.SuggestionGetPayload<{
   select: typeof suggestionWithCommentsSelect
-}>
+}> &
+  ViewerHasUpvoted
 
-export type SuggestionWithCommentsResponse = {
-  viewerHasUpvoted: boolean
-} & SuggestionWithCommentsSelect
-
-// ------------------------------- Create a Suggestion --------------------------------
-/** Fields that are included when a suggestion is created. */
-export const suggestionCreateSelect = suggestionSelect
-
-export type SuggestionCreateResponse = Prisma.SuggestionGetPayload<{
-  select: typeof suggestionCreateSelect
-}>
-
-// ------------------------------- Update a Suggestion --------------------------------
-/** Fields that are included when a suggestion is updated. */
-export const suggestionUpdateSelect = suggestionSelect
-
-export type SuggestionUpdateResponse = Prisma.SuggestionGetPayload<{
-  select: typeof suggestionUpdateSelect
-}>
-
-// ------------------------------- Suggestions with Upvote field --------------------------------
-/** Base fields for a Suggestion with upvote field. Excludes the comments list. */
-export const suggestionWithViewerUpvoteSelect = (userId: string) =>
-  ({
-    ...suggestionSelect,
-    upvotes: {
-      where: { userId },
-      select: { id: true },
-    },
-  }) as const satisfies Prisma.SuggestionSelect
-
-export type SuggestionWithViewerUpvote = Prisma.SuggestionGetPayload<{
-  select: ReturnType<typeof suggestionWithViewerUpvoteSelect>
-}>
-
-/** Extends `suggestionWithCommentsSelect` to include upvote field. */
+// --------------------- Get Suggestion with Comments and Upvotes Response ---------------------
+/** Extends `suggestionWithCommentsSelect` to include `upvotes` field. */
 export const suggestionWithCommentsAndViewerUpvoteSelect = (userId: string) =>
   ({
     ...suggestionWithCommentsSelect,
@@ -88,7 +69,18 @@ export const suggestionWithCommentsAndViewerUpvoteSelect = (userId: string) =>
     },
   }) as const satisfies Prisma.SuggestionSelect
 
-export type SuggestionWithCommentsAndViewerUpvote =
-  Prisma.SuggestionGetPayload<{
-    select: ReturnType<typeof suggestionWithCommentsAndViewerUpvoteSelect>
-  }>
+// ------------------------------- Create Suggestion Response --------------------------------
+/** Fields that are included in the response when a suggestion is created. */
+export const suggestionCreateSelect = suggestionBaseSelect
+
+export type SuggestionCreateResponse = Prisma.SuggestionGetPayload<{
+  select: typeof suggestionCreateSelect
+}>
+
+// ------------------------------- Update Suggestion Response --------------------------------
+/** Fields that are included in the response when a suggestion is updated. */
+export const suggestionUpdateSelect = suggestionBaseSelect
+
+export type SuggestionUpdateResponse = Prisma.SuggestionGetPayload<{
+  select: typeof suggestionUpdateSelect
+}>
