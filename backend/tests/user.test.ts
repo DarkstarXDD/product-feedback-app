@@ -4,7 +4,7 @@ import type {
   PrivateUserResponse,
   PublicUserResponse,
 } from "@/lib/selects/user.select"
-import type { SuggestionResponse } from "@/lib/selects/suggestion.select"
+import type { SuggestionBaseResponse } from "@/lib/selects/suggestion.select"
 import type { JsonSuccessBody, JsonErrorBody } from "@/lib/responses"
 import type { CommentResponse } from "@/lib/selects/comment.select"
 import type { Pagination } from "@/lib/pagination"
@@ -477,7 +477,7 @@ describe("GET /api/v1/users/:username/suggestions", () => {
 
       const resBody = (await res.json()) as {
         meta: { pagination: Pagination }
-      } & JsonSuccessBody<SuggestionResponse[]>
+      } & JsonSuccessBody<SuggestionBaseResponse[]>
 
       expect(res.status).toBe(200)
       expect(resBody.data.some((item) => item.id === suggestion.id)).toBe(true)
@@ -514,7 +514,7 @@ describe("GET /api/v1/users/:username/suggestions", () => {
 
       const resBody = (await res.json()) as {
         meta: { pagination: Pagination }
-      } & JsonSuccessBody<SuggestionResponse[]>
+      } & JsonSuccessBody<SuggestionBaseResponse[]>
 
       expect(res.status).toBe(200)
       expect(resBody.data).toHaveLength(10)
@@ -550,7 +550,7 @@ describe("GET /api/v1/users/:username/upvotes", () => {
 
       const resBody = (await res.json()) as {
         meta: { pagination: Pagination }
-      } & JsonSuccessBody<SuggestionResponse[]>
+      } & JsonSuccessBody<SuggestionBaseResponse[]>
 
       expect(res.status).toBe(200)
       expect(resBody.data.some((item) => item.id === suggestion.id)).toBe(true)
@@ -594,7 +594,7 @@ describe("GET /api/v1/users/:username/upvotes", () => {
 
       const resBody = (await res.json()) as {
         meta: { pagination: Pagination }
-      } & JsonSuccessBody<SuggestionResponse[]>
+      } & JsonSuccessBody<SuggestionBaseResponse[]>
 
       expect(res.status).toBe(200)
       expect(resBody.data).toHaveLength(10)

@@ -5,8 +5,8 @@ import type { AppContext } from "@/lib/types"
 import { privateUserSelect, publicUserSelect } from "@/lib/selects/user.select"
 import { withTargetAccess } from "@/middlewares/with-target-access.middleware"
 import { resolveAuthUser } from "@/middlewares/resolve-auth-user.middleware"
+import { suggestionBaseSelect } from "@/lib/selects/suggestion.select"
 import { requireRole } from "@/middlewares/require-role.middleware"
-import { suggestionSelect } from "@/lib/selects/suggestion.select"
 import { jsonSuccess, conflict, notFound } from "@/lib/responses"
 import { paginationSchema } from "@/schemas/pagination.schema"
 import { commentSelect } from "@/lib/selects/comment.select"
@@ -127,7 +127,7 @@ userRoutes.get(
       }),
       prisma.suggestion.findMany({
         select: {
-          ...suggestionSelect,
+          ...suggestionBaseSelect,
           ...(user
             ? {
                 upvotes: {
@@ -188,7 +188,7 @@ userRoutes.get(
       prisma.suggestion.count({ where }),
       prisma.suggestion.findMany({
         select: {
-          ...suggestionSelect,
+          ...suggestionBaseSelect,
           ...(user
             ? {
                 upvotes: {
