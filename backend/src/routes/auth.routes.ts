@@ -44,8 +44,7 @@ authRouter.post(
             schema: resolver(jsonErrorSchema),
           },
         },
-        description:
-          "Bad Request. This error occurs when the request body fails validation.",
+        description: "Bad Request. Request body fails validation.",
       },
       409: {
         content: {
@@ -54,7 +53,7 @@ authRouter.post(
           },
         },
         description:
-          "Conflict. This error occurs when the provided email or username already exists in the database.",
+          "Conflict. Provided email or username already exists in the database.",
       },
     },
   }),
@@ -118,8 +117,7 @@ authRouter.post(
             schema: resolver(jsonErrorSchema),
           },
         },
-        description:
-          "Bad Request. This error occurs when the request body fails validation.",
+        description: "Bad Request. Request body fails validation.",
       },
       401: {
         content: {
@@ -127,8 +125,7 @@ authRouter.post(
             schema: resolver(jsonErrorSchema),
           },
         },
-        description:
-          "Unauthorized. This error occurs when the email or password is invalid.",
+        description: "Unauthorized. Email or password is invalid.",
       },
     },
   }),
