@@ -1,9 +1,18 @@
+import { describeRoute, resolver } from "hono-openapi"
 import { Hono } from "hono"
 
+import {
+  paginatedSuccessSchema,
+  jsonSuccessSchema,
+  jsonErrorSchema,
+} from "@/schemas/shared.schema"
+import {
+  commentResponseSchema,
+  commentUpdateSchema,
+} from "@/schemas/comment.schema"
 import { resolveAuthUser } from "@/middlewares/resolve-auth-user.middleware"
 import { requireRole } from "@/middlewares/require-role.middleware"
 import { jsonSuccess, forbidden, notFound } from "@/lib/responses"
-import { commentUpdateSchema } from "@/schemas/comment.schema"
 import { paginationSchema } from "@/schemas/pagination.schema"
 import { commentSelect } from "@/lib/selects/comment.select"
 import { zodValidator } from "@/middlewares/zod-validator"
@@ -16,6 +25,45 @@ const commentsRouter = new Hono()
 // ------------------------------- GET All Comments --------------------------------
 commentsRouter.get(
   "/",
+  describeRoute({
+    tags: ["Comments"],
+    summary: "Get All Comments",
+    description: "Returns a paginated list of all comments. Admin only.",
+    responses: {
+      200: {
+        content: {
+          "application/json": {
+            schema: resolver(paginatedSuccessSchema(commentResponseSchema)),
+          },
+        },
+        description: "Successfully retrieved comments.",
+      },
+      400: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description: "Bad Request. Query parameters fail validation.",
+      },
+      401: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description: "Unauthorized. User is not authenticated.",
+      },
+      403: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description: "Forbidden. User does not have the required role.",
+      },
+    },
+  }),
   resolveAuthUser,
   requireRole("ADMIN"),
   zodValidator("query", paginationSchema),
@@ -44,24 +92,97 @@ commentsRouter.get(
 )
 
 // ------------------------------- GET a Comment --------------------------------
-commentsRouter.get("/:id", async (c) => {
-  const commentId = c.req.param("id")
+commentsRouter.get(
+  "/:id",
+  describeRoute({
+    tags: ["Comments"],
+    summary: "Get a Comment",
+    description: "Returns a single comment by id.",
+    responses: {
+      200: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonSuccessSchema(commentResponseSchema)),
+          },
+        },
+        description: "Successfully retrieved comment.",
+      },
+      404: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description: "Not Found. Comment does not exist.",
+      },
+    },
+  }),
+  async (c) => {
+    const commentId = c.req.param("id")
 
-  const comment = await prisma.comment.findUnique({
-    where: { id: commentId },
-    select: commentSelect,
-  })
+    const comment = await prisma.comment.findUnique({
+      where: { id: commentId },
+      select: commentSelect,
+    })
 
-  if (!comment) {
-    return notFound(c, "Comment not found")
+    if (!comment) {
+      return notFound(c, "Comment not found")
+    }
+
+    return jsonSuccess(c, { data: comment }, { status: 200 })
   }
-
-  return jsonSuccess(c, { data: comment }, { status: 200 })
-})
+)
 
 // ------------------------------- Update a Comment --------------------------------
 commentsRouter.patch(
   "/:id",
+  describeRoute({
+    tags: ["Comments"],
+    summary: "Update a Comment",
+    description: "Updates an existing comment by id.",
+    responses: {
+      200: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonSuccessSchema(commentResponseSchema)),
+          },
+        },
+        description: "Successfully updated comment.",
+      },
+      400: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description: "Bad Request. Request body fails validation.",
+      },
+      401: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description: "Unauthorized. User is not authenticated.",
+      },
+      403: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description: "Forbidden. User does not own the comment.",
+      },
+      404: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description: "Not Found. Comment does not exist.",
+      },
+    },
+  }),
   resolveAuthUser,
   requireRole("ADMIN", "USER"),
   zodValidator("json", commentUpdateSchema),

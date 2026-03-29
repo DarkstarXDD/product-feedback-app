@@ -23,11 +23,14 @@ import {
   jsonSuccessSchema,
   jsonErrorSchema,
 } from "@/schemas/shared.schema"
+import {
+  commentResponseSchema,
+  commentCreateSchema,
+} from "@/schemas/comment.schema"
 import { mapSuggestionWithUpvoteStatus } from "@/lib/mappers/suggestion.mapper"
 import { jsonSuccess, forbidden, conflict, notFound } from "@/lib/responses"
 import { resolveAuthUser } from "@/middlewares/resolve-auth-user.middleware"
 import { requireRole } from "@/middlewares/require-role.middleware"
-import { commentCreateSchema } from "@/schemas/comment.schema"
 import { paginationSchema } from "@/schemas/pagination.schema"
 import { commentSelect } from "@/lib/selects/comment.select"
 import { upvoteSelect } from "@/lib/selects/upvote.select"
@@ -306,6 +309,45 @@ suggestionRouter.patch(
 // ------------------------------- Create a Comment for a Suggestion --------------------------------
 suggestionRouter.post(
   "/:slug/comments",
+  describeRoute({
+    tags: ["Suggestions"],
+    summary: "Create a Comment",
+    description: "Creates a new comment on a suggestion.",
+    responses: {
+      201: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonSuccessSchema(commentResponseSchema)),
+          },
+        },
+        description: "Successfully created comment.",
+      },
+      400: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description: "Bad Request. Request body fails validation.",
+      },
+      401: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description: "Unauthorized. User is not authenticated.",
+      },
+      403: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description: "Forbidden. User does not have the required role.",
+      },
+    },
+  }),
   resolveAuthUser,
   requireRole("ADMIN", "USER"),
   zodValidator("json", commentCreateSchema),
@@ -332,16 +374,34 @@ suggestionRouter.post(
 )
 
 // ------------------------------- Get All Comments for a Suggestion --------------------------------
-suggestionRouter.get("/:slug/comments", async (c) => {
-  const slug = c.req.param("slug")
+suggestionRouter.get(
+  "/:slug/comments",
+  describeRoute({
+    tags: ["Suggestions"],
+    summary: "Get All Comments for a Suggestion",
+    description: "Returns all comments for a suggestion.",
+    responses: {
+      200: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonSuccessSchema(z.array(commentResponseSchema))),
+          },
+        },
+        description: "Successfully retrieved comments.",
+      },
+    },
+  }),
+  async (c) => {
+    const slug = c.req.param("slug")
 
-  const comments = await prisma.comment.findMany({
-    where: { suggestion: { slug } },
-    select: commentSelect,
-  })
+    const comments = await prisma.comment.findMany({
+      where: { suggestion: { slug } },
+      select: commentSelect,
+    })
 
-  return jsonSuccess(c, { data: comments })
-})
+    return jsonSuccess(c, { data: comments })
+  }
+)
 
 // ------------------------------- Create an Upvote for a Suggestion --------------------------------
 suggestionRouter.post(
