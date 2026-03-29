@@ -18,8 +18,12 @@ import {
   suggestionUpdateSelect,
   suggestionBaseSelect,
 } from "@/lib/selects/suggestion.select"
+import {
+  paginatedSuccessSchema,
+  jsonSuccessSchema,
+  jsonErrorSchema,
+} from "@/schemas/shared.schema"
 import { mapSuggestionWithUpvoteStatus } from "@/lib/mappers/suggestion.mapper"
-import { jsonSuccessSchema, jsonErrorSchema } from "@/schemas/shared.schema"
 import { jsonSuccess, forbidden, conflict, notFound } from "@/lib/responses"
 import { resolveAuthUser } from "@/middlewares/resolve-auth-user.middleware"
 import { requireRole } from "@/middlewares/require-role.middleware"
@@ -48,7 +52,7 @@ suggestionRouter.get(
         content: {
           "application/json": {
             schema: resolver(
-              jsonSuccessSchema(
+              paginatedSuccessSchema(
                 z.array(suggestionWithViewerUpvoteResponseSchema)
               )
             ),

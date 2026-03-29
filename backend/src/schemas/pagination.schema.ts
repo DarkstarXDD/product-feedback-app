@@ -1,5 +1,7 @@
 import * as z from "zod"
 
+import type { Pagination } from "@/lib/pagination"
+
 export const DEFAULT_PAGE = 1
 export const DEFAULT_PAGE_SIZE = 10
 export const MAX_PAGE_SIZE = 50
@@ -29,3 +31,13 @@ export const paginationSchema = z.object({
 })
 
 export type PaginationQuery = z.infer<typeof paginationSchema>
+
+// --------------------- Pagination Response Schema -----------------------
+export const paginationResponseSchema: z.ZodType<Pagination> = z.object({
+  page: z.number().meta({ example: 1, "x-order": 1 }),
+  pageSize: z.number().meta({ example: 10, "x-order": 2 }),
+  totalItems: z.number().meta({ example: 100, "x-order": 3 }),
+  totalPages: z.number().meta({ example: 10, "x-order": 4 }),
+  hasNextPage: z.boolean().meta({ example: true, "x-order": 5 }),
+  hasPreviousPage: z.boolean().meta({ example: false, "x-order": 6 }),
+})
