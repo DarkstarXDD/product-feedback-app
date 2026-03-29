@@ -31,6 +31,7 @@ import { mapSuggestionWithUpvoteStatus } from "@/lib/mappers/suggestion.mapper"
 import { jsonSuccess, forbidden, conflict, notFound } from "@/lib/responses"
 import { resolveAuthUser } from "@/middlewares/resolve-auth-user.middleware"
 import { requireRole } from "@/middlewares/require-role.middleware"
+import { upvoteResponseSchema } from "@/schemas/upvote.schema"
 import { paginationSchema } from "@/schemas/pagination.schema"
 import { commentSelect } from "@/lib/selects/comment.select"
 import { upvoteSelect } from "@/lib/selects/upvote.select"
@@ -406,6 +407,53 @@ suggestionRouter.get(
 // ------------------------------- Create an Upvote for a Suggestion --------------------------------
 suggestionRouter.post(
   "/:slug/upvotes",
+  describeRoute({
+    tags: ["Suggestions"],
+    summary: "Upvote a Suggestion",
+    description: "Creates an upvote on a suggestion.",
+    responses: {
+      201: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonSuccessSchema(upvoteResponseSchema)),
+          },
+        },
+        description: "Successfully upvoted suggestion.",
+      },
+      401: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description: "Unauthorized. User is not authenticated.",
+      },
+      403: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description: "Forbidden. User does not have the required role.",
+      },
+      404: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description: "Not Found. Suggestion does not exist.",
+      },
+      409: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description: "Conflict. Suggestion already upvoted.",
+      },
+    },
+  }),
   resolveAuthUser,
   requireRole("ADMIN", "USER"),
   async (c) => {
@@ -447,6 +495,40 @@ suggestionRouter.post(
 // ------------------------------- Delete an Upvote for a Suggestion --------------------------------
 suggestionRouter.delete(
   "/:slug/upvotes",
+  describeRoute({
+    tags: ["Suggestions"],
+    summary: "Remove an Upvote from a Suggestion",
+    description: "Removes the current user's upvote from a suggestion.",
+    responses: {
+      204: {
+        description: "Successfully removed upvote.",
+      },
+      401: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description: "Unauthorized. User is not authenticated.",
+      },
+      403: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description: "Forbidden. User does not have the required role.",
+      },
+      404: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description: "Not Found. Upvote does not exist.",
+      },
+    },
+  }),
   resolveAuthUser,
   requireRole("ADMIN", "USER"),
   async (c) => {
