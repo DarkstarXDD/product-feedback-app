@@ -2,6 +2,7 @@ import * as z from "zod"
 
 import type { JsonSuccessBody, JsonErrorBody } from "@/lib/responses"
 
+import { paginationResponseSchema } from "@/schemas/pagination.schema"
 import { ERROR_CODES } from "@/lib/consts"
 
 /** Describes the standard jsonError response body. */
@@ -36,5 +37,15 @@ export function jsonSuccessSchema<TOutput, TInput = TOutput>(
   return z.object({
     data: dataSchema,
     meta: z.record(z.string(), z.unknown()).optional(),
+  })
+}
+
+/** Wraps a response payload schema in the standard jsonSuccess envelope with a typed pagination meta. */
+export function paginatedSuccessSchema<TOutput, TInput = TOutput>(
+  dataSchema: z.ZodType<TOutput, TInput>
+) {
+  return z.object({
+    data: dataSchema,
+    meta: z.object({ pagination: paginationResponseSchema }),
   })
 }
