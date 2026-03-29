@@ -1,5 +1,15 @@
+import { describeRoute, resolver } from "hono-openapi"
 import { Hono } from "hono"
+import * as z from "zod"
 
+import {
+  suggestionWithViewerUpvoteResponseSchema,
+  suggestionWithCommentsResponseSchema,
+  suggestionCreateResponseSchema,
+  suggestionUpdateResponseSchema,
+  suggestionCreateSchema,
+  suggestionUpdateSchema,
+} from "@/schemas/suggestion.schema"
 import {
   suggestionWithCommentsAndViewerUpvoteSelect,
   suggestionWithViewerUpvoteSelect,
@@ -8,11 +18,8 @@ import {
   suggestionUpdateSelect,
   suggestionBaseSelect,
 } from "@/lib/selects/suggestion.select"
-import {
-  suggestionCreateSchema,
-  suggestionUpdateSchema,
-} from "@/schemas/suggestion.schema"
 import { mapSuggestionWithUpvoteStatus } from "@/lib/mappers/suggestion.mapper"
+import { jsonSuccessSchema, jsonErrorSchema } from "@/schemas/shared.schema"
 import { jsonSuccess, forbidden, conflict, notFound } from "@/lib/responses"
 import { resolveAuthUser } from "@/middlewares/resolve-auth-user.middleware"
 import { requireRole } from "@/middlewares/require-role.middleware"
@@ -32,6 +39,34 @@ const suggestionRouter = new Hono()
 // ------------------------------- GET All Suggestions --------------------------------
 suggestionRouter.get(
   "/",
+  describeRoute({
+    tags: ["Suggestions"],
+    summary: "Get All Suggestions",
+    description: "Returns a paginated list of suggestions.",
+    responses: {
+      200: {
+        content: {
+          "application/json": {
+            schema: resolver(
+              jsonSuccessSchema(
+                z.array(suggestionWithViewerUpvoteResponseSchema)
+              )
+            ),
+          },
+        },
+        description: "Successfully retrieved suggestions.",
+      },
+      400: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description:
+          "Bad Request. Occurs when the query parameters fail validation.",
+      },
+    },
+  }),
   resolveAuthUser,
   zodValidator("query", paginationSchema),
   async (c) => {
@@ -63,33 +98,101 @@ suggestionRouter.get(
 )
 
 // ------------------------------- GET a Suggestion --------------------------------
-suggestionRouter.get("/:slug", resolveAuthUser, async (c) => {
-  const slug = c.req.param("slug")
-  const user = c.get("user")
-
-  const suggestion = await prisma.suggestion.findUnique({
-    where: { slug },
-    select: user
-      ? suggestionWithCommentsAndViewerUpvoteSelect(user.id)
-      : suggestionWithCommentsSelect,
-  })
-
-  if (!suggestion) {
-    return notFound(c, "Suggestion not found")
-  }
-
-  return jsonSuccess(
-    c,
-    {
-      data: mapSuggestionWithUpvoteStatus(suggestion),
+suggestionRouter.get(
+  "/:slug",
+  describeRoute({
+    tags: ["Suggestions"],
+    summary: "Get a Suggestion",
+    description: "Returns a single suggestion by slug, including its comments.",
+    responses: {
+      200: {
+        content: {
+          "application/json": {
+            schema: resolver(
+              jsonSuccessSchema(suggestionWithCommentsResponseSchema)
+            ),
+          },
+        },
+        description: "Successfully retrieved suggestion.",
+      },
+      404: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description: "Not Found. Suggestion does not exist.",
+      },
     },
-    { status: 200 }
-  )
-})
+  }),
+  resolveAuthUser,
+  async (c) => {
+    const slug = c.req.param("slug")
+    const user = c.get("user")
+
+    const suggestion = await prisma.suggestion.findUnique({
+      where: { slug },
+      select: user
+        ? suggestionWithCommentsAndViewerUpvoteSelect(user.id)
+        : suggestionWithCommentsSelect,
+    })
+
+    if (!suggestion) {
+      return notFound(c, "Suggestion not found")
+    }
+
+    return jsonSuccess(
+      c,
+      {
+        data: mapSuggestionWithUpvoteStatus(suggestion),
+      },
+      { status: 200 }
+    )
+  }
+)
 
 // ------------------------------- Create a Suggestion --------------------------------
 suggestionRouter.post(
   "/",
+  describeRoute({
+    tags: ["Suggestions"],
+    summary: "Create a Suggestion",
+    description: "Creates a new suggestion.",
+    responses: {
+      201: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonSuccessSchema(suggestionCreateResponseSchema)),
+          },
+        },
+        description: "Successfully created suggestion.",
+      },
+      400: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description: "Bad Request. Request body fails validation.",
+      },
+      401: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description: "Unauthorized. User is not authenticated.",
+      },
+      403: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description: "Forbidden. User does not have the required role.",
+      },
+    },
+  }),
   resolveAuthUser,
   requireRole("ADMIN", "USER"),
   zodValidator("json", suggestionCreateSchema),
@@ -113,6 +216,53 @@ suggestionRouter.post(
 // ------------------------------- Update a Suggestion --------------------------------
 suggestionRouter.patch(
   "/:slug",
+  describeRoute({
+    tags: ["Suggestions"],
+    summary: "Update a Suggestion",
+    description: "Updates an existing suggestion by slug.",
+    responses: {
+      200: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonSuccessSchema(suggestionUpdateResponseSchema)),
+          },
+        },
+        description: "Successfully updated suggestion.",
+      },
+      400: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description: "Bad Request. Request body fails validation.",
+      },
+      401: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description: "Unauthorized. User is not authenticated.",
+      },
+      403: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description: "Forbidden. User does not own the suggestion.",
+      },
+      404: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description: "Not Found. Suggestion does not exist.",
+      },
+    },
+  }),
   resolveAuthUser,
   requireRole("ADMIN", "USER"),
   zodValidator("json", suggestionUpdateSchema),
