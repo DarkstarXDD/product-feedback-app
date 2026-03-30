@@ -1,13 +1,27 @@
+import { describeRoute, resolver } from "hono-openapi"
 import { Hono } from "hono"
+import * as z from "zod"
 
 import type { AppContext } from "@/lib/types"
 
+import {
+  suggestionWithViewerUpvoteSelect,
+  suggestionBaseSelect,
+} from "@/lib/selects/suggestion.select"
+import {
+  paginatedSuccessSchema,
+  jsonSuccessSchema,
+  jsonErrorSchema,
+} from "@/schemas/shared.schema"
+import { suggestionWithViewerUpvoteResponseSchema } from "@/schemas/suggestion.schema"
 import { privateUserSelect, publicUserSelect } from "@/lib/selects/user.select"
+import { mapSuggestionWithUpvoteStatus } from "@/lib/mappers/suggestion.mapper"
 import { withTargetAccess } from "@/middlewares/with-target-access.middleware"
 import { resolveAuthUser } from "@/middlewares/resolve-auth-user.middleware"
-import { suggestionBaseSelect } from "@/lib/selects/suggestion.select"
 import { requireRole } from "@/middlewares/require-role.middleware"
+import { privateUserResponseSchema } from "@/schemas/user.schema"
 import { jsonSuccess, conflict, notFound } from "@/lib/responses"
+import { commentResponseSchema } from "@/schemas/comment.schema"
 import { paginationSchema } from "@/schemas/pagination.schema"
 import { commentSelect } from "@/lib/selects/comment.select"
 import { getTargetUserOrThrow } from "@/lib/context-helpers"
@@ -21,6 +35,45 @@ const userRoutes = new Hono<AppContext>()
 // ------------------------------- Get All Users --------------------------------
 userRoutes.get(
   "/",
+  describeRoute({
+    tags: ["Users"],
+    summary: "Get All Users",
+    description: "Returns a paginated list of all users. Admin only.",
+    responses: {
+      200: {
+        content: {
+          "application/json": {
+            schema: resolver(paginatedSuccessSchema(privateUserResponseSchema)),
+          },
+        },
+        description: "Successfully retrieved users.",
+      },
+      400: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description: "Bad Request. Query parameters fail validation.",
+      },
+      401: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description: "Unauthorized. User is not authenticated.",
+      },
+      403: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description: "Forbidden. User does not have the required role.",
+      },
+    },
+  }),
   resolveAuthUser,
   requireRole("ADMIN"),
   zodValidator("query", paginationSchema),
@@ -45,30 +98,106 @@ userRoutes.get(
 )
 
 // ------------------------------- Get a User ----------------------------------
-userRoutes.get("/:username", resolveAuthUser, withTargetAccess(), async (c) => {
-  const access = c.get("access")
-  const targetUser = getTargetUserOrThrow(c)
+userRoutes.get(
+  "/:username",
+  describeRoute({
+    tags: ["Users"],
+    summary: "Get a User",
+    description:
+      "Returns a user by username. Admins and the user themselves receive the full response. Unauthenticated users or other users receive only `name` and `username`.",
+    responses: {
+      200: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonSuccessSchema(privateUserResponseSchema)),
+          },
+        },
+        description: "Successfully retrieved user.",
+      },
+      404: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description: "Not Found. User does not exist.",
+      },
+    },
+  }),
+  resolveAuthUser,
+  withTargetAccess(),
+  async (c) => {
+    const access = c.get("access")
+    const targetUser = getTargetUserOrThrow(c)
 
-  const select =
-    access && (access.isAdmin || access.isSelf)
-      ? privateUserSelect
-      : publicUserSelect
+    const select =
+      access && (access.isAdmin || access.isSelf)
+        ? privateUserSelect
+        : publicUserSelect
 
-  const user = await prisma.user.findUnique({
-    where: { id: targetUser.id },
-    select,
-  })
+    const user = await prisma.user.findUnique({
+      where: { id: targetUser.id },
+      select,
+    })
 
-  if (!user) {
-    return notFound(c, "User not found")
+    if (!user) {
+      return notFound(c, "User not found")
+    }
+
+    return jsonSuccess(c, { data: user })
   }
-
-  return jsonSuccess(c, { data: user })
-})
+)
 
 // --------------------------------- Update a User ------------------------------
 userRoutes.patch(
   "/:username",
+  describeRoute({
+    tags: ["Users"],
+    summary: "Update a User",
+    description: "Updates an existing user by username.",
+    responses: {
+      200: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonSuccessSchema(privateUserResponseSchema)),
+          },
+        },
+        description: "Successfully updated user.",
+      },
+      400: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description: "Bad Request. Request body fails validation.",
+      },
+      401: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description: "Unauthorized. User is not authenticated.",
+      },
+      403: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description: "Forbidden. User does not have access.",
+      },
+      409: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description: "Conflict. Email or username already exists.",
+      },
+    },
+  }),
   resolveAuthUser,
   withTargetAccess({ requireSelfOrAdmin: true }),
   zodValidator("json", userUpdateSchema),
@@ -113,6 +242,33 @@ userRoutes.patch(
 // ---------------------------- Get All Suggestions of a User -------------------------
 userRoutes.get(
   "/:username/suggestions",
+  describeRoute({
+    tags: ["Users"],
+    summary: "Get All Suggestions of a User",
+    description: "Returns a paginated list of suggestions created by a user.",
+    responses: {
+      200: {
+        content: {
+          "application/json": {
+            schema: resolver(
+              paginatedSuccessSchema(
+                z.array(suggestionWithViewerUpvoteResponseSchema)
+              )
+            ),
+          },
+        },
+        description: "Successfully retrieved suggestions.",
+      },
+      400: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description: "Bad Request. Query parameters fail validation.",
+      },
+    },
+  }),
   resolveAuthUser,
   zodValidator("query", paginationSchema),
   async (c) => {
@@ -126,39 +282,20 @@ userRoutes.get(
         where: { user: { username } },
       }),
       prisma.suggestion.findMany({
-        select: {
-          ...suggestionBaseSelect,
-          ...(user
-            ? {
-                upvotes: {
-                  where: { userId: user.id },
-                  select: { id: true },
-                },
-              }
-            : {}),
-        },
+        select: user
+          ? suggestionWithViewerUpvoteSelect(user.id)
+          : suggestionBaseSelect,
         where: { user: { username } },
         take: pageSize,
         skip,
       }),
     ])
 
-    const data = suggestions.map((suggestion) => {
-      const viewerHasUpvoted =
-        user && "upvotes" in suggestion ? suggestion.upvotes.length > 0 : false
-      const { upvotes: _upvotes, ...suggestionData } = suggestion
-
-      return {
-        ...suggestionData,
-        viewerHasUpvoted,
-      }
-    })
-
     return jsonSuccess(
       c,
       {
         meta: { pagination: buildPagination({ page, pageSize, totalItems }) },
-        data,
+        data: suggestions.map(mapSuggestionWithUpvoteStatus),
       },
       { status: 200 }
     )
@@ -168,6 +305,33 @@ userRoutes.get(
 // ---------------------------- Get All Upvoted Suggestions of a User -------------------------
 userRoutes.get(
   "/:username/upvotes",
+  describeRoute({
+    tags: ["Users"],
+    summary: "Get All Upvoted Suggestions of a User",
+    description: "Returns a paginated list of suggestions upvoted by a user.",
+    responses: {
+      200: {
+        content: {
+          "application/json": {
+            schema: resolver(
+              paginatedSuccessSchema(
+                z.array(suggestionWithViewerUpvoteResponseSchema)
+              )
+            ),
+          },
+        },
+        description: "Successfully retrieved upvoted suggestions.",
+      },
+      400: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description: "Bad Request. Query parameters fail validation.",
+      },
+    },
+  }),
   resolveAuthUser,
   zodValidator("query", paginationSchema),
   async (c) => {
@@ -176,50 +340,25 @@ userRoutes.get(
     const { pageSize, page } = c.req.valid("query")
     const skip = (page - 1) * pageSize
 
-    const where = {
-      upvotes: {
-        some: {
-          user: { username },
-        },
-      },
-    } as const
+    const where = { upvotes: { some: { user: { username } } } } as const
 
     const [totalItems, suggestions] = await Promise.all([
       prisma.suggestion.count({ where }),
       prisma.suggestion.findMany({
-        select: {
-          ...suggestionBaseSelect,
-          ...(user
-            ? {
-                upvotes: {
-                  where: { userId: user.id },
-                  select: { id: true },
-                },
-              }
-            : {}),
-        },
+        select: user
+          ? suggestionWithViewerUpvoteSelect(user.id)
+          : suggestionBaseSelect,
         take: pageSize,
         where,
         skip,
       }),
     ])
 
-    const data = suggestions.map((suggestion) => {
-      const viewerHasUpvoted =
-        user && "upvotes" in suggestion ? suggestion.upvotes.length > 0 : false
-      const { upvotes: _upvotes, ...suggestionData } = suggestion
-
-      return {
-        ...suggestionData,
-        viewerHasUpvoted,
-      }
-    })
-
     return jsonSuccess(
       c,
       {
         meta: { pagination: buildPagination({ page, pageSize, totalItems }) },
-        data,
+        data: suggestions.map(mapSuggestionWithUpvoteStatus),
       },
       { status: 200 }
     )
@@ -229,6 +368,29 @@ userRoutes.get(
 // ------------------------------- GET All Comments of a User --------------------------------
 userRoutes.get(
   "/:username/comments",
+  describeRoute({
+    tags: ["Users"],
+    summary: "Get All Comments of a User",
+    description: "Returns a paginated list of comments made by a user.",
+    responses: {
+      200: {
+        content: {
+          "application/json": {
+            schema: resolver(paginatedSuccessSchema(commentResponseSchema)),
+          },
+        },
+        description: "Successfully retrieved comments.",
+      },
+      400: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description: "Bad Request. Query parameters fail validation.",
+      },
+    },
+  }),
   zodValidator("query", paginationSchema),
   async (c) => {
     const username = c.req.param("username")
