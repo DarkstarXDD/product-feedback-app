@@ -1,14 +1,17 @@
 import { describe, expect, test } from "vitest"
+import * as z from "zod"
 
-import type {
-  PrivateUserResponse,
-  PublicUserResponse,
-} from "@/lib/selects/user.select"
-import type { SuggestionBaseResponse } from "@/lib/selects/suggestion.select"
-import type { JsonSuccessBody, JsonErrorBody } from "@/lib/responses"
-import type { CommentResponse } from "@/lib/selects/comment.select"
-import type { Pagination } from "@/lib/pagination"
-
+import {
+  paginatedSuccessSchema,
+  jsonSuccessSchema,
+  jsonErrorSchema,
+} from "@/schemas/shared.schema"
+import {
+  privateUserResponseSchema,
+  publicUserResponseSchema,
+} from "@/schemas/user.schema"
+import { suggestionWithViewerUpvoteResponseSchema } from "@/schemas/suggestion.schema"
+import { commentResponseSchema } from "@/schemas/comment.schema"
 import app from "@/app"
 
 import {
@@ -25,7 +28,7 @@ describe("GET /api/v1/users", () => {
   test("returns 401 when unauthenticated", async () => {
     const res = await app.request("/api/v1/users")
 
-    const resBody = (await res.json()) as JsonErrorBody
+    const resBody = jsonErrorSchema.parse(await res.json())
 
     expect(res.status).toBe(401)
     expect(resBody).toMatchObject({
@@ -42,7 +45,7 @@ describe("GET /api/v1/users", () => {
         headers: { cookie: `token=${token}` },
       })
 
-      const resBody = (await res.json()) as JsonErrorBody
+      const resBody = jsonErrorSchema.parse(await res.json())
 
       expect(res.status).toBe(403)
       expect(resBody).toMatchObject({
@@ -65,11 +68,9 @@ describe("GET /api/v1/users", () => {
         headers: { cookie: `token=${token}` },
       })
 
-      const resBody = (await res.json()) as JsonSuccessBody<
-        PrivateUserResponse[]
-      > & {
-        meta: { pagination: Pagination }
-      }
+      const resBody = paginatedSuccessSchema(
+        z.array(privateUserResponseSchema)
+      ).parse(await res.json())
 
       expect(res.status).toBe(200)
       expect(resBody.data.some((item) => item.id === listedUser.id)).toBe(true)
@@ -102,11 +103,9 @@ describe("GET /api/v1/users", () => {
         headers: { cookie: `token=${token}` },
       })
 
-      const resBody = (await res.json()) as JsonSuccessBody<
-        PrivateUserResponse[]
-      > & {
-        meta: { pagination: Pagination }
-      }
+      const resBody = paginatedSuccessSchema(
+        z.array(privateUserResponseSchema)
+      ).parse(await res.json())
 
       expect(res.status).toBe(200)
       expect(resBody.data).toHaveLength(10)
@@ -138,7 +137,7 @@ describe("PATCH /api/v1/users/:username", () => {
         method: "PATCH",
       })
 
-      const resBody = (await res.json()) as JsonErrorBody
+      const resBody = jsonErrorSchema.parse(await res.json())
 
       expect(res.status).toBe(401)
       expect(resBody).toMatchObject({
@@ -166,7 +165,7 @@ describe("PATCH /api/v1/users/:username", () => {
         method: "PATCH",
       })
 
-      const resBody = (await res.json()) as JsonErrorBody
+      const resBody = jsonErrorSchema.parse(await res.json())
 
       expect(res.status).toBe(403)
       expect(resBody).toMatchObject({
@@ -193,7 +192,9 @@ describe("PATCH /api/v1/users/:username", () => {
         method: "PATCH",
       })
 
-      const resBody = (await res.json()) as JsonSuccessBody<PrivateUserResponse>
+      const resBody = jsonSuccessSchema(privateUserResponseSchema).parse(
+        await res.json()
+      )
 
       expect(res.status).toBe(200)
       expect(resBody.data).toMatchObject({
@@ -203,9 +204,6 @@ describe("PATCH /api/v1/users/:username", () => {
         role: user.role,
         id: user.id,
       })
-      expect(resBody.data).toHaveProperty("_count")
-      expect(resBody.data).toHaveProperty("createdAt")
-      expect(resBody.data).toHaveProperty("updatedAt")
       expect(resBody.data).not.toHaveProperty("password")
     } finally {
       await userCleanup().catch(() => {})
@@ -229,7 +227,9 @@ describe("PATCH /api/v1/users/:username", () => {
         method: "PATCH",
       })
 
-      const resBody = (await res.json()) as JsonSuccessBody<PrivateUserResponse>
+      const resBody = jsonSuccessSchema(privateUserResponseSchema).parse(
+        await res.json()
+      )
 
       expect(res.status).toBe(200)
       expect(resBody.data).toMatchObject({
@@ -239,9 +239,6 @@ describe("PATCH /api/v1/users/:username", () => {
         name: payload.name,
         id: targetUser.id,
       })
-      expect(resBody.data).toHaveProperty("_count")
-      expect(resBody.data).toHaveProperty("createdAt")
-      expect(resBody.data).toHaveProperty("updatedAt")
       expect(resBody.data).not.toHaveProperty("password")
     } finally {
       await targetUserCleanup().catch(() => {})
@@ -262,7 +259,7 @@ describe("PATCH /api/v1/users/:username", () => {
         method: "PATCH",
       })
 
-      const resBody = (await res.json()) as JsonErrorBody
+      const resBody = jsonErrorSchema.parse(await res.json())
 
       expect(res.status).toBe(400)
       expect(resBody).toEqual({
@@ -293,7 +290,7 @@ describe("PATCH /api/v1/users/:username", () => {
         method: "PATCH",
       })
 
-      const resBody = (await res.json()) as JsonErrorBody
+      const resBody = jsonErrorSchema.parse(await res.json())
 
       expect(res.status).toBe(409)
       expect(resBody).toEqual({
@@ -326,7 +323,7 @@ describe("PATCH /api/v1/users/:username", () => {
         method: "PATCH",
       })
 
-      const resBody = (await res.json()) as JsonErrorBody
+      const resBody = jsonErrorSchema.parse(await res.json())
 
       expect(res.status).toBe(409)
       expect(resBody).toEqual({
@@ -357,7 +354,7 @@ describe("PATCH /api/v1/users/:username", () => {
         method: "PATCH",
       })
 
-      const resBody = (await res.json()) as JsonErrorBody
+      const resBody = jsonErrorSchema.parse(await res.json())
 
       expect(res.status).toBe(404)
       expect(resBody).toMatchObject({
@@ -377,7 +374,9 @@ describe("GET /api/v1/users/:username", () => {
     try {
       const res = await app.request(`/api/v1/users/${user.username}`)
 
-      const resBody = (await res.json()) as JsonSuccessBody<PublicUserResponse>
+      const resBody = jsonSuccessSchema(publicUserResponseSchema).parse(
+        await res.json()
+      )
 
       expect(res.status).toBe(200)
       expect(resBody.data).toMatchObject({
@@ -403,7 +402,9 @@ describe("GET /api/v1/users/:username", () => {
         headers: { cookie: `token=${token}` },
       })
 
-      const resBody = (await res.json()) as JsonSuccessBody<PrivateUserResponse>
+      const resBody = jsonSuccessSchema(privateUserResponseSchema).parse(
+        await res.json()
+      )
 
       expect(res.status).toBe(200)
       expect(resBody.data).toMatchObject({
@@ -413,9 +414,6 @@ describe("GET /api/v1/users/:username", () => {
         name: user.name,
         id: user.id,
       })
-      expect(resBody.data).toHaveProperty("_count")
-      expect(resBody.data).toHaveProperty("createdAt")
-      expect(resBody.data).toHaveProperty("updatedAt")
     } finally {
       await userCleanup().catch(() => {})
     }
@@ -432,7 +430,9 @@ describe("GET /api/v1/users/:username", () => {
         headers: { cookie: `token=${token}` },
       })
 
-      const resBody = (await res.json()) as JsonSuccessBody<PrivateUserResponse>
+      const resBody = jsonSuccessSchema(privateUserResponseSchema).parse(
+        await res.json()
+      )
 
       expect(res.status).toBe(200)
       expect(resBody.data).toMatchObject({
@@ -442,9 +442,6 @@ describe("GET /api/v1/users/:username", () => {
         name: targetUser.name,
         id: targetUser.id,
       })
-      expect(resBody.data).toHaveProperty("_count")
-      expect(resBody.data).toHaveProperty("createdAt")
-      expect(resBody.data).toHaveProperty("updatedAt")
     } finally {
       await targetUserCleanup().catch(() => {})
       await adminCleanup().catch(() => {})
@@ -454,7 +451,7 @@ describe("GET /api/v1/users/:username", () => {
   test("returns 404 when username does not exist", async () => {
     const res = await app.request("/api/v1/users/does-not-exist")
 
-    const resBody = (await res.json()) as JsonErrorBody
+    const resBody = jsonErrorSchema.parse(await res.json())
 
     expect(res.status).toBe(404)
     expect(resBody).toMatchObject({
@@ -475,13 +472,12 @@ describe("GET /api/v1/users/:username/suggestions", () => {
         `/api/v1/users/${user.username}/suggestions`
       )
 
-      const resBody = (await res.json()) as {
-        meta: { pagination: Pagination }
-      } & JsonSuccessBody<SuggestionBaseResponse[]>
+      const resBody = paginatedSuccessSchema(
+        z.array(suggestionWithViewerUpvoteResponseSchema)
+      ).parse(await res.json())
 
       expect(res.status).toBe(200)
       expect(resBody.data.some((item) => item.id === suggestion.id)).toBe(true)
-      expect(resBody.data[0]).toHaveProperty("viewerHasUpvoted")
       expect(resBody.meta.pagination).toEqual({
         hasPreviousPage: false,
         hasNextPage: false,
@@ -512,9 +508,9 @@ describe("GET /api/v1/users/:username/suggestions", () => {
         `/api/v1/users/${user.username}/suggestions?page=2&pageSize=10`
       )
 
-      const resBody = (await res.json()) as {
-        meta: { pagination: Pagination }
-      } & JsonSuccessBody<SuggestionBaseResponse[]>
+      const resBody = paginatedSuccessSchema(
+        z.array(suggestionWithViewerUpvoteResponseSchema)
+      ).parse(await res.json())
 
       expect(res.status).toBe(200)
       expect(resBody.data).toHaveLength(10)
@@ -548,9 +544,9 @@ describe("GET /api/v1/users/:username/upvotes", () => {
     try {
       const res = await app.request(`/api/v1/users/${user.username}/upvotes`)
 
-      const resBody = (await res.json()) as {
-        meta: { pagination: Pagination }
-      } & JsonSuccessBody<SuggestionBaseResponse[]>
+      const resBody = paginatedSuccessSchema(
+        z.array(suggestionWithViewerUpvoteResponseSchema)
+      ).parse(await res.json())
 
       expect(res.status).toBe(200)
       expect(resBody.data.some((item) => item.id === suggestion.id)).toBe(true)
@@ -592,9 +588,9 @@ describe("GET /api/v1/users/:username/upvotes", () => {
         `/api/v1/users/${user.username}/upvotes?page=2&pageSize=10`
       )
 
-      const resBody = (await res.json()) as {
-        meta: { pagination: Pagination }
-      } & JsonSuccessBody<SuggestionBaseResponse[]>
+      const resBody = paginatedSuccessSchema(
+        z.array(suggestionWithViewerUpvoteResponseSchema)
+      ).parse(await res.json())
 
       expect(res.status).toBe(200)
       expect(resBody.data).toHaveLength(10)
@@ -628,9 +624,9 @@ describe("GET /api/v1/users/:username/comments", () => {
     try {
       const res = await app.request(`/api/v1/users/${user.username}/comments`)
 
-      const resBody = (await res.json()) as {
-        meta: { pagination: Pagination }
-      } & JsonSuccessBody<CommentResponse[]>
+      const resBody = paginatedSuccessSchema(
+        z.array(commentResponseSchema)
+      ).parse(await res.json())
 
       expect(res.status).toBe(200)
       expect(resBody.data.some((item) => item.id === comment.id)).toBe(true)
@@ -670,9 +666,9 @@ describe("GET /api/v1/users/:username/comments", () => {
         `/api/v1/users/${user.username}/comments?page=2&pageSize=10`
       )
 
-      const resBody = (await res.json()) as {
-        meta: { pagination: Pagination }
-      } & JsonSuccessBody<CommentResponse[]>
+      const resBody = paginatedSuccessSchema(
+        z.array(commentResponseSchema)
+      ).parse(await res.json())
 
       expect(res.status).toBe(200)
       expect(resBody.data).toHaveLength(10)
