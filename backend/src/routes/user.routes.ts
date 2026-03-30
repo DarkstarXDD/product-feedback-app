@@ -1,4 +1,6 @@
+import { describeRoute, resolver } from "hono-openapi"
 import { Hono } from "hono"
+import * as z from "zod"
 
 import type { AppContext } from "@/lib/types"
 
@@ -6,12 +8,18 @@ import {
   suggestionWithViewerUpvoteSelect,
   suggestionBaseSelect,
 } from "@/lib/selects/suggestion.select"
+import { suggestionWithViewerUpvoteResponseSchema } from "@/schemas/suggestion.schema"
+import {
+  paginatedSuccessSchema,
+  jsonErrorSchema,
+} from "@/schemas/shared.schema"
 import { privateUserSelect, publicUserSelect } from "@/lib/selects/user.select"
 import { mapSuggestionWithUpvoteStatus } from "@/lib/mappers/suggestion.mapper"
 import { withTargetAccess } from "@/middlewares/with-target-access.middleware"
 import { resolveAuthUser } from "@/middlewares/resolve-auth-user.middleware"
 import { requireRole } from "@/middlewares/require-role.middleware"
 import { jsonSuccess, conflict, notFound } from "@/lib/responses"
+import { commentResponseSchema } from "@/schemas/comment.schema"
 import { paginationSchema } from "@/schemas/pagination.schema"
 import { commentSelect } from "@/lib/selects/comment.select"
 import { getTargetUserOrThrow } from "@/lib/context-helpers"
@@ -117,6 +125,33 @@ userRoutes.patch(
 // ---------------------------- Get All Suggestions of a User -------------------------
 userRoutes.get(
   "/:username/suggestions",
+  describeRoute({
+    tags: ["Users"],
+    summary: "Get All Suggestions of a User",
+    description: "Returns a paginated list of suggestions created by a user.",
+    responses: {
+      200: {
+        content: {
+          "application/json": {
+            schema: resolver(
+              paginatedSuccessSchema(
+                z.array(suggestionWithViewerUpvoteResponseSchema)
+              )
+            ),
+          },
+        },
+        description: "Successfully retrieved suggestions.",
+      },
+      400: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description: "Bad Request. Query parameters fail validation.",
+      },
+    },
+  }),
   resolveAuthUser,
   zodValidator("query", paginationSchema),
   async (c) => {
@@ -153,6 +188,33 @@ userRoutes.get(
 // ---------------------------- Get All Upvoted Suggestions of a User -------------------------
 userRoutes.get(
   "/:username/upvotes",
+  describeRoute({
+    tags: ["Users"],
+    summary: "Get All Upvoted Suggestions of a User",
+    description: "Returns a paginated list of suggestions upvoted by a user.",
+    responses: {
+      200: {
+        content: {
+          "application/json": {
+            schema: resolver(
+              paginatedSuccessSchema(
+                z.array(suggestionWithViewerUpvoteResponseSchema)
+              )
+            ),
+          },
+        },
+        description: "Successfully retrieved upvoted suggestions.",
+      },
+      400: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description: "Bad Request. Query parameters fail validation.",
+      },
+    },
+  }),
   resolveAuthUser,
   zodValidator("query", paginationSchema),
   async (c) => {
@@ -187,9 +249,31 @@ userRoutes.get(
 )
 
 // ------------------------------- GET All Comments of a User --------------------------------
-
 userRoutes.get(
   "/:username/comments",
+  describeRoute({
+    tags: ["Users"],
+    summary: "Get All Comments of a User",
+    description: "Returns a paginated list of comments made by a user.",
+    responses: {
+      200: {
+        content: {
+          "application/json": {
+            schema: resolver(paginatedSuccessSchema(commentResponseSchema)),
+          },
+        },
+        description: "Successfully retrieved comments.",
+      },
+      400: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description: "Bad Request. Query parameters fail validation.",
+      },
+    },
+  }),
   zodValidator("query", paginationSchema),
   async (c) => {
     const username = c.req.param("username")
