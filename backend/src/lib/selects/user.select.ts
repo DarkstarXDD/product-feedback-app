@@ -1,3 +1,4 @@
+import type { Serialize } from "@/lib/types"
 import type { Prisma } from "@/db/client"
 
 /** Fields that are included when public requests user data. */
@@ -6,9 +7,11 @@ export const publicUserSelect = {
   username: true,
 } as const satisfies Prisma.UserSelect
 
-export type PublicUserResponse = Prisma.UserGetPayload<{
-  select: typeof publicUserSelect
-}>
+export type PublicUserResponse = Serialize<
+  Prisma.UserGetPayload<{
+    select: typeof publicUserSelect
+  }>
+>
 
 /** Fields that are included when an admin or own user requests user data. Excludes password and relation fields. */
 export const privateUserSelect = {
@@ -22,6 +25,8 @@ export const privateUserSelect = {
   _count: true,
 } as const satisfies Prisma.UserSelect
 
-export type PrivateUserResponse = Prisma.UserGetPayload<{
-  select: typeof privateUserSelect
-}>
+export type PrivateUserResponse = Serialize<
+  Prisma.UserGetPayload<{
+    select: typeof privateUserSelect
+  }>
+>

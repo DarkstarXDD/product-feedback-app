@@ -52,11 +52,13 @@ export const suggestionResponseSchema = z.object({
       "It would be helpful to have a dark mode toggle when reading at night.",
     "x-order": 4,
   }),
-  createdAt: z.date().meta({
+  createdAt: z.iso.datetime().meta({
+    pattern: undefined,
     example: "2026-01-01T00:00:00.000Z",
     "x-order": 5,
   }),
-  updatedAt: z.date().meta({
+  updatedAt: z.iso.datetime().meta({
+    pattern: undefined,
     example: "2026-01-01T00:00:00.000Z",
     "x-order": 6,
   }),
@@ -110,11 +112,13 @@ export const suggestionWithCommentsResponseSchema: z.ZodType<SuggestionWithComme
           content: z
             .string()
             .meta({ example: "I would love to see this added.", "x-order": 2 }),
-          createdAt: z.date().meta({
+          createdAt: z.iso.datetime().meta({
+            pattern: undefined,
             example: "2026-01-01T00:00:00.000Z",
             "x-order": 3,
           }),
-          updatedAt: z.date().meta({
+          updatedAt: z.iso.datetime().meta({
+            pattern: undefined,
             example: "2026-01-01T00:00:00.000Z",
             "x-order": 4,
           }),

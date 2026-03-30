@@ -62,11 +62,13 @@ export const privateUserResponseSchema: z.ZodType<PrivateUserResponse> =
       .email()
       .meta({ pattern: undefined, example: "johndoe@email.com", "x-order": 4 }),
     role: z.enum(["USER", "ADMIN"]).meta({ example: "USER", "x-order": 5 }),
-    createdAt: z.date().meta({
+    createdAt: z.iso.datetime().meta({
+      pattern: undefined,
       example: "2026-01-01T00:00:00.000Z",
       "x-order": 6,
     }),
-    updatedAt: z.date().meta({
+    updatedAt: z.iso.datetime().meta({
+      pattern: undefined,
       example: "2026-01-01T00:00:00.000Z",
       "x-order": 7,
     }),

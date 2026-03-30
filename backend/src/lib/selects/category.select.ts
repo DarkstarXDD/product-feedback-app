@@ -1,3 +1,4 @@
+import type { Serialize } from "@/lib/types"
 import type { Prisma } from "@/db/client"
 
 /** Fields that are included when a Category is fetched. */
@@ -7,6 +8,8 @@ export const categorySelect = {
   name: true,
 } as const satisfies Prisma.CategorySelect
 
-export type CategoryResponse = Prisma.CategoryGetPayload<{
-  select: typeof categorySelect
-}>
+export type CategoryResponse = Serialize<
+  Prisma.CategoryGetPayload<{
+    select: typeof categorySelect
+  }>
+>

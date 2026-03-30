@@ -71,7 +71,11 @@ export function unauthorized(
   message = "Unauthorized",
   errors?: JsonErrorBody["errors"]
 ): never {
-  return jsonError(c, { message, code: "UNAUTHORIZED", errors }, { status: 401 })
+  return jsonError(
+    c,
+    { message, code: "UNAUTHORIZED", errors },
+    { status: 401 }
+  )
 }
 
 /** A thin wrapper for `forbidden` errors. Returns 403. Wraps `jsonError`. */
