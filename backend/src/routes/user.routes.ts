@@ -2,10 +2,14 @@ import { Hono } from "hono"
 
 import type { AppContext } from "@/lib/types"
 
+import {
+  suggestionWithViewerUpvoteSelect,
+  suggestionBaseSelect,
+} from "@/lib/selects/suggestion.select"
 import { privateUserSelect, publicUserSelect } from "@/lib/selects/user.select"
+import { mapSuggestionWithUpvoteStatus } from "@/lib/mappers/suggestion.mapper"
 import { withTargetAccess } from "@/middlewares/with-target-access.middleware"
 import { resolveAuthUser } from "@/middlewares/resolve-auth-user.middleware"
-import { suggestionBaseSelect } from "@/lib/selects/suggestion.select"
 import { requireRole } from "@/middlewares/require-role.middleware"
 import { jsonSuccess, conflict, notFound } from "@/lib/responses"
 import { paginationSchema } from "@/schemas/pagination.schema"
@@ -126,39 +130,20 @@ userRoutes.get(
         where: { user: { username } },
       }),
       prisma.suggestion.findMany({
-        select: {
-          ...suggestionBaseSelect,
-          ...(user
-            ? {
-                upvotes: {
-                  where: { userId: user.id },
-                  select: { id: true },
-                },
-              }
-            : {}),
-        },
+        select: user
+          ? suggestionWithViewerUpvoteSelect(user.id)
+          : suggestionBaseSelect,
         where: { user: { username } },
         take: pageSize,
         skip,
       }),
     ])
 
-    const data = suggestions.map((suggestion) => {
-      const viewerHasUpvoted =
-        user && "upvotes" in suggestion ? suggestion.upvotes.length > 0 : false
-      const { upvotes: _upvotes, ...suggestionData } = suggestion
-
-      return {
-        ...suggestionData,
-        viewerHasUpvoted,
-      }
-    })
-
     return jsonSuccess(
       c,
       {
         meta: { pagination: buildPagination({ page, pageSize, totalItems }) },
-        data,
+        data: suggestions.map(mapSuggestionWithUpvoteStatus),
       },
       { status: 200 }
     )
@@ -176,50 +161,25 @@ userRoutes.get(
     const { pageSize, page } = c.req.valid("query")
     const skip = (page - 1) * pageSize
 
-    const where = {
-      upvotes: {
-        some: {
-          user: { username },
-        },
-      },
-    } as const
+    const where = { upvotes: { some: { user: { username } } } } as const
 
     const [totalItems, suggestions] = await Promise.all([
       prisma.suggestion.count({ where }),
       prisma.suggestion.findMany({
-        select: {
-          ...suggestionBaseSelect,
-          ...(user
-            ? {
-                upvotes: {
-                  where: { userId: user.id },
-                  select: { id: true },
-                },
-              }
-            : {}),
-        },
+        select: user
+          ? suggestionWithViewerUpvoteSelect(user.id)
+          : suggestionBaseSelect,
         take: pageSize,
         where,
         skip,
       }),
     ])
 
-    const data = suggestions.map((suggestion) => {
-      const viewerHasUpvoted =
-        user && "upvotes" in suggestion ? suggestion.upvotes.length > 0 : false
-      const { upvotes: _upvotes, ...suggestionData } = suggestion
-
-      return {
-        ...suggestionData,
-        viewerHasUpvoted,
-      }
-    })
-
     return jsonSuccess(
       c,
       {
         meta: { pagination: buildPagination({ page, pageSize, totalItems }) },
-        data,
+        data: suggestions.map(mapSuggestionWithUpvoteStatus),
       },
       { status: 200 }
     )
@@ -227,6 +187,7 @@ userRoutes.get(
 )
 
 // ------------------------------- GET All Comments of a User --------------------------------
+
 userRoutes.get(
   "/:username/comments",
   zodValidator("query", paginationSchema),
