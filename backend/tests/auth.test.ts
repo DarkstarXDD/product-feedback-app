@@ -1,19 +1,14 @@
 import { describe, expect, test } from "vitest"
 
-import type { JsonSuccessBody, JsonErrorBody } from "@/lib/responses"
-
+import {
+  signUpResponseSchema,
+  signInResponseSchema,
+} from "@/schemas/auth.schema"
+import { jsonSuccessSchema, jsonErrorSchema } from "@/schemas/shared.schema"
 import { prisma } from "@/db/client"
 import app from "@/app"
 
 import { createDummyUserData, createDummyUser } from "./utils"
-
-type SignupResponse = {
-  createdAt: string
-  username: string
-  email: string
-  name: string
-  id: string
-}
 
 describe("POST /api/v1/auth/signup", () => {
   test("returns 201 and created user when valid payload", async () => {
@@ -24,7 +19,9 @@ describe("POST /api/v1/auth/signup", () => {
       body: JSON.stringify(payload),
       method: "POST",
     })
-    const resBody = (await res.json()) as JsonSuccessBody<SignupResponse>
+    const resBody = jsonSuccessSchema(signUpResponseSchema).parse(
+      await res.json()
+    )
 
     try {
       expect(res.status).toBe(201)
@@ -38,7 +35,9 @@ describe("POST /api/v1/auth/signup", () => {
       expect(resBody.data).not.toHaveProperty("password")
       expect(resBody.data).not.toHaveProperty("confirmPassword")
     } finally {
-      await prisma.user.delete({ where: { id: resBody.data.id } }).catch(() => {})
+      await prisma.user
+        .delete({ where: { id: resBody.data.id } })
+        .catch(() => {})
     }
   })
 
@@ -48,7 +47,8 @@ describe("POST /api/v1/auth/signup", () => {
       body: JSON.stringify({}),
       method: "POST",
     })
-    const resBody = (await res.json()) as JsonErrorBody
+
+    const resBody = jsonErrorSchema.parse(await res.json())
 
     expect(res.status).toBe(400)
     expect(resBody).toEqual({
@@ -75,7 +75,7 @@ describe("POST /api/v1/auth/signup", () => {
       headers: new Headers({ "Content-Type": "application/json" }),
       method: "POST",
     })
-    const resBody = await res.json()
+    const resBody = jsonErrorSchema.parse(await res.json())
 
     expect(res.status).toBe(400)
     expect(resBody).toEqual({
@@ -102,7 +102,7 @@ describe("POST /api/v1/auth/signup", () => {
       headers: new Headers({ "Content-Type": "application/json" }),
       method: "POST",
     })
-    const resBody = await res.json()
+    const resBody = jsonErrorSchema.parse(await res.json())
 
     expect(res.status).toBe(400)
     expect(resBody).toEqual({
@@ -128,7 +128,7 @@ describe("POST /api/v1/auth/signup", () => {
       headers: new Headers({ "Content-Type": "application/json" }),
       method: "POST",
     })
-    const resBody = await res.json()
+    const resBody = jsonErrorSchema.parse(await res.json())
 
     expect(res.status).toBe(400)
     expect(resBody).toEqual({
@@ -151,8 +151,9 @@ describe("POST /api/v1/auth/signup", () => {
       body: JSON.stringify(firstPayload),
       method: "POST",
     })
-    const firstResBody =
-      (await firstRes.json()) as JsonSuccessBody<SignupResponse>
+    const firstResBody = jsonSuccessSchema(signUpResponseSchema).parse(
+      await firstRes.json()
+    )
     const firstUserId = firstResBody.data.id
 
     try {
@@ -167,7 +168,7 @@ describe("POST /api/v1/auth/signup", () => {
         headers: new Headers({ "Content-Type": "application/json" }),
         method: "POST",
       })
-      const duplicateResBody = (await duplicateRes.json()) as JsonErrorBody
+      const duplicateResBody = jsonErrorSchema.parse(await duplicateRes.json())
 
       expect(duplicateRes.status).toBe(409)
       expect(duplicateResBody).toEqual({
@@ -192,8 +193,9 @@ describe("POST /api/v1/auth/signup", () => {
       body: JSON.stringify(payload),
       method: "POST",
     })
-    const firstResBody =
-      (await firstRes.json()) as JsonSuccessBody<SignupResponse>
+    const firstResBody = jsonSuccessSchema(signUpResponseSchema).parse(
+      await firstRes.json()
+    )
     const firstUserId = firstResBody.data.id
 
     try {
@@ -208,7 +210,7 @@ describe("POST /api/v1/auth/signup", () => {
         headers: new Headers({ "Content-Type": "application/json" }),
         method: "POST",
       })
-      const duplicateResBody = (await duplicateRes.json()) as JsonErrorBody
+      const duplicateResBody = jsonErrorSchema.parse(await duplicateRes.json())
 
       expect(duplicateRes.status).toBe(409)
       expect(duplicateResBody).toEqual({
@@ -233,7 +235,9 @@ describe("POST /api/v1/auth/signup", () => {
       body: JSON.stringify(payload),
       method: "POST",
     })
-    const resBody = (await res.json()) as JsonSuccessBody<SignupResponse>
+    const resBody = jsonSuccessSchema(signUpResponseSchema).parse(
+      await res.json()
+    )
 
     try {
       const cookie = res.headers.get("set-cookie")
@@ -247,7 +251,9 @@ describe("POST /api/v1/auth/signup", () => {
       expect(cookie).toContain("Path=/")
       expect(cookie).toContain("Max-Age=604800")
     } finally {
-      await prisma.user.delete({ where: { id: resBody.data.id } }).catch(() => {})
+      await prisma.user
+        .delete({ where: { id: resBody.data.id } })
+        .catch(() => {})
     }
   })
 
@@ -259,7 +265,9 @@ describe("POST /api/v1/auth/signup", () => {
       body: JSON.stringify(payload),
       method: "POST",
     })
-    const resBody = (await res.json()) as JsonSuccessBody<SignupResponse>
+    const resBody = jsonSuccessSchema(signUpResponseSchema).parse(
+      await res.json()
+    )
 
     try {
       const dbUser = await prisma.user.findUnique({
@@ -279,7 +287,9 @@ describe("POST /api/v1/auth/signup", () => {
         name: payload.name,
       })
     } finally {
-      await prisma.user.delete({ where: { id: resBody.data.id } }).catch(() => {})
+      await prisma.user
+        .delete({ where: { id: resBody.data.id } })
+        .catch(() => {})
     }
   })
 })
@@ -299,8 +309,9 @@ describe("POST /api/v1/auth/signin", () => {
         method: "POST",
       })
 
-      const signinResBody =
-        (await signinRes.json()) as JsonSuccessBody<SignupResponse>
+      const signinResBody = jsonSuccessSchema(signInResponseSchema).parse(
+        await signinRes.json()
+      )
       const cookie = signinRes.headers.get("set-cookie")
 
       expect(signinRes.status).toBe(200)
@@ -336,7 +347,7 @@ describe("POST /api/v1/auth/signin", () => {
         method: "POST",
       })
 
-      const signinResBody = (await signinRes.json()) as JsonErrorBody
+      const signinResBody = jsonErrorSchema.parse(await signinRes.json())
 
       expect(signinRes.status).toBe(401)
       expect(signinResBody).toEqual({
