@@ -1,10 +1,13 @@
 import { describe, expect, test } from "vitest"
 import { faker } from "@faker-js/faker"
+import * as z from "zod"
 
-import type { JsonSuccessBody, JsonErrorBody } from "@/lib/responses"
-import type { CommentResponse } from "@/lib/selects/comment.select"
-import type { Pagination } from "@/lib/pagination"
-
+import {
+  paginatedSuccessSchema,
+  jsonSuccessSchema,
+  jsonErrorSchema,
+} from "@/schemas/shared.schema"
+import { commentResponseSchema } from "@/schemas/comment.schema"
 import app from "@/app"
 
 import {
@@ -19,7 +22,7 @@ describe("GET /api/v1/comments", () => {
   test("return 401 when unauthorized", async () => {
     const res = await app.request("/api/v1/comments")
 
-    const resBody = (await res.json()) as JsonErrorBody
+    const resBody = jsonErrorSchema.parse(await res.json())
 
     expect(res.status).toBe(401)
     expect(resBody).toMatchObject({
@@ -37,7 +40,7 @@ describe("GET /api/v1/comments", () => {
         headers: { cookie: `token=${token}` },
       })
 
-      const resBody = (await res.json()) as JsonErrorBody
+      const resBody = jsonErrorSchema.parse(await res.json())
 
       expect(res.status).toBe(403)
       expect(resBody).toMatchObject({
@@ -59,9 +62,9 @@ describe("GET /api/v1/comments", () => {
         headers: { cookie: `token=${token}` },
       })
 
-      const resBody = (await res.json()) as {
-        meta: { pagination: Pagination }
-      } & JsonSuccessBody<CommentResponse[]>
+      const resBody = paginatedSuccessSchema(
+        z.array(commentResponseSchema)
+      ).parse(await res.json())
 
       expect(res.status).toBe(200)
       expect(resBody.data.some((item) => item.id === comment.id)).toBe(true)
@@ -101,9 +104,9 @@ describe("GET /api/v1/comments", () => {
         headers: { cookie: `token=${token}` },
       })
 
-      const resBody = (await res.json()) as {
-        meta: { pagination: Pagination }
-      } & JsonSuccessBody<CommentResponse[]>
+      const resBody = paginatedSuccessSchema(
+        z.array(commentResponseSchema)
+      ).parse(await res.json())
 
       expect(res.status).toBe(200)
       expect(resBody.data).toHaveLength(10)
@@ -135,9 +138,9 @@ describe("GET /api/v1/comments/:id", () => {
     try {
       const res = await app.request(`/api/v1/comments/${comment.id}`)
 
-      const resBody = (await res.json()) as JsonSuccessBody<
-        Record<string, unknown>
-      >
+      const resBody = jsonSuccessSchema(commentResponseSchema).parse(
+        await res.json()
+      )
 
       expect(res.status).toBe(200)
       expect(resBody.data).toHaveProperty("id", comment.id)
@@ -151,7 +154,7 @@ describe("GET /api/v1/comments/:id", () => {
 
     const res = await app.request(`/api/v1/comments/${id}`)
 
-    const resBody = (await res.json()) as JsonErrorBody
+    const resBody = jsonErrorSchema.parse(await res.json())
 
     expect(res.status).toBe(404)
     expect(resBody).toMatchObject({
@@ -175,7 +178,7 @@ describe("PATCH /api/v1/comments/:id", () => {
         method: "PATCH",
       })
 
-      const resBody = (await res.json()) as JsonErrorBody
+      const resBody = jsonErrorSchema.parse(await res.json())
 
       expect(res.status).toBe(401)
       expect(resBody).toMatchObject({
@@ -204,7 +207,7 @@ describe("PATCH /api/v1/comments/:id", () => {
         method: "PATCH",
       })
 
-      const resBody = (await res.json()) as JsonErrorBody
+      const resBody = jsonErrorSchema.parse(await res.json())
 
       expect(res.status).toBe(403)
       expect(resBody).toMatchObject({
@@ -236,9 +239,9 @@ describe("PATCH /api/v1/comments/:id", () => {
         method: "PATCH",
       })
 
-      const resBody = (await res.json()) as JsonSuccessBody<
-        Record<string, unknown>
-      >
+      const resBody = jsonSuccessSchema(commentResponseSchema).parse(
+        await res.json()
+      )
 
       expect(res.status).toBe(200)
       expect(resBody.data).toHaveProperty("id", comment.id)
@@ -270,9 +273,9 @@ describe("PATCH /api/v1/comments/:id", () => {
         method: "PATCH",
       })
 
-      const resBody = (await res.json()) as JsonSuccessBody<
-        Record<string, unknown>
-      >
+      const resBody = jsonSuccessSchema(commentResponseSchema).parse(
+        await res.json()
+      )
 
       expect(res.status).toBe(200)
       expect(resBody.data).toHaveProperty("id", comment.id)
@@ -297,7 +300,7 @@ describe("PATCH /api/v1/comments/:id", () => {
         method: "PATCH",
       })
 
-      const resBody = (await res.json()) as JsonErrorBody
+      const resBody = jsonErrorSchema.parse(await res.json())
 
       expect(res.status).toBe(404)
       expect(resBody).toMatchObject({
@@ -328,10 +331,9 @@ describe("PATCH /api/v1/comments/:id", () => {
         method: "PATCH",
       })
 
-      const resBody = (await res.json()) as JsonErrorBody
+      const resBody = jsonErrorSchema.parse(await res.json())
 
       expect(res.status).toBe(400)
-
       expect(resBody).toEqual({
         errors: {
           fieldErrors: {

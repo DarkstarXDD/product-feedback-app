@@ -81,6 +81,7 @@ export const suggestionResponseSchema = z.object({
       name: z.string().meta({ example: "Planned" }),
       slug: z.string().meta({ example: "planned" }),
     })
+    .nullable()
     .meta({ "x-order": 9 }),
   user: z
     .object({
