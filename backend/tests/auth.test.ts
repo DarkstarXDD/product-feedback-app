@@ -26,18 +26,20 @@ describe("POST /api/v1/auth/signup", () => {
     })
     const resBody = (await res.json()) as JsonSuccessBody<SignupResponse>
 
-    expect(res.status).toBe(201)
+    try {
+      expect(res.status).toBe(201)
 
-    expect(resBody.data).toMatchObject({
-      email: payload.email.toLowerCase(),
-      username: payload.username,
-      name: payload.name,
-    })
+      expect(resBody.data).toMatchObject({
+        email: payload.email.toLowerCase(),
+        username: payload.username,
+        name: payload.name,
+      })
 
-    expect(resBody.data).not.toHaveProperty("password")
-    expect(resBody.data).not.toHaveProperty("confirmPassword")
-
-    await prisma.user.delete({ where: { id: resBody.data.id } })
+      expect(resBody.data).not.toHaveProperty("password")
+      expect(resBody.data).not.toHaveProperty("confirmPassword")
+    } finally {
+      await prisma.user.delete({ where: { id: resBody.data.id } }).catch(() => {})
+    }
   })
 
   test("returns 400 and field errors when missing required fields", async () => {
@@ -153,31 +155,33 @@ describe("POST /api/v1/auth/signup", () => {
       (await firstRes.json()) as JsonSuccessBody<SignupResponse>
     const firstUserId = firstResBody.data.id
 
-    expect(firstRes.status).toBe(201)
+    try {
+      expect(firstRes.status).toBe(201)
 
-    const duplicatePayload = createDummyUserData()
-    const duplicateRes = await app.request("/api/v1/auth/signup", {
-      body: JSON.stringify({
-        ...duplicatePayload,
-        email: firstPayload.email,
-      }),
-      headers: new Headers({ "Content-Type": "application/json" }),
-      method: "POST",
-    })
-    const duplicateResBody = (await duplicateRes.json()) as JsonErrorBody
+      const duplicatePayload = createDummyUserData()
+      const duplicateRes = await app.request("/api/v1/auth/signup", {
+        body: JSON.stringify({
+          ...duplicatePayload,
+          email: firstPayload.email,
+        }),
+        headers: new Headers({ "Content-Type": "application/json" }),
+        method: "POST",
+      })
+      const duplicateResBody = (await duplicateRes.json()) as JsonErrorBody
 
-    expect(duplicateRes.status).toBe(409)
-    expect(duplicateResBody).toEqual({
-      errors: {
-        fieldErrors: {
-          email: ["Email already exists"],
+      expect(duplicateRes.status).toBe(409)
+      expect(duplicateResBody).toEqual({
+        errors: {
+          fieldErrors: {
+            email: ["Email already exists"],
+          },
         },
-      },
-      message: "Unique constraint violation",
-      code: "CONFLICT",
-    })
-
-    await prisma.user.delete({ where: { id: firstUserId } })
+        message: "Unique constraint violation",
+        code: "CONFLICT",
+      })
+    } finally {
+      await prisma.user.delete({ where: { id: firstUserId } }).catch(() => {})
+    }
   })
 
   test("returns 409 and field errors when username already exists", async () => {
@@ -192,31 +196,33 @@ describe("POST /api/v1/auth/signup", () => {
       (await firstRes.json()) as JsonSuccessBody<SignupResponse>
     const firstUserId = firstResBody.data.id
 
-    expect(firstRes.status).toBe(201)
+    try {
+      expect(firstRes.status).toBe(201)
 
-    const duplicatePayload = createDummyUserData()
-    const duplicateRes = await app.request("/api/v1/auth/signup", {
-      body: JSON.stringify({
-        ...duplicatePayload,
-        username: payload.username,
-      }),
-      headers: new Headers({ "Content-Type": "application/json" }),
-      method: "POST",
-    })
-    const duplicateResBody = (await duplicateRes.json()) as JsonErrorBody
+      const duplicatePayload = createDummyUserData()
+      const duplicateRes = await app.request("/api/v1/auth/signup", {
+        body: JSON.stringify({
+          ...duplicatePayload,
+          username: payload.username,
+        }),
+        headers: new Headers({ "Content-Type": "application/json" }),
+        method: "POST",
+      })
+      const duplicateResBody = (await duplicateRes.json()) as JsonErrorBody
 
-    expect(duplicateRes.status).toBe(409)
-    expect(duplicateResBody).toEqual({
-      errors: {
-        fieldErrors: {
-          username: ["Username taken. Please pick a different username"],
+      expect(duplicateRes.status).toBe(409)
+      expect(duplicateResBody).toEqual({
+        errors: {
+          fieldErrors: {
+            username: ["Username taken. Please pick a different username"],
+          },
         },
-      },
-      message: "Unique constraint violation",
-      code: "CONFLICT",
-    })
-
-    await prisma.user.delete({ where: { id: firstUserId } })
+        message: "Unique constraint violation",
+        code: "CONFLICT",
+      })
+    } finally {
+      await prisma.user.delete({ where: { id: firstUserId } }).catch(() => {})
+    }
   })
 
   test("returns 201 and sets auth cookie with expected attributes when success", async () => {
@@ -228,18 +234,21 @@ describe("POST /api/v1/auth/signup", () => {
       method: "POST",
     })
     const resBody = (await res.json()) as JsonSuccessBody<SignupResponse>
-    const cookie = res.headers.get("set-cookie")
 
-    expect(res.status).toBe(201)
-    expect(cookie).toBeTruthy()
-    expect(cookie).toContain("token=")
-    expect(cookie).toContain("HttpOnly")
-    expect(cookie).toContain("Secure")
-    expect(cookie).toContain("SameSite=Lax")
-    expect(cookie).toContain("Path=/")
-    expect(cookie).toContain("Max-Age=604800")
+    try {
+      const cookie = res.headers.get("set-cookie")
 
-    await prisma.user.delete({ where: { id: resBody.data.id } })
+      expect(res.status).toBe(201)
+      expect(cookie).toBeTruthy()
+      expect(cookie).toContain("token=")
+      expect(cookie).toContain("HttpOnly")
+      expect(cookie).toContain("Secure")
+      expect(cookie).toContain("SameSite=Lax")
+      expect(cookie).toContain("Path=/")
+      expect(cookie).toContain("Max-Age=604800")
+    } finally {
+      await prisma.user.delete({ where: { id: resBody.data.id } }).catch(() => {})
+    }
   })
 
   test("returns 201 and persists created user in database when success", async () => {
@@ -252,24 +261,26 @@ describe("POST /api/v1/auth/signup", () => {
     })
     const resBody = (await res.json()) as JsonSuccessBody<SignupResponse>
 
-    const dbUser = await prisma.user.findUnique({
-      select: {
-        username: true,
-        email: true,
-        name: true,
-        id: true,
-      },
-      where: { email: payload.email.toLowerCase() },
-    })
+    try {
+      const dbUser = await prisma.user.findUnique({
+        select: {
+          username: true,
+          email: true,
+          name: true,
+          id: true,
+        },
+        where: { email: payload.email.toLowerCase() },
+      })
 
-    expect(res.status).toBe(201)
-    expect(dbUser).toMatchObject({
-      email: payload.email.toLowerCase(),
-      username: payload.username,
-      name: payload.name,
-    })
-
-    await prisma.user.delete({ where: { id: resBody.data.id } })
+      expect(res.status).toBe(201)
+      expect(dbUser).toMatchObject({
+        email: payload.email.toLowerCase(),
+        username: payload.username,
+        name: payload.name,
+      })
+    } finally {
+      await prisma.user.delete({ where: { id: resBody.data.id } }).catch(() => {})
+    }
   })
 })
 
