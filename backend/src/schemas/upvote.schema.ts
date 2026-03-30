@@ -10,7 +10,7 @@ export const upvoteResponseSchema: z.ZodType<UpvoteResponse> = z.object({
     "x-order": 1,
   }),
   createdAt: z
-    .date()
+    .iso.datetime()
     .meta({ example: "2026-01-01T00:00:00.000Z", "x-order": 2 }),
   userId: z.cuid().meta({
     pattern: undefined,

@@ -19,10 +19,20 @@ export const commentUpdateSchema = commentCreateSchema
 
 // --------------------- Comment Response Schema -----------------------
 export const commentResponseSchema: z.ZodType<CommentResponse> = z.object({
-  id: z.cuid().meta({ pattern: undefined, example: "cmlubyi3l000094r6fw9v8djs", "x-order": 1 }),
-  content: z.string().meta({ example: "I would love to see this added.", "x-order": 2 }),
-  createdAt: z.date().meta({ example: "2026-01-01T00:00:00.000Z", "x-order": 3 }),
-  updatedAt: z.date().meta({ example: "2026-01-01T00:00:00.000Z", "x-order": 4 }),
+  id: z.cuid().meta({
+    pattern: undefined,
+    example: "cmlubyi3l000094r6fw9v8djs",
+    "x-order": 1,
+  }),
+  content: z
+    .string()
+    .meta({ example: "I would love to see this added.", "x-order": 2 }),
+  createdAt: z.iso
+    .datetime()
+    .meta({ example: "2026-01-01T00:00:00.000Z", "x-order": 3 }),
+  updatedAt: z.iso
+    .datetime()
+    .meta({ example: "2026-01-01T00:00:00.000Z", "x-order": 4 }),
   suggestion: z
     .object({
       id: z.cuid().meta({ pattern: undefined }),
