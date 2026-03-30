@@ -98,26 +98,55 @@ userRoutes.get(
 )
 
 // ------------------------------- Get a User ----------------------------------
-userRoutes.get("/:username", resolveAuthUser, withTargetAccess(), async (c) => {
-  const access = c.get("access")
-  const targetUser = getTargetUserOrThrow(c)
+userRoutes.get(
+  "/:username",
+  describeRoute({
+    tags: ["Users"],
+    summary: "Get a User",
+    description:
+      "Returns a user by username. Admins and the user themselves receive the full response. Unauthenticated users or other users receive only `name` and `username`.",
+    responses: {
+      200: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonSuccessSchema(privateUserResponseSchema)),
+          },
+        },
+        description: "Successfully retrieved user.",
+      },
+      404: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description: "Not Found. User does not exist.",
+      },
+    },
+  }),
+  resolveAuthUser,
+  withTargetAccess(),
+  async (c) => {
+    const access = c.get("access")
+    const targetUser = getTargetUserOrThrow(c)
 
-  const select =
-    access && (access.isAdmin || access.isSelf)
-      ? privateUserSelect
-      : publicUserSelect
+    const select =
+      access && (access.isAdmin || access.isSelf)
+        ? privateUserSelect
+        : publicUserSelect
 
-  const user = await prisma.user.findUnique({
-    where: { id: targetUser.id },
-    select,
-  })
+    const user = await prisma.user.findUnique({
+      where: { id: targetUser.id },
+      select,
+    })
 
-  if (!user) {
-    return notFound(c, "User not found")
+    if (!user) {
+      return notFound(c, "User not found")
+    }
+
+    return jsonSuccess(c, { data: user })
   }
-
-  return jsonSuccess(c, { data: user })
-})
+)
 
 // --------------------------------- Update a User ------------------------------
 userRoutes.patch(
