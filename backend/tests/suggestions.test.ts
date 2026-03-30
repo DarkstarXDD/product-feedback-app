@@ -1,15 +1,18 @@
 import { describe, expect, test } from "vitest"
-
-import type { JsonSuccessBody, JsonErrorBody } from "@/lib/responses"
-import type { Pagination } from "@/lib/pagination"
+import * as z from "zod"
 
 import {
-  type SuggestionWithCommentsResponse,
-  type SuggestionCreateResponse,
-  type SuggestionBaseResponse,
-} from "@/lib/selects/suggestion.select"
-import { type CommentResponse } from "@/lib/selects/comment.select"
-import { type UpvoteResponse } from "@/lib/selects/upvote.select"
+  suggestionWithViewerUpvoteResponseSchema,
+  suggestionWithCommentsResponseSchema,
+  suggestionCreateResponseSchema,
+} from "@/schemas/suggestion.schema"
+import {
+  paginatedSuccessSchema,
+  jsonSuccessSchema,
+  jsonErrorSchema,
+} from "@/schemas/shared.schema"
+import { commentResponseSchema } from "@/schemas/comment.schema"
+import { upvoteResponseSchema } from "@/schemas/upvote.schema"
 import { prisma } from "@/db/client"
 import app from "@/app"
 
@@ -31,13 +34,12 @@ describe("GET /api/v1/suggestions", () => {
     try {
       const res = await app.request("/api/v1/suggestions")
 
-      const resBody = (await res.json()) as JsonSuccessBody<
-        SuggestionBaseResponse[]
-      >
+      const resBody = paginatedSuccessSchema(
+        z.array(suggestionWithViewerUpvoteResponseSchema)
+      ).parse(await res.json())
 
       expect(res.status).toBe(200)
       expect(resBody.data.some((item) => item.id === suggestion.id)).toBe(true)
-      expect(resBody.data[0]).toHaveProperty("viewerHasUpvoted")
     } finally {
       await suggestionScenarioCleanup().catch(() => {})
     }
@@ -49,9 +51,9 @@ describe("GET /api/v1/suggestions", () => {
     try {
       const res = await app.request("/api/v1/suggestions")
 
-      const resBody = (await res.json()) as {
-        meta: { pagination: Pagination }
-      } & JsonSuccessBody<SuggestionBaseResponse[]>
+      const resBody = paginatedSuccessSchema(
+        z.array(suggestionWithViewerUpvoteResponseSchema)
+      ).parse(await res.json())
 
       expect(res.status).toBe(200)
       expect(resBody).toHaveProperty("meta.pagination")
@@ -82,11 +84,9 @@ describe("GET /api/v1/suggestions", () => {
 
       const res = await app.request("/api/v1/suggestions?page=2&pageSize=10")
 
-      const resBody = (await res.json()) as JsonSuccessBody<
-        SuggestionBaseResponse[]
-      > & {
-        meta: { pagination: Pagination }
-      }
+      const resBody = paginatedSuccessSchema(
+        z.array(suggestionWithViewerUpvoteResponseSchema)
+      ).parse(await res.json())
 
       expect(res.status).toBe(200)
       expect(resBody.data).toHaveLength(10)
@@ -109,7 +109,7 @@ describe("GET /api/v1/suggestions", () => {
   test("returns 400 with field errors when pagination query params are invalid", async () => {
     const res = await app.request("/api/v1/suggestions?page=0&pageSize=abc")
 
-    const resBody = (await res.json()) as JsonErrorBody
+    const resBody = jsonErrorSchema.parse(await res.json())
 
     expect(res.status).toBe(400)
     expect(resBody).toMatchObject({
@@ -129,17 +129,15 @@ describe("GET /api/v1/suggestions/:slug", () => {
     try {
       const res = await app.request(`/api/v1/suggestions/${suggestion.slug}`)
 
-      const resBody =
-        (await res.json()) as JsonSuccessBody<SuggestionWithCommentsResponse>
+      const resBody = jsonSuccessSchema(
+        suggestionWithCommentsResponseSchema
+      ).parse(await res.json())
 
       expect(res.status).toBe(200)
       expect(resBody.data).toHaveProperty("id", suggestion.id)
       expect(resBody.data).toHaveProperty("slug", suggestion.slug)
       expect(resBody.data).toHaveProperty("title", suggestion.title)
       expect(resBody.data).toHaveProperty("description", suggestion.description)
-      expect(Array.isArray(resBody.data.comments)).toBe(true)
-      expect(resBody.data).toHaveProperty("_count")
-      expect(resBody.data).toHaveProperty("viewerHasUpvoted")
     } finally {
       await suggestionScenarioCleanup().catch(() => {})
     }
@@ -150,7 +148,7 @@ describe("GET /api/v1/suggestions/:slug", () => {
 
     const res = await app.request(`/api/v1/suggestions/${slug}`)
 
-    const resBody = (await res.json()) as JsonErrorBody
+    const resBody = jsonErrorSchema.parse(await res.json())
 
     expect(res.status).toBe(404)
     expect(resBody).toMatchObject({
@@ -174,7 +172,7 @@ describe("POST /api/v1/suggestions", () => {
       method: "POST",
     })
 
-    const resBody = (await res.json()) as JsonErrorBody
+    const resBody = jsonErrorSchema.parse(await res.json())
 
     expect(res.status).toBe(401)
     expect(resBody).toMatchObject({
@@ -202,16 +200,14 @@ describe("POST /api/v1/suggestions", () => {
       method: "POST",
     })
 
-    const resBody =
-      (await res.json()) as JsonSuccessBody<SuggestionCreateResponse>
+    const resBody = jsonSuccessSchema(suggestionCreateResponseSchema).parse(
+      await res.json()
+    )
 
     try {
       expect(res.status).toBe(201)
       expect(resBody.data).toHaveProperty("title", payload.title)
       expect(resBody.data).toHaveProperty("description", payload.description)
-      expect(resBody.data).toHaveProperty("slug")
-      expect(resBody.data).toHaveProperty("category")
-      expect(resBody.data).toHaveProperty("_count")
     } finally {
       await prisma.suggestion
         .delete({ where: { id: resBody.data.id } })
@@ -237,7 +233,7 @@ describe("POST /api/v1/suggestions", () => {
         method: "POST",
       })
 
-      const resBody = (await res.json()) as JsonErrorBody
+      const resBody = jsonErrorSchema.parse(await res.json())
 
       expect(res.status).toBe(400)
       expect(resBody).toEqual({
@@ -275,7 +271,7 @@ describe("PATCH /api/v1/suggestions/:slug", () => {
         method: "PATCH",
       })
 
-      const resBody = (await res.json()) as JsonErrorBody
+      const resBody = jsonErrorSchema.parse(await res.json())
 
       expect(res.status).toBe(401)
       expect(resBody).toMatchObject({
@@ -308,8 +304,9 @@ describe("PATCH /api/v1/suggestions/:slug", () => {
         method: "PATCH",
       })
 
-      const resBody =
-        (await res.json()) as JsonSuccessBody<SuggestionCreateResponse>
+      const resBody = jsonSuccessSchema(suggestionCreateResponseSchema).parse(
+        await res.json()
+      )
 
       expect(res.status).toBe(200)
       expect(resBody.data).toHaveProperty("id", suggestion.id)
@@ -342,8 +339,9 @@ describe("PATCH /api/v1/suggestions/:slug", () => {
         method: "PATCH",
       })
 
-      const resBody =
-        (await res.json()) as JsonSuccessBody<SuggestionCreateResponse>
+      const resBody = jsonSuccessSchema(suggestionCreateResponseSchema).parse(
+        await res.json()
+      )
 
       expect(res.status).toBe(200)
       expect(resBody.data).toHaveProperty("id", suggestion.id)
@@ -376,7 +374,7 @@ describe("PATCH /api/v1/suggestions/:slug", () => {
         method: "PATCH",
       })
 
-      const resBody = (await res.json()) as JsonErrorBody
+      const resBody = jsonErrorSchema.parse(await res.json())
 
       expect(res.status).toBe(403)
       expect(resBody).toMatchObject({
@@ -408,7 +406,7 @@ describe("PATCH /api/v1/suggestions/:slug", () => {
         method: "PATCH",
       })
 
-      const resBody = (await res.json()) as JsonErrorBody
+      const resBody = jsonErrorSchema.parse(await res.json())
 
       expect(res.status).toBe(400)
       expect(resBody).toEqual({
@@ -449,7 +447,7 @@ describe("PATCH /api/v1/suggestions/:slug", () => {
         method: "PATCH",
       })
 
-      const resBody = (await res.json()) as JsonErrorBody
+      const resBody = jsonErrorSchema.parse(await res.json())
 
       expect(res.status).toBe(404)
       expect(resBody).toMatchObject({
@@ -479,7 +477,7 @@ describe("POST /api/v1/suggestions/:slug/comments", () => {
         }
       )
 
-      const resBody = (await res.json()) as JsonErrorBody
+      const resBody = jsonErrorSchema.parse(await res.json())
 
       expect(res.status).toBe(401)
       expect(resBody).toMatchObject({
@@ -512,12 +510,13 @@ describe("POST /api/v1/suggestions/:slug/comments", () => {
       }
     )
 
-    const resBody = (await res.json()) as JsonSuccessBody<CommentResponse>
+    const resBody = jsonSuccessSchema(commentResponseSchema).parse(
+      await res.json()
+    )
 
     try {
       expect(res.status).toBe(201)
       expect(resBody.data).toHaveProperty("content", payload.content)
-      expect(resBody.data).toHaveProperty("id")
       expect(resBody.data).toHaveProperty("suggestion.slug", suggestion.slug)
     } finally {
       await prisma.comment
@@ -548,7 +547,7 @@ describe("POST /api/v1/suggestions/:slug/comments", () => {
         }
       )
 
-      const resBody = (await res.json()) as JsonErrorBody
+      const resBody = jsonErrorSchema.parse(await res.json())
 
       expect(res.status).toBe(400)
       expect(resBody).toEqual({
@@ -578,7 +577,9 @@ describe("GET /api/v1/suggestions/:slug/comments", () => {
         `/api/v1/suggestions/${suggestion.slug}/comments`
       )
 
-      const resBody = (await res.json()) as JsonSuccessBody<CommentResponse[]>
+      const resBody = jsonSuccessSchema(z.array(commentResponseSchema)).parse(
+        await res.json()
+      )
 
       expect(res.status).toBe(200)
       expect(resBody.data.some((item) => item.id === comment.id)).toBe(true)
@@ -602,7 +603,7 @@ describe("POST /api/v1/suggestions/:slug/upvotes", () => {
         }
       )
 
-      const resBody = (await res.json()) as JsonErrorBody
+      const resBody = jsonErrorSchema.parse(await res.json())
 
       expect(res.status).toBe(401)
       expect(resBody).toMatchObject({
@@ -629,13 +630,14 @@ describe("POST /api/v1/suggestions/:slug/upvotes", () => {
       }
     )
 
-    const resBody = (await res.json()) as JsonSuccessBody<UpvoteResponse>
+    const resBody = jsonSuccessSchema(upvoteResponseSchema).parse(
+      await res.json()
+    )
 
     try {
       expect(res.status).toBe(201)
       expect(resBody.data).toHaveProperty("userId", user.id)
       expect(resBody.data).toHaveProperty("suggestionId", suggestion.id)
-      expect(resBody.data).toHaveProperty("id")
     } finally {
       await prisma.upvote
         .delete({ where: { id: resBody.data.id } })
@@ -665,7 +667,7 @@ describe("POST /api/v1/suggestions/:slug/upvotes", () => {
         }
       )
 
-      const resBody = (await res.json()) as JsonErrorBody
+      const resBody = jsonErrorSchema.parse(await res.json())
 
       expect(res.status).toBe(409)
       expect(resBody).toMatchObject({
@@ -693,7 +695,7 @@ describe("DELETE /api/v1/suggestions/:slug/upvotes", () => {
         }
       )
 
-      const resBody = (await res.json()) as JsonErrorBody
+      const resBody = jsonErrorSchema.parse(await res.json())
 
       expect(res.status).toBe(401)
       expect(resBody).toMatchObject({
@@ -749,7 +751,7 @@ describe("DELETE /api/v1/suggestions/:slug/upvotes", () => {
         }
       )
 
-      const resBody = (await res.json()) as JsonErrorBody
+      const resBody = jsonErrorSchema.parse(await res.json())
 
       expect(res.status).toBe(404)
       expect(resBody).toMatchObject({
