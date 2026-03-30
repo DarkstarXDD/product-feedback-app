@@ -28,17 +28,19 @@ describe("GET /api/v1/suggestions", () => {
     const { suggestionScenarioCleanup, suggestion } =
       await createSuggestionScenario()
 
-    const res = await app.request("/api/v1/suggestions")
+    try {
+      const res = await app.request("/api/v1/suggestions")
 
-    const resBody = (await res.json()) as JsonSuccessBody<
-      SuggestionBaseResponse[]
-    >
+      const resBody = (await res.json()) as JsonSuccessBody<
+        SuggestionBaseResponse[]
+      >
 
-    expect(res.status).toBe(200)
-    expect(resBody.data.some((item) => item.id === suggestion.id)).toBe(true)
-    expect(resBody.data[0]).toHaveProperty("viewerHasUpvoted")
-
-    await suggestionScenarioCleanup()
+      expect(res.status).toBe(200)
+      expect(resBody.data.some((item) => item.id === suggestion.id)).toBe(true)
+      expect(resBody.data[0]).toHaveProperty("viewerHasUpvoted")
+    } finally {
+      await suggestionScenarioCleanup().catch(() => {})
+    }
   })
 
   test("returns pagination metadata with defaults", async () => {
@@ -124,21 +126,23 @@ describe("GET /api/v1/suggestions/:slug", () => {
     const { suggestionScenarioCleanup, suggestion } =
       await createSuggestionScenario()
 
-    const res = await app.request(`/api/v1/suggestions/${suggestion.slug}`)
+    try {
+      const res = await app.request(`/api/v1/suggestions/${suggestion.slug}`)
 
-    const resBody =
-      (await res.json()) as JsonSuccessBody<SuggestionWithCommentsResponse>
+      const resBody =
+        (await res.json()) as JsonSuccessBody<SuggestionWithCommentsResponse>
 
-    expect(res.status).toBe(200)
-    expect(resBody.data).toHaveProperty("id", suggestion.id)
-    expect(resBody.data).toHaveProperty("slug", suggestion.slug)
-    expect(resBody.data).toHaveProperty("title", suggestion.title)
-    expect(resBody.data).toHaveProperty("description", suggestion.description)
-    expect(Array.isArray(resBody.data.comments)).toBe(true)
-    expect(resBody.data).toHaveProperty("_count")
-    expect(resBody.data).toHaveProperty("viewerHasUpvoted")
-
-    await suggestionScenarioCleanup()
+      expect(res.status).toBe(200)
+      expect(resBody.data).toHaveProperty("id", suggestion.id)
+      expect(resBody.data).toHaveProperty("slug", suggestion.slug)
+      expect(resBody.data).toHaveProperty("title", suggestion.title)
+      expect(resBody.data).toHaveProperty("description", suggestion.description)
+      expect(Array.isArray(resBody.data.comments)).toBe(true)
+      expect(resBody.data).toHaveProperty("_count")
+      expect(resBody.data).toHaveProperty("viewerHasUpvoted")
+    } finally {
+      await suggestionScenarioCleanup().catch(() => {})
+    }
   })
 
   test("returns 404 with NOT_FOUND when slug does not exist", async () => {
@@ -201,52 +205,56 @@ describe("POST /api/v1/suggestions", () => {
     const resBody =
       (await res.json()) as JsonSuccessBody<SuggestionCreateResponse>
 
-    expect(res.status).toBe(201)
-    expect(resBody.data).toHaveProperty("title", payload.title)
-    expect(resBody.data).toHaveProperty("description", payload.description)
-    expect(resBody.data).toHaveProperty("slug")
-    expect(resBody.data).toHaveProperty("category")
-    expect(resBody.data).toHaveProperty("_count")
-
-    await prisma.suggestion.delete({
-      where: { id: resBody.data.id },
-    })
-    await userCleanup()
+    try {
+      expect(res.status).toBe(201)
+      expect(resBody.data).toHaveProperty("title", payload.title)
+      expect(resBody.data).toHaveProperty("description", payload.description)
+      expect(resBody.data).toHaveProperty("slug")
+      expect(resBody.data).toHaveProperty("category")
+      expect(resBody.data).toHaveProperty("_count")
+    } finally {
+      await prisma.suggestion
+        .delete({ where: { id: resBody.data.id } })
+        .catch(() => {})
+      await userCleanup().catch(() => {})
+    }
   })
 
   test("returns 400 with field errors when validation fails", async () => {
     const { userCleanup, token } = await createUserSession("USER")
 
-    const res = await app.request("/api/v1/suggestions", {
-      body: JSON.stringify({
-        categoryId: "123",
-        description: "",
-        title: "",
-      }),
-      headers: {
-        "content-type": "application/json",
-        cookie: `token=${token}`,
-      },
-      method: "POST",
-    })
-
-    const resBody = (await res.json()) as JsonErrorBody
-
-    expect(res.status).toBe(400)
-    expect(resBody).toEqual({
-      errors: {
-        fieldErrors: {
-          description: ["Description cannot be empty"],
-          categoryId: ["Please pick a valid category"],
-          title: ["Title cannot be empty"],
+    try {
+      const res = await app.request("/api/v1/suggestions", {
+        body: JSON.stringify({
+          categoryId: "123",
+          description: "",
+          title: "",
+        }),
+        headers: {
+          "content-type": "application/json",
+          cookie: `token=${token}`,
         },
-        formErrors: [],
-      },
-      message: "Server validation fails",
-      code: "VALIDATION_ERROR",
-    })
+        method: "POST",
+      })
 
-    await userCleanup()
+      const resBody = (await res.json()) as JsonErrorBody
+
+      expect(res.status).toBe(400)
+      expect(resBody).toEqual({
+        errors: {
+          fieldErrors: {
+            description: ["Description cannot be empty"],
+            categoryId: ["Please pick a valid category"],
+            title: ["Title cannot be empty"],
+          },
+          formErrors: [],
+        },
+        message: "Server validation fails",
+        code: "VALIDATION_ERROR",
+      })
+    } finally {
+      await userCleanup().catch(() => {})
+    }
   })
 })
 
@@ -256,25 +264,27 @@ describe("PATCH /api/v1/suggestions/:slug", () => {
     const { suggestionScenarioCleanup, suggestion } =
       await createSuggestionScenario()
 
-    const res = await app.request(`/api/v1/suggestions/${suggestion.slug}`, {
-      body: JSON.stringify({
-        description: "Public user tries to update a suggestion",
-        title: "Updated feature idea",
-        categoryId,
-      }),
-      headers: { "content-type": "application/json" },
-      method: "PATCH",
-    })
+    try {
+      const res = await app.request(`/api/v1/suggestions/${suggestion.slug}`, {
+        body: JSON.stringify({
+          description: "Public user tries to update a suggestion",
+          title: "Updated feature idea",
+          categoryId,
+        }),
+        headers: { "content-type": "application/json" },
+        method: "PATCH",
+      })
 
-    const resBody = (await res.json()) as JsonErrorBody
+      const resBody = (await res.json()) as JsonErrorBody
 
-    expect(res.status).toBe(401)
-    expect(resBody).toMatchObject({
-      message: "Unauthorized",
-      code: "UNAUTHORIZED",
-    })
-
-    await suggestionScenarioCleanup()
+      expect(res.status).toBe(401)
+      expect(resBody).toMatchObject({
+        message: "Unauthorized",
+        code: "UNAUTHORIZED",
+      })
+    } finally {
+      await suggestionScenarioCleanup().catch(() => {})
+    }
   })
 
   test("returns 200 when owner updates their own suggestion", async () => {
@@ -282,31 +292,33 @@ describe("PATCH /api/v1/suggestions/:slug", () => {
     const { suggestionScenarioCleanup, suggestion } =
       await createSuggestionScenario(user.id)
 
-    const payload = {
-      description: "Owner updates their own suggestion",
-      categoryId: suggestion.categoryId,
-      title: "Updated by owner",
+    try {
+      const payload = {
+        description: "Owner updates their own suggestion",
+        categoryId: suggestion.categoryId,
+        title: "Updated by owner",
+      }
+
+      const res = await app.request(`/api/v1/suggestions/${suggestion.slug}`, {
+        headers: {
+          "content-type": "application/json",
+          cookie: `token=${token}`,
+        },
+        body: JSON.stringify(payload),
+        method: "PATCH",
+      })
+
+      const resBody =
+        (await res.json()) as JsonSuccessBody<SuggestionCreateResponse>
+
+      expect(res.status).toBe(200)
+      expect(resBody.data).toHaveProperty("id", suggestion.id)
+      expect(resBody.data).toHaveProperty("title", payload.title)
+      expect(resBody.data).toHaveProperty("description", payload.description)
+    } finally {
+      await suggestionScenarioCleanup().catch(() => {})
+      await userCleanup().catch(() => {})
     }
-
-    const res = await app.request(`/api/v1/suggestions/${suggestion.slug}`, {
-      headers: {
-        "content-type": "application/json",
-        cookie: `token=${token}`,
-      },
-      body: JSON.stringify(payload),
-      method: "PATCH",
-    })
-
-    const resBody =
-      (await res.json()) as JsonSuccessBody<SuggestionCreateResponse>
-
-    expect(res.status).toBe(200)
-    expect(resBody.data).toHaveProperty("id", suggestion.id)
-    expect(resBody.data).toHaveProperty("title", payload.title)
-    expect(resBody.data).toHaveProperty("description", payload.description)
-
-    await suggestionScenarioCleanup()
-    await userCleanup()
   })
 
   test("returns 200 when admin updates any suggestion", async () => {
@@ -314,31 +326,33 @@ describe("PATCH /api/v1/suggestions/:slug", () => {
     const { suggestionScenarioCleanup, suggestion } =
       await createSuggestionScenario()
 
-    const payload = {
-      description: "Admin updates another user's suggestion",
-      categoryId: suggestion.categoryId,
-      title: "Updated by admin",
+    try {
+      const payload = {
+        description: "Admin updates another user's suggestion",
+        categoryId: suggestion.categoryId,
+        title: "Updated by admin",
+      }
+
+      const res = await app.request(`/api/v1/suggestions/${suggestion.slug}`, {
+        headers: {
+          "content-type": "application/json",
+          cookie: `token=${token}`,
+        },
+        body: JSON.stringify(payload),
+        method: "PATCH",
+      })
+
+      const resBody =
+        (await res.json()) as JsonSuccessBody<SuggestionCreateResponse>
+
+      expect(res.status).toBe(200)
+      expect(resBody.data).toHaveProperty("id", suggestion.id)
+      expect(resBody.data).toHaveProperty("title", payload.title)
+      expect(resBody.data).toHaveProperty("description", payload.description)
+    } finally {
+      await suggestionScenarioCleanup().catch(() => {})
+      await userCleanup().catch(() => {})
     }
-
-    const res = await app.request(`/api/v1/suggestions/${suggestion.slug}`, {
-      headers: {
-        "content-type": "application/json",
-        cookie: `token=${token}`,
-      },
-      body: JSON.stringify(payload),
-      method: "PATCH",
-    })
-
-    const resBody =
-      (await res.json()) as JsonSuccessBody<SuggestionCreateResponse>
-
-    expect(res.status).toBe(200)
-    expect(resBody.data).toHaveProperty("id", suggestion.id)
-    expect(resBody.data).toHaveProperty("title", payload.title)
-    expect(resBody.data).toHaveProperty("description", payload.description)
-
-    await suggestionScenarioCleanup()
-    await userCleanup()
   })
 
   test("returns 403 when a user tries to update another user's suggestion", async () => {
@@ -346,31 +360,33 @@ describe("PATCH /api/v1/suggestions/:slug", () => {
     const { suggestionScenarioCleanup, suggestion } =
       await createSuggestionScenario()
 
-    const payload = {
-      description: "Another user tries to update a suggestion",
-      categoryId: suggestion.categoryId,
-      title: "Updated by another user",
+    try {
+      const payload = {
+        description: "Another user tries to update a suggestion",
+        categoryId: suggestion.categoryId,
+        title: "Updated by another user",
+      }
+
+      const res = await app.request(`/api/v1/suggestions/${suggestion.slug}`, {
+        headers: {
+          "content-type": "application/json",
+          cookie: `token=${token}`,
+        },
+        body: JSON.stringify(payload),
+        method: "PATCH",
+      })
+
+      const resBody = (await res.json()) as JsonErrorBody
+
+      expect(res.status).toBe(403)
+      expect(resBody).toMatchObject({
+        message: "Not allowed or forbidden",
+        code: "FORBIDDEN",
+      })
+    } finally {
+      await suggestionScenarioCleanup().catch(() => {})
+      await userCleanup().catch(() => {})
     }
-
-    const res = await app.request(`/api/v1/suggestions/${suggestion.slug}`, {
-      headers: {
-        "content-type": "application/json",
-        cookie: `token=${token}`,
-      },
-      body: JSON.stringify(payload),
-      method: "PATCH",
-    })
-
-    const resBody = (await res.json()) as JsonErrorBody
-
-    expect(res.status).toBe(403)
-    expect(resBody).toMatchObject({
-      message: "Not allowed or forbidden",
-      code: "FORBIDDEN",
-    })
-
-    await suggestionScenarioCleanup()
-    await userCleanup()
   })
 
   test("returns 400 with field errors when validation fails", async () => {
@@ -378,37 +394,39 @@ describe("PATCH /api/v1/suggestions/:slug", () => {
     const { suggestionScenarioCleanup, suggestion } =
       await createSuggestionScenario(user.id)
 
-    const res = await app.request(`/api/v1/suggestions/${suggestion.slug}`, {
-      body: JSON.stringify({
-        categoryId: "123",
-        description: "",
-        title: "",
-      }),
-      headers: {
-        "content-type": "application/json",
-        cookie: `token=${token}`,
-      },
-      method: "PATCH",
-    })
-
-    const resBody = (await res.json()) as JsonErrorBody
-
-    expect(res.status).toBe(400)
-    expect(resBody).toEqual({
-      errors: {
-        fieldErrors: {
-          description: ["Description cannot be empty"],
-          categoryId: ["Please pick a valid category"],
-          title: ["Title cannot be empty"],
+    try {
+      const res = await app.request(`/api/v1/suggestions/${suggestion.slug}`, {
+        body: JSON.stringify({
+          categoryId: "123",
+          description: "",
+          title: "",
+        }),
+        headers: {
+          "content-type": "application/json",
+          cookie: `token=${token}`,
         },
-        formErrors: [],
-      },
-      message: "Server validation fails",
-      code: "VALIDATION_ERROR",
-    })
+        method: "PATCH",
+      })
 
-    await suggestionScenarioCleanup()
-    await userCleanup()
+      const resBody = (await res.json()) as JsonErrorBody
+
+      expect(res.status).toBe(400)
+      expect(resBody).toEqual({
+        errors: {
+          fieldErrors: {
+            description: ["Description cannot be empty"],
+            categoryId: ["Please pick a valid category"],
+            title: ["Title cannot be empty"],
+          },
+          formErrors: [],
+        },
+        message: "Server validation fails",
+        code: "VALIDATION_ERROR",
+      })
+    } finally {
+      await suggestionScenarioCleanup().catch(() => {})
+      await userCleanup().catch(() => {})
+    }
   })
 
   test("returns 404 when slug does not exist", async () => {
@@ -416,28 +434,31 @@ describe("PATCH /api/v1/suggestions/:slug", () => {
     const { userCleanup, token } = await createUserSession("USER")
     const slug = "does-not-exist"
 
-    const res = await app.request(`/api/v1/suggestions/${slug}`, {
-      body: JSON.stringify({
-        description: "Authenticated user tries to update a missing suggestion",
-        title: "Missing suggestion update",
-        categoryId,
-      }),
-      headers: {
-        "content-type": "application/json",
-        cookie: `token=${token}`,
-      },
-      method: "PATCH",
-    })
+    try {
+      const res = await app.request(`/api/v1/suggestions/${slug}`, {
+        body: JSON.stringify({
+          description:
+            "Authenticated user tries to update a missing suggestion",
+          title: "Missing suggestion update",
+          categoryId,
+        }),
+        headers: {
+          "content-type": "application/json",
+          cookie: `token=${token}`,
+        },
+        method: "PATCH",
+      })
 
-    const resBody = (await res.json()) as JsonErrorBody
+      const resBody = (await res.json()) as JsonErrorBody
 
-    expect(res.status).toBe(404)
-    expect(resBody).toMatchObject({
-      message: "Suggestion not found",
-      code: "NOT_FOUND",
-    })
-
-    await userCleanup()
+      expect(res.status).toBe(404)
+      expect(resBody).toMatchObject({
+        message: "Suggestion not found",
+        code: "NOT_FOUND",
+      })
+    } finally {
+      await userCleanup().catch(() => {})
+    }
   })
 })
 
@@ -446,26 +467,28 @@ describe("POST /api/v1/suggestions/:slug/comments", () => {
     const { suggestionScenarioCleanup, suggestion } =
       await createSuggestionScenario()
 
-    const res = await app.request(
-      `/api/v1/suggestions/${suggestion.slug}/comments`,
-      {
-        body: JSON.stringify({
-          content: "Public user tries to create a comment",
-        }),
-        headers: { "content-type": "application/json" },
-        method: "POST",
-      }
-    )
+    try {
+      const res = await app.request(
+        `/api/v1/suggestions/${suggestion.slug}/comments`,
+        {
+          body: JSON.stringify({
+            content: "Public user tries to create a comment",
+          }),
+          headers: { "content-type": "application/json" },
+          method: "POST",
+        }
+      )
 
-    const resBody = (await res.json()) as JsonErrorBody
+      const resBody = (await res.json()) as JsonErrorBody
 
-    expect(res.status).toBe(401)
-    expect(resBody).toMatchObject({
-      message: "Unauthorized",
-      code: "UNAUTHORIZED",
-    })
-
-    await suggestionScenarioCleanup()
+      expect(res.status).toBe(401)
+      expect(resBody).toMatchObject({
+        message: "Unauthorized",
+        code: "UNAUTHORIZED",
+      })
+    } finally {
+      await suggestionScenarioCleanup().catch(() => {})
+    }
   })
 
   test("returns 201 when authenticated user creates a valid comment on a suggestion", async () => {
@@ -491,16 +514,18 @@ describe("POST /api/v1/suggestions/:slug/comments", () => {
 
     const resBody = (await res.json()) as JsonSuccessBody<CommentResponse>
 
-    expect(res.status).toBe(201)
-    expect(resBody.data).toHaveProperty("content", payload.content)
-    expect(resBody.data).toHaveProperty("id")
-    expect(resBody.data).toHaveProperty("suggestion.slug", suggestion.slug)
-
-    await prisma.comment.delete({
-      where: { id: resBody.data.id },
-    })
-    await suggestionScenarioCleanup()
-    await userCleanup()
+    try {
+      expect(res.status).toBe(201)
+      expect(resBody.data).toHaveProperty("content", payload.content)
+      expect(resBody.data).toHaveProperty("id")
+      expect(resBody.data).toHaveProperty("suggestion.slug", suggestion.slug)
+    } finally {
+      await prisma.comment
+        .delete({ where: { id: resBody.data.id } })
+        .catch(() => {})
+      await suggestionScenarioCleanup().catch(() => {})
+      await userCleanup().catch(() => {})
+    }
   })
 
   test("returns 400 with field errors when validation fails", async () => {
@@ -508,36 +533,38 @@ describe("POST /api/v1/suggestions/:slug/comments", () => {
     const { suggestionScenarioCleanup, suggestion } =
       await createSuggestionScenario()
 
-    const res = await app.request(
-      `/api/v1/suggestions/${suggestion.slug}/comments`,
-      {
-        headers: {
-          "content-type": "application/json",
-          cookie: `token=${token}`,
+    try {
+      const res = await app.request(
+        `/api/v1/suggestions/${suggestion.slug}/comments`,
+        {
+          headers: {
+            "content-type": "application/json",
+            cookie: `token=${token}`,
+          },
+          body: JSON.stringify({
+            content: "",
+          }),
+          method: "POST",
+        }
+      )
+
+      const resBody = (await res.json()) as JsonErrorBody
+
+      expect(res.status).toBe(400)
+      expect(resBody).toEqual({
+        errors: {
+          fieldErrors: {
+            content: ["Comment cannot be empty"],
+          },
+          formErrors: [],
         },
-        body: JSON.stringify({
-          content: "",
-        }),
-        method: "POST",
-      }
-    )
-
-    const resBody = (await res.json()) as JsonErrorBody
-
-    expect(res.status).toBe(400)
-    expect(resBody).toEqual({
-      errors: {
-        fieldErrors: {
-          content: ["Comment cannot be empty"],
-        },
-        formErrors: [],
-      },
-      message: "Server validation fails",
-      code: "VALIDATION_ERROR",
-    })
-
-    await suggestionScenarioCleanup()
-    await userCleanup()
+        message: "Server validation fails",
+        code: "VALIDATION_ERROR",
+      })
+    } finally {
+      await suggestionScenarioCleanup().catch(() => {})
+      await userCleanup().catch(() => {})
+    }
   })
 })
 
@@ -546,16 +573,18 @@ describe("GET /api/v1/suggestions/:slug/comments", () => {
     const { commentScenarioCleanup, suggestion, comment } =
       await createCommentScenario()
 
-    const res = await app.request(
-      `/api/v1/suggestions/${suggestion.slug}/comments`
-    )
+    try {
+      const res = await app.request(
+        `/api/v1/suggestions/${suggestion.slug}/comments`
+      )
 
-    const resBody = (await res.json()) as JsonSuccessBody<CommentResponse[]>
+      const resBody = (await res.json()) as JsonSuccessBody<CommentResponse[]>
 
-    expect(res.status).toBe(200)
-    expect(resBody.data.some((item) => item.id === comment.id)).toBe(true)
-
-    await commentScenarioCleanup()
+      expect(res.status).toBe(200)
+      expect(resBody.data.some((item) => item.id === comment.id)).toBe(true)
+    } finally {
+      await commentScenarioCleanup().catch(() => {})
+    }
   })
 })
 
@@ -565,22 +594,24 @@ describe("POST /api/v1/suggestions/:slug/upvotes", () => {
     const { suggestionScenarioCleanup, suggestion } =
       await createSuggestionScenario()
 
-    const res = await app.request(
-      `/api/v1/suggestions/${suggestion.slug}/upvotes`,
-      {
-        method: "POST",
-      }
-    )
+    try {
+      const res = await app.request(
+        `/api/v1/suggestions/${suggestion.slug}/upvotes`,
+        {
+          method: "POST",
+        }
+      )
 
-    const resBody = (await res.json()) as JsonErrorBody
+      const resBody = (await res.json()) as JsonErrorBody
 
-    expect(res.status).toBe(401)
-    expect(resBody).toMatchObject({
-      message: "Unauthorized",
-      code: "UNAUTHORIZED",
-    })
-
-    await suggestionScenarioCleanup()
+      expect(res.status).toBe(401)
+      expect(resBody).toMatchObject({
+        message: "Unauthorized",
+        code: "UNAUTHORIZED",
+      })
+    } finally {
+      await suggestionScenarioCleanup().catch(() => {})
+    }
   })
 
   test("returns 201 when authenticated user upvotes a suggestion", async () => {
@@ -600,47 +631,52 @@ describe("POST /api/v1/suggestions/:slug/upvotes", () => {
 
     const resBody = (await res.json()) as JsonSuccessBody<UpvoteResponse>
 
-    expect(res.status).toBe(201)
-    expect(resBody.data).toHaveProperty("userId", user.id)
-    expect(resBody.data).toHaveProperty("suggestionId", suggestion.id)
-    expect(resBody.data).toHaveProperty("id")
-
-    await prisma.upvote.delete({ where: { id: resBody.data.id } })
-    await suggestionScenarioCleanup()
-    await userCleanup()
+    try {
+      expect(res.status).toBe(201)
+      expect(resBody.data).toHaveProperty("userId", user.id)
+      expect(resBody.data).toHaveProperty("suggestionId", suggestion.id)
+      expect(resBody.data).toHaveProperty("id")
+    } finally {
+      await prisma.upvote
+        .delete({ where: { id: resBody.data.id } })
+        .catch(() => {})
+      await suggestionScenarioCleanup().catch(() => {})
+      await userCleanup().catch(() => {})
+    }
   })
 
   test("returns 409 when authenticated user upvotes the same suggestion twice", async () => {
     const { userCleanup, token, user } = await createUserSession("USER")
     const { suggestionScenarioCleanup, suggestion } =
       await createSuggestionScenario()
-
     const { upvoteCleanup } = await createUpvote({
       suggestionId: suggestion.id,
       ownerId: user.id,
     })
 
-    const res = await app.request(
-      `/api/v1/suggestions/${suggestion.slug}/upvotes`,
-      {
-        headers: {
-          cookie: `token=${token}`,
-        },
-        method: "POST",
-      }
-    )
+    try {
+      const res = await app.request(
+        `/api/v1/suggestions/${suggestion.slug}/upvotes`,
+        {
+          headers: {
+            cookie: `token=${token}`,
+          },
+          method: "POST",
+        }
+      )
 
-    const resBody = (await res.json()) as JsonErrorBody
+      const resBody = (await res.json()) as JsonErrorBody
 
-    expect(res.status).toBe(409)
-    expect(resBody).toMatchObject({
-      message: "Suggestion already upvoted",
-      code: "CONFLICT",
-    })
-
-    await upvoteCleanup()
-    await suggestionScenarioCleanup()
-    await userCleanup()
+      expect(res.status).toBe(409)
+      expect(resBody).toMatchObject({
+        message: "Suggestion already upvoted",
+        code: "CONFLICT",
+      })
+    } finally {
+      await upvoteCleanup().catch(() => {})
+      await suggestionScenarioCleanup().catch(() => {})
+      await userCleanup().catch(() => {})
+    }
   })
 })
 
@@ -649,22 +685,24 @@ describe("DELETE /api/v1/suggestions/:slug/upvotes", () => {
     const { suggestionScenarioCleanup, suggestion } =
       await createSuggestionScenario()
 
-    const res = await app.request(
-      `/api/v1/suggestions/${suggestion.slug}/upvotes`,
-      {
-        method: "DELETE",
-      }
-    )
+    try {
+      const res = await app.request(
+        `/api/v1/suggestions/${suggestion.slug}/upvotes`,
+        {
+          method: "DELETE",
+        }
+      )
 
-    const resBody = (await res.json()) as JsonErrorBody
+      const resBody = (await res.json()) as JsonErrorBody
 
-    expect(res.status).toBe(401)
-    expect(resBody).toMatchObject({
-      message: "Unauthorized",
-      code: "UNAUTHORIZED",
-    })
-
-    await suggestionScenarioCleanup()
+      expect(res.status).toBe(401)
+      expect(resBody).toMatchObject({
+        message: "Unauthorized",
+        code: "UNAUTHORIZED",
+      })
+    } finally {
+      await suggestionScenarioCleanup().catch(() => {})
+    }
   })
 
   test("returns 204 when authenticated user removes their upvote", async () => {
@@ -677,20 +715,22 @@ describe("DELETE /api/v1/suggestions/:slug/upvotes", () => {
       ownerId: user.id,
     })
 
-    const res = await app.request(
-      `/api/v1/suggestions/${suggestion.slug}/upvotes`,
-      {
-        headers: {
-          cookie: `token=${token}`,
-        },
-        method: "DELETE",
-      }
-    )
+    try {
+      const res = await app.request(
+        `/api/v1/suggestions/${suggestion.slug}/upvotes`,
+        {
+          headers: {
+            cookie: `token=${token}`,
+          },
+          method: "DELETE",
+        }
+      )
 
-    expect(res.status).toBe(204)
-
-    await suggestionScenarioCleanup()
-    await userCleanup()
+      expect(res.status).toBe(204)
+    } finally {
+      await suggestionScenarioCleanup().catch(() => {})
+      await userCleanup().catch(() => {})
+    }
   })
 
   test("returns 404 when authenticated user tries to remove a missing upvote", async () => {
@@ -698,25 +738,27 @@ describe("DELETE /api/v1/suggestions/:slug/upvotes", () => {
     const { suggestionScenarioCleanup, suggestion } =
       await createSuggestionScenario()
 
-    const res = await app.request(
-      `/api/v1/suggestions/${suggestion.slug}/upvotes`,
-      {
-        headers: {
-          cookie: `token=${token}`,
-        },
-        method: "DELETE",
-      }
-    )
+    try {
+      const res = await app.request(
+        `/api/v1/suggestions/${suggestion.slug}/upvotes`,
+        {
+          headers: {
+            cookie: `token=${token}`,
+          },
+          method: "DELETE",
+        }
+      )
 
-    const resBody = (await res.json()) as JsonErrorBody
+      const resBody = (await res.json()) as JsonErrorBody
 
-    expect(res.status).toBe(404)
-    expect(resBody).toMatchObject({
-      message: "Upvote not found",
-      code: "NOT_FOUND",
-    })
-
-    await suggestionScenarioCleanup()
-    await userCleanup()
+      expect(res.status).toBe(404)
+      expect(resBody).toMatchObject({
+        message: "Upvote not found",
+        code: "NOT_FOUND",
+      })
+    } finally {
+      await suggestionScenarioCleanup().catch(() => {})
+      await userCleanup().catch(() => {})
+    }
   })
 })
