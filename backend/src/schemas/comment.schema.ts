@@ -27,12 +27,16 @@ export const commentResponseSchema: z.ZodType<CommentResponse> = z.object({
   content: z
     .string()
     .meta({ example: "I would love to see this added.", "x-order": 2 }),
-  createdAt: z.iso
-    .datetime()
-    .meta({ example: "2026-01-01T00:00:00.000Z", "x-order": 3 }),
-  updatedAt: z.iso
-    .datetime()
-    .meta({ example: "2026-01-01T00:00:00.000Z", "x-order": 4 }),
+  createdAt: z.iso.datetime().meta({
+    pattern: undefined,
+    example: "2026-01-01T00:00:00.000Z",
+    "x-order": 3,
+  }),
+  updatedAt: z.iso.datetime().meta({
+    pattern: undefined,
+    example: "2026-01-01T00:00:00.000Z",
+    "x-order": 4,
+  }),
   suggestion: z
     .object({
       id: z.cuid().meta({ pattern: undefined }),
