@@ -1,3 +1,4 @@
+import type { Serialize } from "@/lib/types"
 import type { Prisma } from "@/db/client"
 
 /** Fields that are included when a Comment is fetched. */
@@ -10,6 +11,8 @@ export const commentSelect = {
   user: { select: { id: true, username: true, name: true } },
 } as const satisfies Prisma.CommentSelect
 
-export type CommentResponse = Prisma.CommentGetPayload<{
-  select: typeof commentSelect
-}>
+export type CommentResponse = Serialize<
+  Prisma.CommentGetPayload<{
+    select: typeof commentSelect
+  }>
+>

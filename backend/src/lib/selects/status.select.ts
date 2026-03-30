@@ -1,3 +1,4 @@
+import type { Serialize } from "@/lib/types"
 import type { Prisma } from "@/db/client"
 
 /** Fields that are included when a Status is fetched. */
@@ -7,6 +8,8 @@ export const statusSelect = {
   name: true,
 } as const satisfies Prisma.StatusSelect
 
-export type StatusResponse = Prisma.StatusGetPayload<{
-  select: typeof statusSelect
-}>
+export type StatusResponse = Serialize<
+  Prisma.StatusGetPayload<{
+    select: typeof statusSelect
+  }>
+>

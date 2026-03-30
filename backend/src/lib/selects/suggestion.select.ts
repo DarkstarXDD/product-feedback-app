@@ -1,3 +1,4 @@
+import type { Serialize } from "@/lib/types"
 import type { Prisma } from "@/db/client"
 
 interface ViewerHasUpvoted {
@@ -19,9 +20,11 @@ export const suggestionBaseSelect = {
   user: { select: { id: true, username: true, name: true } },
 } as const satisfies Prisma.SuggestionSelect
 
-export type SuggestionBaseResponse = Prisma.SuggestionGetPayload<{
-  select: typeof suggestionBaseSelect
-}>
+export type SuggestionBaseResponse = Serialize<
+  Prisma.SuggestionGetPayload<{
+    select: typeof suggestionBaseSelect
+  }>
+>
 
 // --------------------------- Get Suggestion with Upvotes Response ---------------------------
 /** Extends `suggestionBaseSelect` to include `upvotes` field. */
@@ -53,9 +56,11 @@ export const suggestionWithCommentsSelect = {
   },
 } as const satisfies Prisma.SuggestionSelect
 
-export type SuggestionWithCommentsResponse = Prisma.SuggestionGetPayload<{
-  select: typeof suggestionWithCommentsSelect
-}> &
+export type SuggestionWithCommentsResponse = Serialize<
+  Prisma.SuggestionGetPayload<{
+    select: typeof suggestionWithCommentsSelect
+  }>
+> &
   ViewerHasUpvoted
 
 // --------------------- Get Suggestion with Comments and Upvotes Response ---------------------
@@ -73,14 +78,18 @@ export const suggestionWithCommentsAndViewerUpvoteSelect = (userId: string) =>
 /** Fields that are included in the response when a suggestion is created. */
 export const suggestionCreateSelect = suggestionBaseSelect
 
-export type SuggestionCreateResponse = Prisma.SuggestionGetPayload<{
-  select: typeof suggestionCreateSelect
-}>
+export type SuggestionCreateResponse = Serialize<
+  Prisma.SuggestionGetPayload<{
+    select: typeof suggestionCreateSelect
+  }>
+>
 
 // ------------------------------- Update Suggestion Response --------------------------------
 /** Fields that are included in the response when a suggestion is updated. */
 export const suggestionUpdateSelect = suggestionBaseSelect
 
-export type SuggestionUpdateResponse = Prisma.SuggestionGetPayload<{
-  select: typeof suggestionUpdateSelect
-}>
+export type SuggestionUpdateResponse = Serialize<
+  Prisma.SuggestionGetPayload<{
+    select: typeof suggestionUpdateSelect
+  }>
+>
