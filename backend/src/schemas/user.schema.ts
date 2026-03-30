@@ -1,6 +1,9 @@
 import * as z from "zod"
 
-import type { PrivateUserResponse } from "@/lib/selects/user.select"
+import type {
+  PrivateUserResponse,
+  PublicUserResponse,
+} from "@/lib/selects/user.select"
 
 /** Base schema for user. */
 export const userSchema = z.object({
@@ -36,6 +39,14 @@ export const userUpdateSchema = userSchema
   .refine((data) => Object.keys(data).length > 0, {
     error: "At least one field is required",
   })
+
+// --------------------- PublicUser Response Schema -----------------------
+export const publicUserResponseSchema: z.ZodType<PublicUserResponse> = z.object(
+  {
+    name: z.string().meta({ example: "John Doe", "x-order": 1 }),
+    username: z.string().meta({ example: "johndoe", "x-order": 2 }),
+  }
+)
 
 // --------------------- PrivateUser Response Schema -----------------------
 export const privateUserResponseSchema: z.ZodType<PrivateUserResponse> =
