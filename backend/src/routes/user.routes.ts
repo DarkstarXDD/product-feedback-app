@@ -8,16 +8,18 @@ import {
   suggestionWithViewerUpvoteSelect,
   suggestionBaseSelect,
 } from "@/lib/selects/suggestion.select"
-import { suggestionWithViewerUpvoteResponseSchema } from "@/schemas/suggestion.schema"
 import {
   paginatedSuccessSchema,
+  jsonSuccessSchema,
   jsonErrorSchema,
 } from "@/schemas/shared.schema"
+import { suggestionWithViewerUpvoteResponseSchema } from "@/schemas/suggestion.schema"
 import { privateUserSelect, publicUserSelect } from "@/lib/selects/user.select"
 import { mapSuggestionWithUpvoteStatus } from "@/lib/mappers/suggestion.mapper"
 import { withTargetAccess } from "@/middlewares/with-target-access.middleware"
 import { resolveAuthUser } from "@/middlewares/resolve-auth-user.middleware"
 import { requireRole } from "@/middlewares/require-role.middleware"
+import { privateUserResponseSchema } from "@/schemas/user.schema"
 import { jsonSuccess, conflict, notFound } from "@/lib/responses"
 import { commentResponseSchema } from "@/schemas/comment.schema"
 import { paginationSchema } from "@/schemas/pagination.schema"
@@ -33,6 +35,45 @@ const userRoutes = new Hono<AppContext>()
 // ------------------------------- Get All Users --------------------------------
 userRoutes.get(
   "/",
+  describeRoute({
+    tags: ["Users"],
+    summary: "Get All Users",
+    description: "Returns a paginated list of all users. Admin only.",
+    responses: {
+      200: {
+        content: {
+          "application/json": {
+            schema: resolver(paginatedSuccessSchema(privateUserResponseSchema)),
+          },
+        },
+        description: "Successfully retrieved users.",
+      },
+      400: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description: "Bad Request. Query parameters fail validation.",
+      },
+      401: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description: "Unauthorized. User is not authenticated.",
+      },
+      403: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description: "Forbidden. User does not have the required role.",
+      },
+    },
+  }),
   resolveAuthUser,
   requireRole("ADMIN"),
   zodValidator("query", paginationSchema),
@@ -81,6 +122,53 @@ userRoutes.get("/:username", resolveAuthUser, withTargetAccess(), async (c) => {
 // --------------------------------- Update a User ------------------------------
 userRoutes.patch(
   "/:username",
+  describeRoute({
+    tags: ["Users"],
+    summary: "Update a User",
+    description: "Updates an existing user by username.",
+    responses: {
+      200: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonSuccessSchema(privateUserResponseSchema)),
+          },
+        },
+        description: "Successfully updated user.",
+      },
+      400: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description: "Bad Request. Request body fails validation.",
+      },
+      401: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description: "Unauthorized. User is not authenticated.",
+      },
+      403: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description: "Forbidden. User does not have access.",
+      },
+      409: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description: "Conflict. Email or username already exists.",
+      },
+    },
+  }),
   resolveAuthUser,
   withTargetAccess({ requireSelfOrAdmin: true }),
   zodValidator("json", userUpdateSchema),
