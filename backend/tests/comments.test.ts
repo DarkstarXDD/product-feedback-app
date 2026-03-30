@@ -32,19 +32,21 @@ describe("GET /api/v1/comments", () => {
   test("return 403 when auth user", async () => {
     const { userCleanup, token } = await createUserSession("USER")
 
-    const res = await app.request("/api/v1/comments", {
-      headers: { cookie: `token=${token}` },
-    })
+    try {
+      const res = await app.request("/api/v1/comments", {
+        headers: { cookie: `token=${token}` },
+      })
 
-    const resBody = (await res.json()) as JsonErrorBody
+      const resBody = (await res.json()) as JsonErrorBody
 
-    expect(res.status).toBe(403)
-    expect(resBody).toMatchObject({
-      message: "Forbidden",
-      code: "FORBIDDEN",
-    })
-
-    await userCleanup()
+      expect(res.status).toBe(403)
+      expect(resBody).toMatchObject({
+        message: "Forbidden",
+        code: "FORBIDDEN",
+      })
+    } finally {
+      await userCleanup().catch(() => {})
+    }
   })
 
   /** Only admins can access the full comment list  */
@@ -52,27 +54,29 @@ describe("GET /api/v1/comments", () => {
     const { userCleanup, token } = await createUserSession("ADMIN")
     const { commentScenarioCleanup, comment } = await createCommentScenario()
 
-    const res = await app.request("/api/v1/comments", {
-      headers: { cookie: `token=${token}` },
-    })
+    try {
+      const res = await app.request("/api/v1/comments", {
+        headers: { cookie: `token=${token}` },
+      })
 
-    const resBody = (await res.json()) as {
-      meta: { pagination: Pagination }
-    } & JsonSuccessBody<CommentResponse[]>
+      const resBody = (await res.json()) as {
+        meta: { pagination: Pagination }
+      } & JsonSuccessBody<CommentResponse[]>
 
-    expect(res.status).toBe(200)
-    expect(resBody.data.some((item) => item.id === comment.id)).toBe(true)
-    expect(resBody.meta.pagination).toEqual({
-      hasPreviousPage: false,
-      hasNextPage: false,
-      totalItems: 1,
-      totalPages: 1,
-      pageSize: 10,
-      page: 1,
-    })
-
-    await userCleanup()
-    await commentScenarioCleanup()
+      expect(res.status).toBe(200)
+      expect(resBody.data.some((item) => item.id === comment.id)).toBe(true)
+      expect(resBody.meta.pagination).toEqual({
+        hasPreviousPage: false,
+        hasNextPage: false,
+        totalItems: 1,
+        totalPages: 1,
+        pageSize: 10,
+        page: 1,
+      })
+    } finally {
+      await commentScenarioCleanup().catch(() => {})
+      await userCleanup().catch(() => {})
+    }
   })
 
   test("return 200 and correct pagination metadata when multiple pages exist", async () => {
@@ -128,16 +132,18 @@ describe("GET /api/v1/comments/:id", () => {
   test("return 200 and comment when public", async () => {
     const { commentScenarioCleanup, comment } = await createCommentScenario()
 
-    const res = await app.request(`/api/v1/comments/${comment.id}`)
+    try {
+      const res = await app.request(`/api/v1/comments/${comment.id}`)
 
-    const resBody = (await res.json()) as JsonSuccessBody<
-      Record<string, unknown>
-    >
+      const resBody = (await res.json()) as JsonSuccessBody<
+        Record<string, unknown>
+      >
 
-    expect(res.status).toBe(200)
-    expect(resBody.data).toHaveProperty("id", comment.id)
-
-    await commentScenarioCleanup()
+      expect(res.status).toBe(200)
+      expect(resBody.data).toHaveProperty("id", comment.id)
+    } finally {
+      await commentScenarioCleanup().catch(() => {})
+    }
   })
 
   test("return 404 if comment not found", async () => {
@@ -160,23 +166,25 @@ describe("PATCH /api/v1/comments/:id", () => {
   test("public can't update comments", async () => {
     const { commentScenarioCleanup, comment } = await createCommentScenario()
 
-    const res = await app.request(`/api/v1/comments/${comment.id}`, {
-      body: JSON.stringify({
-        content: "Public user tries to update the comment",
-      }),
-      headers: { "content-type": "application/json" },
-      method: "PATCH",
-    })
+    try {
+      const res = await app.request(`/api/v1/comments/${comment.id}`, {
+        body: JSON.stringify({
+          content: "Public user tries to update the comment",
+        }),
+        headers: { "content-type": "application/json" },
+        method: "PATCH",
+      })
 
-    const resBody = (await res.json()) as JsonErrorBody
+      const resBody = (await res.json()) as JsonErrorBody
 
-    expect(res.status).toBe(401)
-    expect(resBody).toMatchObject({
-      message: "Unauthorized",
-      code: "UNAUTHORIZED",
-    })
-
-    await commentScenarioCleanup()
+      expect(res.status).toBe(401)
+      expect(resBody).toMatchObject({
+        message: "Unauthorized",
+        code: "UNAUTHORIZED",
+      })
+    } finally {
+      await commentScenarioCleanup().catch(() => {})
+    }
   })
 
   /** John can't update Janes comment and vice versa  */
@@ -184,24 +192,29 @@ describe("PATCH /api/v1/comments/:id", () => {
     const { userCleanup, token } = await createUserSession("USER")
     const { commentScenarioCleanup, comment } = await createCommentScenario()
 
-    const res = await app.request(`/api/v1/comments/${comment.id}`, {
-      body: JSON.stringify({
-        content: "Another user tries to update the comment",
-      }),
-      headers: { "content-type": "application/json", cookie: `token=${token}` },
-      method: "PATCH",
-    })
+    try {
+      const res = await app.request(`/api/v1/comments/${comment.id}`, {
+        body: JSON.stringify({
+          content: "Another user tries to update the comment",
+        }),
+        headers: {
+          "content-type": "application/json",
+          cookie: `token=${token}`,
+        },
+        method: "PATCH",
+      })
 
-    const resBody = (await res.json()) as JsonErrorBody
+      const resBody = (await res.json()) as JsonErrorBody
 
-    expect(res.status).toBe(403)
-    expect(resBody).toMatchObject({
-      message: "Not allowed or forbidden",
-      code: "FORBIDDEN",
-    })
-
-    await userCleanup()
-    await commentScenarioCleanup()
+      expect(res.status).toBe(403)
+      expect(resBody).toMatchObject({
+        message: "Not allowed or forbidden",
+        code: "FORBIDDEN",
+      })
+    } finally {
+      await commentScenarioCleanup().catch(() => {})
+      await userCleanup().catch(() => {})
+    }
   })
 
   /** Admin can update any comment created by anyone  */
@@ -209,26 +222,31 @@ describe("PATCH /api/v1/comments/:id", () => {
     const { userCleanup, token } = await createUserSession("ADMIN")
     const { commentScenarioCleanup, comment } = await createCommentScenario()
 
-    const updatedComment = faker.lorem.sentence()
+    try {
+      const updatedComment = faker.lorem.sentence()
 
-    const res = await app.request(`/api/v1/comments/${comment.id}`, {
-      headers: { "content-type": "application/json", cookie: `token=${token}` },
-      body: JSON.stringify({
-        content: updatedComment,
-      }),
-      method: "PATCH",
-    })
+      const res = await app.request(`/api/v1/comments/${comment.id}`, {
+        headers: {
+          "content-type": "application/json",
+          cookie: `token=${token}`,
+        },
+        body: JSON.stringify({
+          content: updatedComment,
+        }),
+        method: "PATCH",
+      })
 
-    const resBody = (await res.json()) as JsonSuccessBody<
-      Record<string, unknown>
-    >
+      const resBody = (await res.json()) as JsonSuccessBody<
+        Record<string, unknown>
+      >
 
-    expect(res.status).toBe(200)
-    expect(resBody.data).toHaveProperty("id", comment.id)
-    expect(resBody.data).toHaveProperty("content", updatedComment)
-
-    await userCleanup()
-    await commentScenarioCleanup()
+      expect(res.status).toBe(200)
+      expect(resBody.data).toHaveProperty("id", comment.id)
+      expect(resBody.data).toHaveProperty("content", updatedComment)
+    } finally {
+      await commentScenarioCleanup().catch(() => {})
+      await userCleanup().catch(() => {})
+    }
   })
 
   /** John can update any comment created by themselves  */
@@ -238,47 +256,57 @@ describe("PATCH /api/v1/comments/:id", () => {
       user.id
     )
 
-    const updatedComment = faker.lorem.sentence()
+    try {
+      const updatedComment = faker.lorem.sentence()
 
-    const res = await app.request(`/api/v1/comments/${comment.id}`, {
-      headers: { "content-type": "application/json", cookie: `token=${token}` },
-      body: JSON.stringify({
-        content: updatedComment,
-      }),
-      method: "PATCH",
-    })
+      const res = await app.request(`/api/v1/comments/${comment.id}`, {
+        headers: {
+          "content-type": "application/json",
+          cookie: `token=${token}`,
+        },
+        body: JSON.stringify({
+          content: updatedComment,
+        }),
+        method: "PATCH",
+      })
 
-    const resBody = (await res.json()) as JsonSuccessBody<
-      Record<string, unknown>
-    >
+      const resBody = (await res.json()) as JsonSuccessBody<
+        Record<string, unknown>
+      >
 
-    expect(res.status).toBe(200)
-    expect(resBody.data).toHaveProperty("id", comment.id)
-    expect(resBody.data).toHaveProperty("content", updatedComment)
-
-    await commentScenarioCleanup()
-    await userCleanup()
+      expect(res.status).toBe(200)
+      expect(resBody.data).toHaveProperty("id", comment.id)
+      expect(resBody.data).toHaveProperty("content", updatedComment)
+    } finally {
+      await commentScenarioCleanup().catch(() => {})
+      await userCleanup().catch(() => {})
+    }
   })
 
   test("returns 404 when comment id does not exist", async () => {
     const { userCleanup, token } = await createUserSession("USER")
     const id = "does-not-exist"
 
-    const res = await app.request(`/api/v1/comments/${id}`, {
-      body: JSON.stringify({ content: "Trying to update a missing comment" }),
-      headers: { "content-type": "application/json", cookie: `token=${token}` },
-      method: "PATCH",
-    })
+    try {
+      const res = await app.request(`/api/v1/comments/${id}`, {
+        body: JSON.stringify({ content: "Trying to update a missing comment" }),
+        headers: {
+          "content-type": "application/json",
+          cookie: `token=${token}`,
+        },
+        method: "PATCH",
+      })
 
-    const resBody = (await res.json()) as JsonErrorBody
+      const resBody = (await res.json()) as JsonErrorBody
 
-    expect(res.status).toBe(404)
-    expect(resBody).toMatchObject({
-      message: "Comment not found",
-      code: "NOT_FOUND",
-    })
-
-    await userCleanup()
+      expect(res.status).toBe(404)
+      expect(resBody).toMatchObject({
+        message: "Comment not found",
+        code: "NOT_FOUND",
+      })
+    } finally {
+      await userCleanup().catch(() => {})
+    }
   })
 
   /** Comment cannot be empty */
@@ -288,30 +316,35 @@ describe("PATCH /api/v1/comments/:id", () => {
       user.id
     )
 
-    const res = await app.request(`/api/v1/comments/${comment.id}`, {
-      headers: { "content-type": "application/json", cookie: `token=${token}` },
-      body: JSON.stringify({
-        content: "",
-      }),
-      method: "PATCH",
-    })
-
-    const resBody = (await res.json()) as JsonErrorBody
-
-    expect(res.status).toBe(400)
-
-    expect(resBody).toEqual({
-      errors: {
-        fieldErrors: {
-          content: ["Comment cannot be empty"],
+    try {
+      const res = await app.request(`/api/v1/comments/${comment.id}`, {
+        headers: {
+          "content-type": "application/json",
+          cookie: `token=${token}`,
         },
-        formErrors: [],
-      },
-      message: "Server validation fails",
-      code: "VALIDATION_ERROR",
-    })
+        body: JSON.stringify({
+          content: "",
+        }),
+        method: "PATCH",
+      })
 
-    await commentScenarioCleanup()
-    await userCleanup()
+      const resBody = (await res.json()) as JsonErrorBody
+
+      expect(res.status).toBe(400)
+
+      expect(resBody).toEqual({
+        errors: {
+          fieldErrors: {
+            content: ["Comment cannot be empty"],
+          },
+          formErrors: [],
+        },
+        message: "Server validation fails",
+        code: "VALIDATION_ERROR",
+      })
+    } finally {
+      await commentScenarioCleanup().catch(() => {})
+      await userCleanup().catch(() => {})
+    }
   })
 })
