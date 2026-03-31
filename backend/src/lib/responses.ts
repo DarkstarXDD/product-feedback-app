@@ -55,7 +55,13 @@ export function jsonError(
   options?: JsonErrorOptions
 ): never {
   throw new HTTPException(options?.status, {
-    res: c.json(body, options?.status),
+    res: c.json(
+      {
+        ...body,
+        errors: body.errors ? { formErrors: [], ...body.errors } : undefined,
+      },
+      options?.status
+    ),
     message: body.message,
   })
 }

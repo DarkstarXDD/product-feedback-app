@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vitest"
+import { beforeEach, describe, expect, test } from "vitest"
 import { faker } from "@faker-js/faker"
 import * as z from "zod"
 
@@ -15,338 +15,260 @@ import {
   createCommentScenario,
   createUserSession,
   createComment,
+  cleanupDb,
 } from "./utils"
 
+beforeEach(cleanupDb)
+
 describe("GET /api/v1/comments", () => {
-  /** Only admins can access the full comment list  */
+  //----------------------- 401 when public ---------------------------
   test("return 401 when unauthorized", async () => {
     const res = await app.request("/api/v1/comments")
-
     const resBody = jsonErrorSchema.parse(await res.json())
 
     expect(res.status).toBe(401)
     expect(resBody).toMatchObject({
-      message: "Unauthorized",
       code: "UNAUTHORIZED",
+      message: "Unauthorized",
     })
   })
 
-  /** Only admins can access the full comment list  */
+  //---------------------- 403 when auth user --------------------------
   test("return 403 when auth user", async () => {
-    const { userCleanup, token } = await createUserSession("USER")
+    const { token } = await createUserSession("USER")
 
-    try {
-      const res = await app.request("/api/v1/comments", {
-        headers: { cookie: `token=${token}` },
-      })
+    const res = await app.request("/api/v1/comments", {
+      headers: { cookie: `token=${token}` },
+    })
+    const resBody = jsonErrorSchema.parse(await res.json())
 
-      const resBody = jsonErrorSchema.parse(await res.json())
-
-      expect(res.status).toBe(403)
-      expect(resBody).toMatchObject({
-        message: "Forbidden",
-        code: "FORBIDDEN",
-      })
-    } finally {
-      await userCleanup().catch(() => {})
-    }
+    expect(res.status).toBe(403)
+    expect(resBody).toMatchObject({
+      code: "FORBIDDEN",
+      message: "Forbidden",
+    })
   })
 
-  /** Only admins can access the full comment list  */
+  //------------------- 200 and comment list when admin ------------------------
   test("return 200 and comment list when admin", async () => {
-    const { userCleanup, token } = await createUserSession("ADMIN")
-    const { commentScenarioCleanup, comment } = await createCommentScenario()
+    const { token } = await createUserSession("ADMIN")
+    const { comment } = await createCommentScenario()
 
-    try {
-      const res = await app.request("/api/v1/comments", {
-        headers: { cookie: `token=${token}` },
-      })
+    const res = await app.request("/api/v1/comments", {
+      headers: { cookie: `token=${token}` },
+    })
+    const resBody = paginatedSuccessSchema(
+      z.array(commentResponseSchema)
+    ).parse(await res.json())
 
-      const resBody = paginatedSuccessSchema(
-        z.array(commentResponseSchema)
-      ).parse(await res.json())
-
-      expect(res.status).toBe(200)
-      expect(resBody.data.some((item) => item.id === comment.id)).toBe(true)
-      expect(resBody.meta.pagination).toEqual({
-        hasPreviousPage: false,
-        hasNextPage: false,
-        totalItems: 1,
-        totalPages: 1,
-        pageSize: 10,
-        page: 1,
-      })
-    } finally {
-      await commentScenarioCleanup().catch(() => {})
-      await userCleanup().catch(() => {})
-    }
+    expect(res.status).toBe(200)
+    expect(resBody.data.some((item) => item.id === comment.id)).toBe(true)
+    expect(resBody.meta.pagination).toEqual({
+      page: 1,
+      pageSize: 10,
+      hasPreviousPage: false,
+      hasNextPage: false,
+      totalItems: 1,
+      totalPages: 1,
+    })
   })
 
+  //----------------------------- 200 and correct paginated data ----------------------------
   test("return 200 and correct pagination metadata when multiple pages exist", async () => {
-    const { userCleanup, token, user } = await createUserSession("ADMIN")
-    const suggestionScenarioCleanups: Array<() => Promise<unknown>> = []
-    const commentCleanups: Array<() => Promise<unknown>> = []
+    const { token, user } = await createUserSession("ADMIN")
 
-    try {
-      for (let i = 0; i < 20; i++) {
-        const { suggestionScenarioCleanup, suggestion } =
-          await createSuggestionScenario()
-        suggestionScenarioCleanups.push(suggestionScenarioCleanup)
-
-        const { commentCleanup } = await createComment({
-          suggestionId: suggestion.id,
-          ownerId: user.id,
-        })
-        commentCleanups.push(commentCleanup)
-      }
-
-      const res = await app.request("/api/v1/comments?page=2&pageSize=10", {
-        headers: { cookie: `token=${token}` },
-      })
-
-      const resBody = paginatedSuccessSchema(
-        z.array(commentResponseSchema)
-      ).parse(await res.json())
-
-      expect(res.status).toBe(200)
-      expect(resBody.data).toHaveLength(10)
-      expect(resBody.meta.pagination).toEqual({
-        hasPreviousPage: true,
-        hasNextPage: false,
-        totalItems: 20,
-        totalPages: 2,
-        pageSize: 10,
-        page: 2,
-      })
-    } finally {
-      for (const cleanup of commentCleanups.reverse()) {
-        await cleanup().catch(() => {})
-      }
-      for (const cleanup of suggestionScenarioCleanups.reverse()) {
-        await cleanup().catch(() => {})
-      }
-      await userCleanup().catch(() => {})
+    for (let i = 0; i < 20; i++) {
+      const suggestion = await createSuggestionScenario()
+      await createComment({ suggestionId: suggestion.id, ownerId: user.id })
     }
+
+    const res = await app.request("/api/v1/comments?page=2&pageSize=10", {
+      headers: { cookie: `token=${token}` },
+    })
+    const resBody = paginatedSuccessSchema(
+      z.array(commentResponseSchema)
+    ).parse(await res.json())
+
+    expect(res.status).toBe(200)
+    expect(resBody.data).toHaveLength(10)
+    expect(resBody.meta.pagination).toEqual({
+      page: 2,
+      pageSize: 10,
+      hasPreviousPage: true,
+      hasNextPage: false,
+      totalItems: 20,
+      totalPages: 2,
+    })
   })
 })
 
 describe("GET /api/v1/comments/:id", () => {
-  /** Anyone can access individual comments if they know the commendId  */
+  //----------------------------- 200 and comment when public ----------------------------
   test("return 200 and comment when public", async () => {
-    const { commentScenarioCleanup, comment } = await createCommentScenario()
+    const { comment } = await createCommentScenario()
 
-    try {
-      const res = await app.request(`/api/v1/comments/${comment.id}`)
+    const res = await app.request(`/api/v1/comments/${comment.id}`)
+    const resBody = jsonSuccessSchema(commentResponseSchema).parse(
+      await res.json()
+    )
 
-      const resBody = jsonSuccessSchema(commentResponseSchema).parse(
-        await res.json()
-      )
-
-      expect(res.status).toBe(200)
-      expect(resBody.data).toHaveProperty("id", comment.id)
-    } finally {
-      await commentScenarioCleanup().catch(() => {})
-    }
+    expect(res.status).toBe(200)
+    expect(resBody.data).toHaveProperty("id", comment.id)
   })
 
+  //----------------------------- 404 when comment not found ----------------------------
   test("return 404 if comment not found", async () => {
-    const id: string = "123"
-
-    const res = await app.request(`/api/v1/comments/${id}`)
-
+    const res = await app.request(`/api/v1/comments/123`)
     const resBody = jsonErrorSchema.parse(await res.json())
 
     expect(res.status).toBe(404)
     expect(resBody).toMatchObject({
-      message: "Comment not found",
       code: "NOT_FOUND",
+      message: "Comment not found",
     })
   })
 })
 
 describe("PATCH /api/v1/comments/:id", () => {
-  /** Public (non logged in users) can't update any comments  */
+  //----------------------------- 401 when public tries to update comment ----------------------------
   test("public can't update comments", async () => {
-    const { commentScenarioCleanup, comment } = await createCommentScenario()
+    const { comment } = await createCommentScenario()
 
-    try {
-      const res = await app.request(`/api/v1/comments/${comment.id}`, {
-        body: JSON.stringify({
-          content: "Public user tries to update the comment",
-        }),
-        headers: { "content-type": "application/json" },
-        method: "PATCH",
-      })
+    const res = await app.request(`/api/v1/comments/${comment.id}`, {
+      body: JSON.stringify({
+        content: "Public user tries to update the comment",
+      }),
+      headers: { "content-type": "application/json" },
+      method: "PATCH",
+    })
+    const resBody = jsonErrorSchema.parse(await res.json())
 
-      const resBody = jsonErrorSchema.parse(await res.json())
-
-      expect(res.status).toBe(401)
-      expect(resBody).toMatchObject({
-        message: "Unauthorized",
-        code: "UNAUTHORIZED",
-      })
-    } finally {
-      await commentScenarioCleanup().catch(() => {})
-    }
+    expect(res.status).toBe(401)
+    expect(resBody).toMatchObject({
+      code: "UNAUTHORIZED",
+      message: "Unauthorized",
+    })
   })
 
-  /** John can't update Janes comment and vice versa  */
+  //------------------------ 403 when user tries to update another user's comment -------------------
   test("user can't update another user's comment", async () => {
-    const { userCleanup, token } = await createUserSession("USER")
-    const { commentScenarioCleanup, comment } = await createCommentScenario()
+    const { token } = await createUserSession("USER")
+    const { comment } = await createCommentScenario()
 
-    try {
-      const res = await app.request(`/api/v1/comments/${comment.id}`, {
-        body: JSON.stringify({
-          content: "Another user tries to update the comment",
-        }),
-        headers: {
-          "content-type": "application/json",
-          cookie: `token=${token}`,
-        },
-        method: "PATCH",
-      })
+    const res = await app.request(`/api/v1/comments/${comment.id}`, {
+      body: JSON.stringify({
+        content: "Another user tries to update the comment",
+      }),
+      headers: {
+        "content-type": "application/json",
+        cookie: `token=${token}`,
+      },
+      method: "PATCH",
+    })
+    const resBody = jsonErrorSchema.parse(await res.json())
 
-      const resBody = jsonErrorSchema.parse(await res.json())
-
-      expect(res.status).toBe(403)
-      expect(resBody).toMatchObject({
-        message: "Not allowed or forbidden",
-        code: "FORBIDDEN",
-      })
-    } finally {
-      await commentScenarioCleanup().catch(() => {})
-      await userCleanup().catch(() => {})
-    }
+    expect(res.status).toBe(403)
+    expect(resBody).toMatchObject({
+      code: "FORBIDDEN",
+      message: "Not allowed or forbidden",
+    })
   })
 
-  /** Admin can update any comment created by anyone  */
+  //-------------------------- 200 when admin update any comment ---------------------
   test("admin can update anyones comment", async () => {
-    const { userCleanup, token } = await createUserSession("ADMIN")
-    const { commentScenarioCleanup, comment } = await createCommentScenario()
+    const { token } = await createUserSession("ADMIN")
+    const { comment } = await createCommentScenario()
+    const updatedComment = faker.lorem.sentence()
 
-    try {
-      const updatedComment = faker.lorem.sentence()
+    const res = await app.request(`/api/v1/comments/${comment.id}`, {
+      body: JSON.stringify({ content: updatedComment }),
+      headers: {
+        "content-type": "application/json",
+        cookie: `token=${token}`,
+      },
+      method: "PATCH",
+    })
 
-      const res = await app.request(`/api/v1/comments/${comment.id}`, {
-        headers: {
-          "content-type": "application/json",
-          cookie: `token=${token}`,
-        },
-        body: JSON.stringify({
-          content: updatedComment,
-        }),
-        method: "PATCH",
-      })
+    const resBody = jsonSuccessSchema(commentResponseSchema).parse(
+      await res.json()
+    )
 
-      const resBody = jsonSuccessSchema(commentResponseSchema).parse(
-        await res.json()
-      )
-
-      expect(res.status).toBe(200)
-      expect(resBody.data).toHaveProperty("id", comment.id)
-      expect(resBody.data).toHaveProperty("content", updatedComment)
-    } finally {
-      await commentScenarioCleanup().catch(() => {})
-      await userCleanup().catch(() => {})
-    }
+    expect(res.status).toBe(200)
+    expect(resBody.data).toHaveProperty("id", comment.id)
+    expect(resBody.data).toHaveProperty("content", updatedComment)
   })
 
-  /** John can update any comment created by themselves  */
+  //-------------------------- 200 when user updates their own comment ---------------------
   test("user can update their own comment", async () => {
-    const { userCleanup, token, user } = await createUserSession("USER")
-    const { commentScenarioCleanup, comment } = await createCommentScenario(
-      user.id
+    const { token, user } = await createUserSession("USER")
+    const { comment } = await createCommentScenario(user.id)
+    const updatedComment = faker.lorem.sentence()
+
+    const res = await app.request(`/api/v1/comments/${comment.id}`, {
+      body: JSON.stringify({ content: updatedComment }),
+      headers: {
+        "content-type": "application/json",
+        cookie: `token=${token}`,
+      },
+      method: "PATCH",
+    })
+
+    const resBody = jsonSuccessSchema(commentResponseSchema).parse(
+      await res.json()
     )
 
-    try {
-      const updatedComment = faker.lorem.sentence()
-
-      const res = await app.request(`/api/v1/comments/${comment.id}`, {
-        headers: {
-          "content-type": "application/json",
-          cookie: `token=${token}`,
-        },
-        body: JSON.stringify({
-          content: updatedComment,
-        }),
-        method: "PATCH",
-      })
-
-      const resBody = jsonSuccessSchema(commentResponseSchema).parse(
-        await res.json()
-      )
-
-      expect(res.status).toBe(200)
-      expect(resBody.data).toHaveProperty("id", comment.id)
-      expect(resBody.data).toHaveProperty("content", updatedComment)
-    } finally {
-      await commentScenarioCleanup().catch(() => {})
-      await userCleanup().catch(() => {})
-    }
+    expect(res.status).toBe(200)
+    expect(resBody.data).toHaveProperty("id", comment.id)
+    expect(resBody.data).toHaveProperty("content", updatedComment)
   })
 
+  //--------------------------- 404 when comment not found ---------------------------
   test("returns 404 when comment id does not exist", async () => {
-    const { userCleanup, token } = await createUserSession("USER")
-    const id = "does-not-exist"
+    const { token } = await createUserSession("USER")
 
-    try {
-      const res = await app.request(`/api/v1/comments/${id}`, {
-        body: JSON.stringify({ content: "Trying to update a missing comment" }),
-        headers: {
-          "content-type": "application/json",
-          cookie: `token=${token}`,
-        },
-        method: "PATCH",
-      })
+    const res = await app.request(`/api/v1/comments/does-not-exist`, {
+      body: JSON.stringify({ content: "Trying to update a missing comment" }),
+      headers: {
+        "content-type": "application/json",
+        cookie: `token=${token}`,
+      },
+      method: "PATCH",
+    })
+    const resBody = jsonErrorSchema.parse(await res.json())
 
-      const resBody = jsonErrorSchema.parse(await res.json())
-
-      expect(res.status).toBe(404)
-      expect(resBody).toMatchObject({
-        message: "Comment not found",
-        code: "NOT_FOUND",
-      })
-    } finally {
-      await userCleanup().catch(() => {})
-    }
+    expect(res.status).toBe(404)
+    expect(resBody).toMatchObject({
+      code: "NOT_FOUND",
+      message: "Comment not found",
+    })
   })
 
-  /** Comment cannot be empty */
+  //--------------------------- 400 when field validation fails ---------------------------
   test("returns 400 and field errors when validation fails", async () => {
-    const { userCleanup, token, user } = await createUserSession("USER")
-    const { commentScenarioCleanup, comment } = await createCommentScenario(
-      user.id
-    )
+    const { token, user } = await createUserSession("USER")
+    const { comment } = await createCommentScenario(user.id)
 
-    try {
-      const res = await app.request(`/api/v1/comments/${comment.id}`, {
-        headers: {
-          "content-type": "application/json",
-          cookie: `token=${token}`,
+    const res = await app.request(`/api/v1/comments/${comment.id}`, {
+      body: JSON.stringify({ content: "" }),
+      headers: {
+        "content-type": "application/json",
+        cookie: `token=${token}`,
+      },
+      method: "PATCH",
+    })
+
+    const resBody = jsonErrorSchema.parse(await res.json())
+
+    expect(res.status).toBe(400)
+    expect(resBody).toEqual({
+      errors: {
+        formErrors: [],
+        fieldErrors: {
+          content: ["Comment cannot be empty"],
         },
-        body: JSON.stringify({
-          content: "",
-        }),
-        method: "PATCH",
-      })
-
-      const resBody = jsonErrorSchema.parse(await res.json())
-
-      expect(res.status).toBe(400)
-      expect(resBody).toEqual({
-        errors: {
-          fieldErrors: {
-            content: ["Comment cannot be empty"],
-          },
-          formErrors: [],
-        },
-        message: "Server validation fails",
-        code: "VALIDATION_ERROR",
-      })
-    } finally {
-      await commentScenarioCleanup().catch(() => {})
-      await userCleanup().catch(() => {})
-    }
+      },
+      code: "VALIDATION_ERROR",
+      message: "Server validation fails",
+    })
   })
 })
