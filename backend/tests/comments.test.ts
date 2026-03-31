@@ -78,7 +78,7 @@ describe("GET /api/v1/comments", () => {
     const { token, user } = await createUserSession("ADMIN")
 
     for (let i = 0; i < 20; i++) {
-      const { suggestion } = await createSuggestionScenario()
+      const suggestion = await createSuggestionScenario()
       await createComment({ suggestionId: suggestion.id, ownerId: user.id })
     }
 

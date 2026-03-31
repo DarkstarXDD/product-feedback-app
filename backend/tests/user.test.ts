@@ -19,9 +19,9 @@ import {
   createCommentScenario,
   createUserSession,
   createSuggestion,
-  createDummyUser,
   createComment,
   createUpvote,
+  createUser,
   cleanupDb,
 } from "./utils"
 
@@ -62,7 +62,7 @@ describe("GET /api/v1/users", () => {
   // ----------------------- 200 and user list when admin -------------------------------------
   test("returns 200 and user list when authenticated user is an admin", async () => {
     const { token } = await createUserSession("ADMIN")
-    const { user: listedUser } = await createDummyUser("USER")
+    const { user: listedUser } = await createUser("USER")
 
     const res = await app.request("/api/v1/users", {
       headers: { cookie: `token=${token}` },
@@ -89,7 +89,7 @@ describe("GET /api/v1/users", () => {
     const { token } = await createUserSession("ADMIN")
 
     for (let i = 0; i < 19; i++) {
-      await createDummyUser("USER")
+      await createUser("USER")
     }
 
     const res = await app.request("/api/v1/users?page=2&pageSize=10", {
@@ -119,7 +119,7 @@ describe("GET /api/v1/users", () => {
 describe("PATCH /api/v1/users/:username", () => {
   // ----------------------- 401 when unauthenticated -----------------------------------
   test("returns 401 when unauthenticated", async () => {
-    const { user } = await createDummyUser("USER")
+    const { user } = await createUser("USER")
 
     const res = await app.request(`/api/v1/users/${user.username}`, {
       body: JSON.stringify({ name: "Updated name" }),
@@ -138,7 +138,7 @@ describe("PATCH /api/v1/users/:username", () => {
   // ----------------------- 403 when user tries to update other users profile --------------------------
   test("returns 403 when authenticated user tries to update another user's profile", async () => {
     const { token } = await createUserSession("USER")
-    const { user: targetUser } = await createDummyUser("USER")
+    const { user: targetUser } = await createUser("USER")
 
     const res = await app.request(`/api/v1/users/${targetUser.username}`, {
       body: JSON.stringify({ name: "Updated by another user" }),
@@ -188,7 +188,7 @@ describe("PATCH /api/v1/users/:username", () => {
   // ----------------------- 200 when admin updates any profile --------------------------
   test("returns 200 when admin updates another user's profile", async () => {
     const { token } = await createUserSession("ADMIN")
-    const { user: targetUser } = await createDummyUser("USER")
+    const { user: targetUser } = await createUser("USER")
     const payload = { name: "Updated by admin" }
 
     const res = await app.request(`/api/v1/users/${targetUser.username}`, {
@@ -244,7 +244,7 @@ describe("PATCH /api/v1/users/:username", () => {
   // ----------------------- 409 when email already exists ----------------------------
   test("returns 409 when email already exists", async () => {
     const { token, user } = await createUserSession("USER")
-    const { user: conflictingUser } = await createDummyUser("USER")
+    const { user: conflictingUser } = await createUser("USER")
 
     const res = await app.request(`/api/v1/users/${user.username}`, {
       body: JSON.stringify({ email: conflictingUser.email }),
@@ -272,7 +272,7 @@ describe("PATCH /api/v1/users/:username", () => {
   // ----------------------- 409 when username already exists --------------------------
   test("returns 409 when username already exists", async () => {
     const { token, user } = await createUserSession("USER")
-    const { user: conflictingUser } = await createDummyUser("USER")
+    const { user: conflictingUser } = await createUser("USER")
 
     const res = await app.request(`/api/v1/users/${user.username}`, {
       body: JSON.stringify({ username: conflictingUser.username }),
@@ -325,7 +325,7 @@ describe("PATCH /api/v1/users/:username", () => {
 describe("GET /api/v1/users/:username", () => {
   // ----------------------- 200 and public fields when public user --------------------------
   test("returns 200 and public user fields when unauthenticated", async () => {
-    const { user } = await createDummyUser("USER")
+    const { user } = await createUser("USER")
 
     const res = await app.request(`/api/v1/users/${user.username}`)
     const resBody = jsonSuccessSchema(publicUserResponseSchema).parse(
@@ -365,7 +365,7 @@ describe("GET /api/v1/users/:username", () => {
   // ----------------------- 200 and private fields when admin --------------------------
   test("returns 200 and private user fields when admin requests another user's profile", async () => {
     const { token } = await createUserSession("ADMIN")
-    const { user: targetUser } = await createDummyUser("USER")
+    const { user: targetUser } = await createUser("USER")
 
     const res = await app.request(`/api/v1/users/${targetUser.username}`, {
       headers: { cookie: `token=${token}` },
@@ -403,8 +403,8 @@ describe("GET /api/v1/users/:username", () => {
 describe("GET /api/v1/users/:username/suggestions", () => {
   // ----------------------- 200 and suggestion list ------------------------------
   test("returns 200 and suggestion list for that user", async () => {
-    const { user } = await createDummyUser("USER")
-    const { suggestion } = await createSuggestionScenario(user.id)
+    const { user } = await createUser("USER")
+    const suggestion = await createSuggestionScenario(user.id)
 
     const res = await app.request(`/api/v1/users/${user.username}/suggestions`)
     const resBody = paginatedSuccessSchema(
@@ -425,10 +425,10 @@ describe("GET /api/v1/users/:username/suggestions", () => {
 
   // ----------------------- 200 and pagination data ----------------------------------
   test("returns correct pagination metadata when multiple pages exist", async () => {
-    const { user } = await createDummyUser("USER")
+    const { user } = await createUser("USER")
 
     for (let i = 0; i < 20; i++) {
-      await createSuggestion({ ownerId: user.id })
+      await createSuggestion(user.id)
     }
 
     const res = await app.request(
@@ -457,8 +457,8 @@ describe("GET /api/v1/users/:username/suggestions", () => {
 describe("GET /api/v1/users/:username/upvotes", () => {
   // ----------------------- 200 and suggestion list ----------------------------------
   test("returns 200 and suggestion list the user has upvoted", async () => {
-    const { user } = await createDummyUser("USER")
-    const { suggestion } = await createSuggestionScenario()
+    const { user } = await createUser("USER")
+    const suggestion = await createSuggestionScenario()
     await createUpvote({ suggestionId: suggestion.id, ownerId: user.id })
 
     const res = await app.request(`/api/v1/users/${user.username}/upvotes`)
@@ -481,10 +481,10 @@ describe("GET /api/v1/users/:username/upvotes", () => {
 
   // ----------------------- 200 and paginated data ----------------------------------
   test("returns correct pagination metadata when multiple pages exist", async () => {
-    const { user } = await createDummyUser("USER")
+    const { user } = await createUser("USER")
 
     for (let i = 0; i < 20; i++) {
-      const { suggestion } = await createSuggestionScenario()
+      const suggestion = await createSuggestionScenario()
 
       await createUpvote({ suggestionId: suggestion.id, ownerId: user.id })
     }
@@ -537,11 +537,10 @@ describe("GET /api/v1/users/:username/comments", () => {
 
   // ----------------------- 200 and comments with paginated data ----------------------------------
   test("returns correct pagination metadata when multiple pages exist", async () => {
-    const { user } = await createDummyUser("USER")
+    const { user } = await createUser("USER")
 
     for (let i = 0; i < 20; i++) {
-      const { suggestion } = await createSuggestionScenario()
-
+      const suggestion = await createSuggestionScenario()
       await createComment({ suggestionId: suggestion.id, ownerId: user.id })
     }
 

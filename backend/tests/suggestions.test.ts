@@ -21,8 +21,8 @@ import {
   getRandomCategoryId,
   createUserSession,
   createSuggestion,
-  createDummyUser,
   createUpvote,
+  createUser,
   cleanupDb,
 } from "./utils"
 
@@ -34,7 +34,7 @@ beforeEach(cleanupDb)
 describe("GET /api/v1/suggestions", () => {
   //----------------------- 200 and suggestion list ---------------------------
   test("returns 200 and suggestion list", async () => {
-    const { suggestion } = await createSuggestionScenario()
+    const suggestion = await createSuggestionScenario()
 
     const res = await app.request("/api/v1/suggestions")
     const resBody = paginatedSuccessSchema(
@@ -68,10 +68,10 @@ describe("GET /api/v1/suggestions", () => {
 
   //----------------------- 200 and paginated data multiple pages ---------------------------
   test("returns correct pagination metadata when multiple pages exist", async () => {
-    const { user } = await createDummyUser("USER")
+    const { user } = await createUser("USER")
 
     for (let i = 0; i < 20; i++) {
-      await createSuggestion({ ownerId: user.id })
+      await createSuggestion(user.id)
     }
 
     const res = await app.request("/api/v1/suggestions?page=2&pageSize=10")
@@ -112,7 +112,7 @@ describe("GET /api/v1/suggestions", () => {
 describe("GET /api/v1/suggestions/:slug", () => {
   //----------------------- 200 and suggestion ---------------------------
   test("returns 200 and suggestion when slug exists", async () => {
-    const { suggestion } = await createSuggestionScenario()
+    const suggestion = await createSuggestionScenario()
 
     const res = await app.request(`/api/v1/suggestions/${suggestion.slug}`)
     const resBody = jsonSuccessSchema(
@@ -237,7 +237,7 @@ describe("PATCH /api/v1/suggestions/:slug", () => {
   //------------------------- 401 unauthenticated -------------------------------
   test("returns 401 when unauthenticated", async () => {
     const categoryId = await getRandomCategoryId()
-    const { suggestion } = await createSuggestionScenario()
+    const suggestion = await createSuggestionScenario()
 
     const res = await app.request(`/api/v1/suggestions/${suggestion.slug}`, {
       body: JSON.stringify({
@@ -261,7 +261,7 @@ describe("PATCH /api/v1/suggestions/:slug", () => {
   //---------------------- 200 when user updated their own suggestion ----------------------------
   test("returns 200 when owner updates their own suggestion", async () => {
     const { token, user } = await createUserSession("USER")
-    const { suggestion } = await createSuggestionScenario(user.id)
+    const suggestion = await createSuggestionScenario(user.id)
 
     const payload = {
       categoryId: suggestion.categoryId,
@@ -291,7 +291,7 @@ describe("PATCH /api/v1/suggestions/:slug", () => {
   //---------------------- 200 when admin updates a suggestion ----------------------------
   test("returns 200 when admin updates any suggestion", async () => {
     const { token } = await createUserSession("ADMIN")
-    const { suggestion } = await createSuggestionScenario()
+    const suggestion = await createSuggestionScenario()
 
     const payload = {
       categoryId: suggestion.categoryId,
@@ -321,7 +321,7 @@ describe("PATCH /api/v1/suggestions/:slug", () => {
   //-------------------- 403 when user tries to update another users suggestion ----------------------
   test("returns 403 when a user tries to update another user's suggestion", async () => {
     const { token } = await createUserSession("USER")
-    const { suggestion } = await createSuggestionScenario()
+    const suggestion = await createSuggestionScenario()
 
     const payload = {
       categoryId: suggestion.categoryId,
@@ -350,7 +350,7 @@ describe("PATCH /api/v1/suggestions/:slug", () => {
   //-------------------- 400 and field errors when validation fails ----------------------
   test("returns 400 with field errors when validation fails", async () => {
     const { token, user } = await createUserSession("USER")
-    const { suggestion } = await createSuggestionScenario(user.id)
+    const suggestion = await createSuggestionScenario(user.id)
 
     const res = await app.request(`/api/v1/suggestions/${suggestion.slug}`, {
       body: JSON.stringify({
@@ -435,7 +435,7 @@ describe("GET /api/v1/suggestions/:slug/comments", () => {
 describe("POST /api/v1/suggestions/:slug/comments", () => {
   //-------------------- 401 when unauthenticated ----------------------
   test("returns 401 when unauthenticated", async () => {
-    const { suggestion } = await createSuggestionScenario()
+    const suggestion = await createSuggestionScenario()
 
     const res = await app.request(
       `/api/v1/suggestions/${suggestion.slug}/comments`,
@@ -460,7 +460,7 @@ describe("POST /api/v1/suggestions/:slug/comments", () => {
   //-------------------- 201 when authenticated and comment created ----------------------
   test("returns 201 when authenticated user creates a valid comment on a suggestion", async () => {
     const { token } = await createUserSession("USER")
-    const { suggestion } = await createSuggestionScenario()
+    const suggestion = await createSuggestionScenario()
 
     const payload = {
       content: "Authenticated user creates a valid comment",
@@ -490,7 +490,7 @@ describe("POST /api/v1/suggestions/:slug/comments", () => {
   //-------------------- 400 and field error when validation fails ----------------------
   test("returns 400 with field errors when validation fails", async () => {
     const { token } = await createUserSession("USER")
-    const { suggestion } = await createSuggestionScenario()
+    const suggestion = await createSuggestionScenario()
 
     const res = await app.request(
       `/api/v1/suggestions/${suggestion.slug}/comments`,
@@ -528,7 +528,7 @@ describe("POST /api/v1/suggestions/:slug/comments", () => {
 describe("POST /api/v1/suggestions/:slug/upvotes", () => {
   //-------------------- 401 when unauthenticated ----------------------
   test("returns 401 when unauthenticated", async () => {
-    const { suggestion } = await createSuggestionScenario()
+    const suggestion = await createSuggestionScenario()
 
     const res = await app.request(
       `/api/v1/suggestions/${suggestion.slug}/upvotes`,
@@ -549,7 +549,7 @@ describe("POST /api/v1/suggestions/:slug/upvotes", () => {
   //-------------------- 201 when authenticated ----------------------
   test("returns 201 when authenticated user upvotes a suggestion", async () => {
     const { token, user } = await createUserSession("USER")
-    const { suggestion } = await createSuggestionScenario()
+    const suggestion = await createSuggestionScenario()
 
     const res = await app.request(
       `/api/v1/suggestions/${suggestion.slug}/upvotes`,
@@ -571,7 +571,7 @@ describe("POST /api/v1/suggestions/:slug/upvotes", () => {
   //------------------------ 409 when already upvoted ---------------------------
   test("returns 409 when authenticated user upvotes the same suggestion twice", async () => {
     const { token, user } = await createUserSession("USER")
-    const { suggestion } = await createSuggestionScenario()
+    const suggestion = await createSuggestionScenario()
     await createUpvote({
       suggestionId: suggestion.id,
       ownerId: user.id,
@@ -603,7 +603,7 @@ describe("POST /api/v1/suggestions/:slug/upvotes", () => {
 describe("DELETE /api/v1/suggestions/:slug/upvotes", () => {
   //----------------------- 401 when unauthenticated -------------------------
   test("returns 401 when unauthenticated", async () => {
-    const { suggestion } = await createSuggestionScenario()
+    const suggestion = await createSuggestionScenario()
 
     const res = await app.request(
       `/api/v1/suggestions/${suggestion.slug}/upvotes`,
@@ -623,7 +623,7 @@ describe("DELETE /api/v1/suggestions/:slug/upvotes", () => {
   //------------------------- 204 when upvote removed ----------------------------
   test("returns 204 when authenticated user removes their upvote", async () => {
     const { token, user } = await createUserSession("USER")
-    const { suggestion } = await createSuggestionScenario()
+    const suggestion = await createSuggestionScenario()
 
     await createUpvote({
       suggestionId: suggestion.id,
@@ -644,7 +644,7 @@ describe("DELETE /api/v1/suggestions/:slug/upvotes", () => {
   //------------------------- 404 when upvote not found ----------------------------
   test("returns 404 when authenticated user tries to remove a missing upvote", async () => {
     const { token } = await createUserSession("USER")
-    const { suggestion } = await createSuggestionScenario()
+    const suggestion = await createSuggestionScenario()
 
     const res = await app.request(
       `/api/v1/suggestions/${suggestion.slug}/upvotes`,
