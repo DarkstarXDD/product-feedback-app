@@ -234,3 +234,10 @@ export async function createCommentScenario(commentOwnerId?: string) {
     comment,
   }
 }
+
+export async function cleanupDb() {
+  await prisma.upvote.deleteMany()
+  await prisma.comment.deleteMany()
+  await prisma.suggestion.deleteMany()
+  await prisma.user.deleteMany()
+}
