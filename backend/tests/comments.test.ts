@@ -21,7 +21,7 @@ import {
 beforeEach(cleanupDb)
 
 describe("GET /api/v1/comments", () => {
-  //----------------------- 401  when public ---------------------------
+  //----------------------- 401 when public ---------------------------
   test("return 401 when unauthorized", async () => {
     const res = await app.request("/api/v1/comments")
     const resBody = jsonErrorSchema.parse(await res.json())
