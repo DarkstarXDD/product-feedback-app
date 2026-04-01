@@ -12,9 +12,9 @@ import { createUserData, createUser, cleanupDb } from "./utils"
 
 beforeEach(cleanupDb)
 
+//--------------------------- POST /api/v1/auth/signup -------------------------------------
 describe("POST /api/v1/auth/signup", () => {
-  //------------------- 201 and created user when valid payload ------------------------
-  test("returns 201 and created user when valid payload", async () => {
+  test("returns 201 and created user", async () => {
     const payload = createUserData()
 
     const res = await app.request("/api/v1/auth/signup", {
@@ -36,8 +36,8 @@ describe("POST /api/v1/auth/signup", () => {
     expect(resBody.data).not.toHaveProperty("confirmPassword")
   })
 
-  //------------------- 201 and persists user in database ------------------------
-  test("returns 201 and persists created user in database when success", async () => {
+  // ---------------------------------------------------------
+  test("returns 201 and persists created user in database", async () => {
     const payload = createUserData()
 
     const res = await app.request("/api/v1/auth/signup", {
@@ -64,8 +64,8 @@ describe("POST /api/v1/auth/signup", () => {
     })
   })
 
-  //------------------- 400 when missing required fields ------------------------
-  test("returns 400 and field errors when missing required fields", async () => {
+  // ---------------------------------------------------------
+  test("returns 400 when missing required fields", async () => {
     const res = await app.request("/api/v1/auth/signup", {
       body: JSON.stringify({}),
       headers: new Headers({ "Content-Type": "application/json" }),
@@ -90,8 +90,8 @@ describe("POST /api/v1/auth/signup", () => {
     })
   })
 
-  //------------------- 400 when confirm password mismatch ------------------------
-  test("returns 400 and field errors when confirm password mismatch", async () => {
+  // ---------------------------------------------------------
+  test("returns 400 when confirm password mismatch", async () => {
     const payload = createUserData()
 
     const res = await app.request("/api/v1/auth/signup", {
@@ -112,8 +112,8 @@ describe("POST /api/v1/auth/signup", () => {
     })
   })
 
-  //------------------- 400 when password is shorter than minimum ------------------------
-  test("returns 400 and field errors when password is shorter than minimum", async () => {
+  // ---------------------------------------------------------
+  test("returns 400 when password is shorter than minimum", async () => {
     const payload = createUserData()
 
     const res = await app.request("/api/v1/auth/signup", {
@@ -140,8 +140,8 @@ describe("POST /api/v1/auth/signup", () => {
     })
   })
 
-  //------------------- 400 when email format is invalid ------------------------
-  test("returns 400 and field errors when email format is invalid", async () => {
+  // ---------------------------------------------------------
+  test("returns 400 when email format is invalid", async () => {
     const payload = createUserData()
 
     const res = await app.request("/api/v1/auth/signup", {
@@ -165,8 +165,8 @@ describe("POST /api/v1/auth/signup", () => {
     })
   })
 
-  //------------------- 409 when username already exists ------------------------
-  test("returns 409 and field errors when username already exists", async () => {
+  // ---------------------------------------------------------
+  test("returns 409 when username already exists", async () => {
     const payload = createUserData()
     const duplicatePayload = createUserData()
 
@@ -201,8 +201,8 @@ describe("POST /api/v1/auth/signup", () => {
     })
   })
 
-  //------------------- 409 when email already exists ------------------------
-  test("returns 409 and field errors when email already exists", async () => {
+  // ---------------------------------------------------------
+  test("returns 409 when email already exists", async () => {
     const firstPayload = createUserData()
     const duplicatePayload = createUserData()
 
@@ -237,8 +237,8 @@ describe("POST /api/v1/auth/signup", () => {
     })
   })
 
-  //------------------- 201 and sets auth cookie with attributes when success ----------------------
-  test("returns 201 and sets auth cookie with expected attributes when success", async () => {
+  // ---------------------------------------------------------
+  test("returns 201 and sets auth cookie", async () => {
     const payload = createUserData()
 
     const res = await app.request("/api/v1/auth/signup", {
@@ -259,9 +259,9 @@ describe("POST /api/v1/auth/signup", () => {
   })
 })
 
-// ------------------------------- Sign In --------------------------------
+//--------------------------- POST /api/v1/auth/signin -------------------------------------
 describe("POST /api/v1/auth/signin", () => {
-  test("returns 200 and sets auth cookie when credentials are valid", async () => {
+  test("returns 200 and sets auth cookie", async () => {
     const { userPassword, user } = await createUser("USER")
 
     const signinRes = await app.request("/api/v1/auth/signin", {
@@ -295,8 +295,8 @@ describe("POST /api/v1/auth/signin", () => {
     expect(cookie).toContain("Max-Age=604800")
   })
 
-  //---------------------- 401 when password is invalid --------------------------
-  test("returns 401 and form errors when password is invalid", async () => {
+  // ---------------------------------------------------------
+  test("returns 401 when password is invalid", async () => {
     const { user } = await createUser("USER")
 
     const signinRes = await app.request("/api/v1/auth/signin", {
@@ -320,7 +320,7 @@ describe("POST /api/v1/auth/signin", () => {
   })
 })
 
-// ------------------------------- Sign Out --------------------------------
+//--------------------------- POST /api/v1/auth/signout -------------------------------------
 describe("POST /api/v1/auth/signout", () => {
   test("returns 204 and clears auth cookie", async () => {
     const res = await app.request("/api/v1/auth/signout", {
