@@ -20,9 +20,9 @@ import {
 
 beforeEach(cleanupDb)
 
+//--------------------------- GET /api/v1/comments -------------------------------------
 describe("GET /api/v1/comments", () => {
-  //----------------------- 401 when public ---------------------------
-  test("return 401 when unauthorized", async () => {
+  test("returns 401 when unauthenticated", async () => {
     const res = await app.request("/api/v1/comments")
     const resBody = jsonErrorSchema.parse(await res.json())
 
@@ -33,8 +33,8 @@ describe("GET /api/v1/comments", () => {
     })
   })
 
-  //---------------------- 403 when auth user --------------------------
-  test("return 403 when auth user", async () => {
+  // ---------------------------------------------------------
+  test("returns 403 when user is not an admin", async () => {
     const { token } = await createUserSession("USER")
 
     const res = await app.request("/api/v1/comments", {
@@ -49,8 +49,8 @@ describe("GET /api/v1/comments", () => {
     })
   })
 
-  //------------------- 200 and comment list when admin ------------------------
-  test("return 200 and comment list when admin", async () => {
+  // ---------------------------------------------------------
+  test("returns 200 and comment list when admin", async () => {
     const { token } = await createUserSession("ADMIN")
     const { comment } = await createCommentScenario()
 
@@ -73,8 +73,8 @@ describe("GET /api/v1/comments", () => {
     })
   })
 
-  //----------------------------- 200 and correct paginated data ----------------------------
-  test("return 200 and correct pagination metadata when multiple pages exist", async () => {
+  // ---------------------------------------------------------
+  test("returns 200 and correct pagination metadata when multiple pages exist", async () => {
     const { token, user } = await createUserSession("ADMIN")
 
     for (let i = 0; i < 20; i++) {
@@ -102,9 +102,9 @@ describe("GET /api/v1/comments", () => {
   })
 })
 
+//--------------------------- GET /api/v1/comments/:id ---------------------------------
 describe("GET /api/v1/comments/:id", () => {
-  //----------------------------- 200 and comment when public ----------------------------
-  test("return 200 and comment when public", async () => {
+  test("returns 200 and comment", async () => {
     const { comment } = await createCommentScenario()
 
     const res = await app.request(`/api/v1/comments/${comment.id}`)
@@ -116,8 +116,8 @@ describe("GET /api/v1/comments/:id", () => {
     expect(resBody.data).toHaveProperty("id", comment.id)
   })
 
-  //----------------------------- 404 when comment not found ----------------------------
-  test("return 404 if comment not found", async () => {
+  // ---------------------------------------------------------
+  test("returns 404 when comment idoes not exist", async () => {
     const res = await app.request(`/api/v1/comments/123`)
     const resBody = jsonErrorSchema.parse(await res.json())
 
@@ -129,9 +129,9 @@ describe("GET /api/v1/comments/:id", () => {
   })
 })
 
+//--------------------------- PATCH /api/v1/comments/:id ---------------------------------
 describe("PATCH /api/v1/comments/:id", () => {
-  //----------------------------- 401 when public tries to update comment ----------------------------
-  test("public can't update comments", async () => {
+  test("returns 401 when unauthorized", async () => {
     const { comment } = await createCommentScenario()
 
     const res = await app.request(`/api/v1/comments/${comment.id}`, {
@@ -150,8 +150,8 @@ describe("PATCH /api/v1/comments/:id", () => {
     })
   })
 
-  //------------------------ 403 when user tries to update another user's comment -------------------
-  test("user can't update another user's comment", async () => {
+  // ---------------------------------------------------------
+  test("returns 403 when user tries to update another user's comment", async () => {
     const { token } = await createUserSession("USER")
     const { comment } = await createCommentScenario()
 
@@ -174,32 +174,8 @@ describe("PATCH /api/v1/comments/:id", () => {
     })
   })
 
-  //-------------------------- 200 when admin update any comment ---------------------
-  test("admin can update anyones comment", async () => {
-    const { token } = await createUserSession("ADMIN")
-    const { comment } = await createCommentScenario()
-    const updatedComment = faker.lorem.sentence()
-
-    const res = await app.request(`/api/v1/comments/${comment.id}`, {
-      body: JSON.stringify({ content: updatedComment }),
-      headers: {
-        "content-type": "application/json",
-        cookie: `token=${token}`,
-      },
-      method: "PATCH",
-    })
-
-    const resBody = jsonSuccessSchema(commentResponseSchema).parse(
-      await res.json()
-    )
-
-    expect(res.status).toBe(200)
-    expect(resBody.data).toHaveProperty("id", comment.id)
-    expect(resBody.data).toHaveProperty("content", updatedComment)
-  })
-
-  //-------------------------- 200 when user updates their own comment ---------------------
-  test("user can update their own comment", async () => {
+  // ---------------------------------------------------------
+  test("returns 200 and updated comment when user updates their own comment", async () => {
     const { token, user } = await createUserSession("USER")
     const { comment } = await createCommentScenario(user.id)
     const updatedComment = faker.lorem.sentence()
@@ -222,28 +198,31 @@ describe("PATCH /api/v1/comments/:id", () => {
     expect(resBody.data).toHaveProperty("content", updatedComment)
   })
 
-  //--------------------------- 404 when comment not found ---------------------------
-  test("returns 404 when comment id does not exist", async () => {
-    const { token } = await createUserSession("USER")
+  // ---------------------------------------------------------
+  test("returns 200 and updated comment when admin updates any comment", async () => {
+    const { token } = await createUserSession("ADMIN")
+    const { comment } = await createCommentScenario()
+    const updatedComment = faker.lorem.sentence()
 
-    const res = await app.request(`/api/v1/comments/does-not-exist`, {
-      body: JSON.stringify({ content: "Trying to update a missing comment" }),
+    const res = await app.request(`/api/v1/comments/${comment.id}`, {
+      body: JSON.stringify({ content: updatedComment }),
       headers: {
         "content-type": "application/json",
         cookie: `token=${token}`,
       },
       method: "PATCH",
     })
-    const resBody = jsonErrorSchema.parse(await res.json())
 
-    expect(res.status).toBe(404)
-    expect(resBody).toMatchObject({
-      code: "NOT_FOUND",
-      message: "Comment not found",
-    })
+    const resBody = jsonSuccessSchema(commentResponseSchema).parse(
+      await res.json()
+    )
+
+    expect(res.status).toBe(200)
+    expect(resBody.data).toHaveProperty("id", comment.id)
+    expect(resBody.data).toHaveProperty("content", updatedComment)
   })
 
-  //--------------------------- 400 when field validation fails ---------------------------
+  // ---------------------------------------------------------
   test("returns 400 and field errors when validation fails", async () => {
     const { token, user } = await createUserSession("USER")
     const { comment } = await createCommentScenario(user.id)
@@ -269,6 +248,27 @@ describe("PATCH /api/v1/comments/:id", () => {
       },
       code: "VALIDATION_ERROR",
       message: "Server validation fails",
+    })
+  })
+
+  // ---------------------------------------------------------
+  test("returns 404 when comment does not exist", async () => {
+    const { token } = await createUserSession("USER")
+
+    const res = await app.request(`/api/v1/comments/does-not-exist`, {
+      body: JSON.stringify({ content: "Trying to update a missing comment" }),
+      headers: {
+        "content-type": "application/json",
+        cookie: `token=${token}`,
+      },
+      method: "PATCH",
+    })
+    const resBody = jsonErrorSchema.parse(await res.json())
+
+    expect(res.status).toBe(404)
+    expect(resBody).toMatchObject({
+      code: "NOT_FOUND",
+      message: "Comment not found",
     })
   })
 })
