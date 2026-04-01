@@ -27,11 +27,8 @@ import {
 
 beforeEach(cleanupDb)
 
-//--------------------------------------------------------------------------------------
 //--------------------------- GET /api/v1/users ----------------------------------------
-//--------------------------------------------------------------------------------------
 describe("GET /api/v1/users", () => {
-  //----------------------- 401 when unauthenticated ---------------------------
   test("returns 401 when unauthenticated", async () => {
     const res = await app.request("/api/v1/users")
     const resBody = jsonErrorSchema.parse(await res.json())
@@ -43,8 +40,8 @@ describe("GET /api/v1/users", () => {
     })
   })
 
-  //----------------------- 403 when auth user ---------------------------
-  test("returns 403 when authenticated user is not an admin", async () => {
+  // ---------------------------------------------------------
+  test("returns 403 when user is not an admin", async () => {
     const { token } = await createUserSession("USER")
 
     const res = await app.request("/api/v1/users", {
@@ -59,8 +56,8 @@ describe("GET /api/v1/users", () => {
     })
   })
 
-  // ----------------------- 200 and user list when admin -------------------------------------
-  test("returns 200 and user list when authenticated user is an admin", async () => {
+  // ---------------------------------------------------------
+  test("returns 200 and user list when admin", async () => {
     const { token } = await createUserSession("ADMIN")
     const { user: listedUser } = await createUser("USER")
 
@@ -84,8 +81,8 @@ describe("GET /api/v1/users", () => {
     })
   })
 
-  // ----------------------- 200 and correct pagination data -----------------------------------
-  test("returns correct pagination metadata when multiple pages exist", async () => {
+  // ---------------------------------------------------------
+  test("returns 200 and correct pagination metadata when multiple pages exist", async () => {
     const { token } = await createUserSession("ADMIN")
 
     for (let i = 0; i < 19; i++) {
@@ -113,11 +110,83 @@ describe("GET /api/v1/users", () => {
   })
 })
 
-//--------------------------------------------------------------------------------------
+//--------------------------- GET /api/v1/users/:username ------------------------------
+describe("GET /api/v1/users/:username", () => {
+  test("returns 200 and user with public fields when unauthenticated", async () => {
+    const { user } = await createUser("USER")
+
+    const res = await app.request(`/api/v1/users/${user.username}`)
+    const resBody = jsonSuccessSchema(publicUserResponseSchema).parse(
+      await res.json()
+    )
+
+    expect(res.status).toBe(200)
+    expect(resBody.data).toMatchObject({
+      name: user.name,
+      username: user.username,
+    })
+    expect(resBody.data).not.toHaveProperty("id")
+    expect(resBody.data).not.toHaveProperty("email")
+  })
+
+  // ---------------------------------------------------------
+  test("returns 200 and user with private fields when user requests own profile", async () => {
+    const { token, user } = await createUserSession("USER")
+
+    const res = await app.request(`/api/v1/users/${user.username}`, {
+      headers: { cookie: `token=${token}` },
+    })
+    const resBody = jsonSuccessSchema(privateUserResponseSchema).parse(
+      await res.json()
+    )
+
+    expect(res.status).toBe(200)
+    expect(resBody.data).toMatchObject({
+      id: user.id,
+      name: user.name,
+      username: user.username,
+      email: user.email,
+      role: user.role,
+    })
+  })
+
+  // ---------------------------------------------------------
+  test("returns 200 and user with private fields when admin requests any profile", async () => {
+    const { token } = await createUserSession("ADMIN")
+    const { user: targetUser } = await createUser("USER")
+
+    const res = await app.request(`/api/v1/users/${targetUser.username}`, {
+      headers: { cookie: `token=${token}` },
+    })
+    const resBody = jsonSuccessSchema(privateUserResponseSchema).parse(
+      await res.json()
+    )
+
+    expect(res.status).toBe(200)
+    expect(resBody.data).toMatchObject({
+      id: targetUser.id,
+      name: targetUser.name,
+      username: targetUser.username,
+      email: targetUser.email,
+      role: targetUser.role,
+    })
+  })
+
+  // ---------------------------------------------------------
+  test("returns 404 when username does not exist", async () => {
+    const res = await app.request("/api/v1/users/does-not-exist")
+    const resBody = jsonErrorSchema.parse(await res.json())
+
+    expect(res.status).toBe(404)
+    expect(resBody).toMatchObject({
+      code: "NOT_FOUND",
+      message: "User not found",
+    })
+  })
+})
+
 //--------------------------- PATCH /api/v1/users/:username ----------------------------
-//--------------------------------------------------------------------------------------
 describe("PATCH /api/v1/users/:username", () => {
-  // ----------------------- 401 when unauthenticated -----------------------------------
   test("returns 401 when unauthenticated", async () => {
     const { user } = await createUser("USER")
 
@@ -135,8 +204,8 @@ describe("PATCH /api/v1/users/:username", () => {
     })
   })
 
-  // ----------------------- 403 when user tries to update other users profile --------------------------
-  test("returns 403 when authenticated user tries to update another user's profile", async () => {
+  // ---------------------------------------------------------
+  test("returns 403 when user tries to update another user's profile", async () => {
     const { token } = await createUserSession("USER")
     const { user: targetUser } = await createUser("USER")
 
@@ -157,8 +226,8 @@ describe("PATCH /api/v1/users/:username", () => {
     })
   })
 
-  // ----------------------- 200 when user updates their own profile --------------------------
-  test("returns 200 when authenticated user updates their own profile", async () => {
+  // ---------------------------------------------------------
+  test("returns 200 and updated profile when user updates their own profile", async () => {
     const { token, user } = await createUserSession("USER")
     const payload = { name: "Updated self name" }
 
@@ -185,8 +254,8 @@ describe("PATCH /api/v1/users/:username", () => {
     expect(resBody.data).not.toHaveProperty("password")
   })
 
-  // ----------------------- 200 when admin updates any profile --------------------------
-  test("returns 200 when admin updates another user's profile", async () => {
+  // ---------------------------------------------------------
+  test("returns 200 and updated profile when admin updates any profile", async () => {
     const { token } = await createUserSession("ADMIN")
     const { user: targetUser } = await createUser("USER")
     const payload = { name: "Updated by admin" }
@@ -215,8 +284,8 @@ describe("PATCH /api/v1/users/:username", () => {
     expect(resBody.data).not.toHaveProperty("password")
   })
 
-  // ----------------------- 400 and field errors when validation fails -------------------
-  test("returns 400 with form errors when payload is empty", async () => {
+  // ---------------------------------------------------------
+  test("returns 400 and form errors when payload is empty", async () => {
     const { token, user } = await createUserSession("USER")
 
     const res = await app.request(`/api/v1/users/${user.username}`, {
@@ -241,7 +310,7 @@ describe("PATCH /api/v1/users/:username", () => {
     })
   })
 
-  // ----------------------- 409 when email already exists ----------------------------
+  // ---------------------------------------------------------
   test("returns 409 when email already exists", async () => {
     const { token, user } = await createUserSession("USER")
     const { user: conflictingUser } = await createUser("USER")
@@ -269,7 +338,7 @@ describe("PATCH /api/v1/users/:username", () => {
     })
   })
 
-  // ----------------------- 409 when username already exists --------------------------
+  // ---------------------------------------------------------
   test("returns 409 when username already exists", async () => {
     const { token, user } = await createUserSession("USER")
     const { user: conflictingUser } = await createUser("USER")
@@ -297,7 +366,7 @@ describe("PATCH /api/v1/users/:username", () => {
     })
   })
 
-  // ----------------------- 404 when username not found ------------------------------
+  // ---------------------------------------------------------
   test("returns 404 when username does not exist", async () => {
     const { token } = await createUserSession("USER")
 
@@ -319,90 +388,9 @@ describe("PATCH /api/v1/users/:username", () => {
   })
 })
 
-//--------------------------------------------------------------------------------------
-//--------------------------- GET /api/v1/users/:username ------------------------------
-//--------------------------------------------------------------------------------------
-describe("GET /api/v1/users/:username", () => {
-  // ----------------------- 200 and public fields when public user --------------------------
-  test("returns 200 and public user fields when unauthenticated", async () => {
-    const { user } = await createUser("USER")
-
-    const res = await app.request(`/api/v1/users/${user.username}`)
-    const resBody = jsonSuccessSchema(publicUserResponseSchema).parse(
-      await res.json()
-    )
-
-    expect(res.status).toBe(200)
-    expect(resBody.data).toMatchObject({
-      name: user.name,
-      username: user.username,
-    })
-    expect(resBody.data).not.toHaveProperty("id")
-    expect(resBody.data).not.toHaveProperty("email")
-  })
-
-  // ----------------------- 200 and private fields when auth user --------------------------
-  test("returns 200 and private user fields when authenticated user requests their own profile", async () => {
-    const { token, user } = await createUserSession("USER")
-
-    const res = await app.request(`/api/v1/users/${user.username}`, {
-      headers: { cookie: `token=${token}` },
-    })
-    const resBody = jsonSuccessSchema(privateUserResponseSchema).parse(
-      await res.json()
-    )
-
-    expect(res.status).toBe(200)
-    expect(resBody.data).toMatchObject({
-      id: user.id,
-      name: user.name,
-      username: user.username,
-      email: user.email,
-      role: user.role,
-    })
-  })
-
-  // ----------------------- 200 and private fields when admin --------------------------
-  test("returns 200 and private user fields when admin requests another user's profile", async () => {
-    const { token } = await createUserSession("ADMIN")
-    const { user: targetUser } = await createUser("USER")
-
-    const res = await app.request(`/api/v1/users/${targetUser.username}`, {
-      headers: { cookie: `token=${token}` },
-    })
-    const resBody = jsonSuccessSchema(privateUserResponseSchema).parse(
-      await res.json()
-    )
-
-    expect(res.status).toBe(200)
-    expect(resBody.data).toMatchObject({
-      id: targetUser.id,
-      name: targetUser.name,
-      username: targetUser.username,
-      email: targetUser.email,
-      role: targetUser.role,
-    })
-  })
-
-  // ----------------------- 404 and username not found ------------------------------
-  test("returns 404 when username does not exist", async () => {
-    const res = await app.request("/api/v1/users/does-not-exist")
-    const resBody = jsonErrorSchema.parse(await res.json())
-
-    expect(res.status).toBe(404)
-    expect(resBody).toMatchObject({
-      code: "NOT_FOUND",
-      message: "User not found",
-    })
-  })
-})
-
-//--------------------------------------------------------------------------------------
 //--------------------------- GET /api/v1/users/:username/suggestions ------------------
-//--------------------------------------------------------------------------------------
 describe("GET /api/v1/users/:username/suggestions", () => {
-  // ----------------------- 200 and suggestion list ------------------------------
-  test("returns 200 and suggestion list for that user", async () => {
+  test("returns 200 and suggestion list", async () => {
     const { user } = await createUser("USER")
     const suggestion = await createSuggestionScenario(user.id)
 
@@ -423,8 +411,8 @@ describe("GET /api/v1/users/:username/suggestions", () => {
     })
   })
 
-  // ----------------------- 200 and pagination data ----------------------------------
-  test("returns correct pagination metadata when multiple pages exist", async () => {
+  // ---------------------------------------------------------
+  test("returns 200 and correct pagination metadata when multiple pages exist", async () => {
     const { user } = await createUser("USER")
 
     for (let i = 0; i < 20; i++) {
@@ -451,12 +439,9 @@ describe("GET /api/v1/users/:username/suggestions", () => {
   })
 })
 
-//--------------------------------------------------------------------------------------
 //--------------------------- GET /api/v1/users/:username/upvotes ----------------------
-//--------------------------------------------------------------------------------------
 describe("GET /api/v1/users/:username/upvotes", () => {
-  // ----------------------- 200 and suggestion list ----------------------------------
-  test("returns 200 and suggestion list the user has upvoted", async () => {
+  test("returns 200 and suggestion list", async () => {
     const { user } = await createUser("USER")
     const suggestion = await createSuggestionScenario()
     await createUpvote({ suggestionId: suggestion.id, ownerId: user.id })
@@ -479,13 +464,12 @@ describe("GET /api/v1/users/:username/upvotes", () => {
     })
   })
 
-  // ----------------------- 200 and paginated data ----------------------------------
-  test("returns correct pagination metadata when multiple pages exist", async () => {
+  // ---------------------------------------------------------
+  test("returns 200 and correct pagination metadata when multiple pages exist", async () => {
     const { user } = await createUser("USER")
 
     for (let i = 0; i < 20; i++) {
       const suggestion = await createSuggestionScenario()
-
       await createUpvote({ suggestionId: suggestion.id, ownerId: user.id })
     }
 
@@ -509,12 +493,9 @@ describe("GET /api/v1/users/:username/upvotes", () => {
   })
 })
 
-//--------------------------------------------------------------------------------------
 //--------------------------- GET /api/v1/users/:username/comments ---------------------
-//--------------------------------------------------------------------------------------
 describe("GET /api/v1/users/:username/comments", () => {
-  // ----------------------- 200 and comment list ----------------------------------
-  test("returns 200 and comment list for that user", async () => {
+  test("returns 200 and comment list", async () => {
     const { user } = await createUserSession("USER")
     const { comment } = await createCommentScenario(user.id)
 
@@ -535,8 +516,8 @@ describe("GET /api/v1/users/:username/comments", () => {
     })
   })
 
-  // ----------------------- 200 and comments with paginated data ----------------------------------
-  test("returns correct pagination metadata when multiple pages exist", async () => {
+  // ---------------------------------------------------------
+  test("returns 200 and correct pagination metadata when multiple pages exist", async () => {
     const { user } = await createUser("USER")
 
     for (let i = 0; i < 20; i++) {
