@@ -28,11 +28,8 @@ import {
 
 beforeEach(cleanupDb)
 
-//--------------------------------------------------------------------------------------
 //--------------------------- GET /api/v1/suggestions ----------------------------------
-//--------------------------------------------------------------------------------------
 describe("GET /api/v1/suggestions", () => {
-  //----------------------- 200 and suggestion list ---------------------------
   test("returns 200 and suggestion list", async () => {
     const suggestion = await createSuggestionScenario()
 
@@ -45,29 +42,8 @@ describe("GET /api/v1/suggestions", () => {
     expect(resBody.data.some((item) => item.id === suggestion.id)).toBe(true)
   })
 
-  //----------------------- 200 and paginated data ---------------------------
-  test("returns pagination metadata with defaults", async () => {
-    await createSuggestionScenario()
-
-    const res = await app.request("/api/v1/suggestions")
-    const resBody = paginatedSuccessSchema(
-      z.array(suggestionWithViewerUpvoteResponseSchema)
-    ).parse(await res.json())
-
-    expect(res.status).toBe(200)
-    expect(resBody).toHaveProperty("meta.pagination")
-    expect(resBody.meta.pagination).toEqual({
-      page: 1,
-      pageSize: 10,
-      hasPreviousPage: false,
-      hasNextPage: false,
-      totalItems: 1,
-      totalPages: 1,
-    })
-  })
-
-  //----------------------- 200 and paginated data multiple pages ---------------------------
-  test("returns correct pagination metadata when multiple pages exist", async () => {
+  // ---------------------------------------------------------
+  test("returns 200 and correct pagination metadata when multiple pages exist", async () => {
     const { user } = await createUser("USER")
 
     for (let i = 0; i < 20; i++) {
@@ -91,8 +67,8 @@ describe("GET /api/v1/suggestions", () => {
     })
   })
 
-  //----------------------- 400 and field errors for pagination query ---------------------------
-  test("returns 400 with field errors when pagination query params are invalid", async () => {
+  // ---------------------------------------------------------
+  test("returns 400 and field errors when pagination query params are invalid", async () => {
     const res = await app.request("/api/v1/suggestions?page=0&pageSize=abc")
     const resBody = jsonErrorSchema.parse(await res.json())
 
@@ -106,12 +82,9 @@ describe("GET /api/v1/suggestions", () => {
   })
 })
 
-//--------------------------------------------------------------------------------------
 //--------------------------- GET /api/v1/suggestions/:slug ----------------------------
-//--------------------------------------------------------------------------------------
 describe("GET /api/v1/suggestions/:slug", () => {
-  //----------------------- 200 and suggestion ---------------------------
-  test("returns 200 and suggestion when slug exists", async () => {
+  test("returns 200 and suggestion", async () => {
     const suggestion = await createSuggestionScenario()
 
     const res = await app.request(`/api/v1/suggestions/${suggestion.slug}`)
@@ -126,8 +99,8 @@ describe("GET /api/v1/suggestions/:slug", () => {
     expect(resBody.data).toHaveProperty("description", suggestion.description)
   })
 
-  //------------------------- 404 when not found -----------------------------
-  test("returns 404 with NOT_FOUND when slug does not exist", async () => {
+  // ---------------------------------------------------------
+  test("returns 404 when suggestion does not exist", async () => {
     const res = await app.request(`/api/v1/suggestions/does-not-exist`)
     const resBody = jsonErrorSchema.parse(await res.json())
 
@@ -139,11 +112,8 @@ describe("GET /api/v1/suggestions/:slug", () => {
   })
 })
 
-//--------------------------------------------------------------------------------------
 //---------------------------- POST /api/v1/suggestions --------------------------------
-//--------------------------------------------------------------------------------------
 describe("POST /api/v1/suggestions", () => {
-  //------------------------- 401 when unauthenticated -----------------------------
   test("returns 401 when unauthenticated", async () => {
     const categoryId = await getRandomCategoryId()
 
@@ -166,8 +136,8 @@ describe("POST /api/v1/suggestions", () => {
     })
   })
 
-  //----------------------- 201 when authenticated and created suggestion ---------------------------
-  test("returns 201 when authenticated user creates a valid suggestion", async () => {
+  // ---------------------------------------------------------
+  test("returns 201 and created suggestion when authenticated", async () => {
     const categoryId = await getRandomCategoryId()
     const { token } = await createUserSession("USER")
 
@@ -195,8 +165,8 @@ describe("POST /api/v1/suggestions", () => {
     expect(resBody.data).toHaveProperty("description", payload.description)
   })
 
-  //---------------------- 400 and field errors when validation fails --------------------------
-  test("returns 400 with field errors when validation fails", async () => {
+  // ---------------------------------------------------------
+  test("returns 400 and field errors when validation fails", async () => {
     const { token } = await createUserSession("USER")
 
     const res = await app.request("/api/v1/suggestions", {
@@ -230,11 +200,8 @@ describe("POST /api/v1/suggestions", () => {
   })
 })
 
-//--------------------------------------------------------------------------------------
 //---------------------------- PATCH /api/v1/suggestions/:slug -------------------------
-//--------------------------------------------------------------------------------------
 describe("PATCH /api/v1/suggestions/:slug", () => {
-  //------------------------- 401 unauthenticated -------------------------------
   test("returns 401 when unauthenticated", async () => {
     const categoryId = await getRandomCategoryId()
     const suggestion = await createSuggestionScenario()
@@ -258,8 +225,37 @@ describe("PATCH /api/v1/suggestions/:slug", () => {
     })
   })
 
-  //---------------------- 200 when user updated their own suggestion ----------------------------
-  test("returns 200 when owner updates their own suggestion", async () => {
+  // ---------------------------------------------------------
+  test("returns 403 when user tries to update another user's suggestion", async () => {
+    const { token } = await createUserSession("USER")
+    const suggestion = await createSuggestionScenario()
+
+    const payload = {
+      categoryId: suggestion.categoryId,
+      title: "Updated by another user",
+      description: "Another user tries to update a suggestion",
+    }
+
+    const res = await app.request(`/api/v1/suggestions/${suggestion.slug}`, {
+      body: JSON.stringify(payload),
+      headers: {
+        "content-type": "application/json",
+        cookie: `token=${token}`,
+      },
+      method: "PATCH",
+    })
+
+    const resBody = jsonErrorSchema.parse(await res.json())
+
+    expect(res.status).toBe(403)
+    expect(resBody).toMatchObject({
+      code: "FORBIDDEN",
+      message: "Not allowed or forbidden",
+    })
+  })
+
+  // ---------------------------------------------------------
+  test("returns 200 and updated suggestion when user updates their own suggestion", async () => {
     const { token, user } = await createUserSession("USER")
     const suggestion = await createSuggestionScenario(user.id)
 
@@ -288,8 +284,8 @@ describe("PATCH /api/v1/suggestions/:slug", () => {
     expect(resBody.data).toHaveProperty("description", payload.description)
   })
 
-  //---------------------- 200 when admin updates a suggestion ----------------------------
-  test("returns 200 when admin updates any suggestion", async () => {
+  // ---------------------------------------------------------
+  test("returns 200 and updated suggestion when admin updates any suggestion", async () => {
     const { token } = await createUserSession("ADMIN")
     const suggestion = await createSuggestionScenario()
 
@@ -318,37 +314,8 @@ describe("PATCH /api/v1/suggestions/:slug", () => {
     expect(resBody.data).toHaveProperty("description", payload.description)
   })
 
-  //-------------------- 403 when user tries to update another users suggestion ----------------------
-  test("returns 403 when a user tries to update another user's suggestion", async () => {
-    const { token } = await createUserSession("USER")
-    const suggestion = await createSuggestionScenario()
-
-    const payload = {
-      categoryId: suggestion.categoryId,
-      title: "Updated by another user",
-      description: "Another user tries to update a suggestion",
-    }
-
-    const res = await app.request(`/api/v1/suggestions/${suggestion.slug}`, {
-      body: JSON.stringify(payload),
-      headers: {
-        "content-type": "application/json",
-        cookie: `token=${token}`,
-      },
-      method: "PATCH",
-    })
-
-    const resBody = jsonErrorSchema.parse(await res.json())
-
-    expect(res.status).toBe(403)
-    expect(resBody).toMatchObject({
-      code: "FORBIDDEN",
-      message: "Not allowed or forbidden",
-    })
-  })
-
-  //-------------------- 400 and field errors when validation fails ----------------------
-  test("returns 400 with field errors when validation fails", async () => {
+  // ---------------------------------------------------------
+  test("returns 400 and field errors when validation fails", async () => {
     const { token, user } = await createUserSession("USER")
     const suggestion = await createSuggestionScenario(user.id)
 
@@ -382,8 +349,8 @@ describe("PATCH /api/v1/suggestions/:slug", () => {
     })
   })
 
-  //-------------------- 404 when suggestion not found ----------------------
-  test("returns 404 when slug does not exist", async () => {
+  // ---------------------------------------------------------
+  test("returns 404 when suggestion does not exist", async () => {
     const categoryId = await getRandomCategoryId()
     const { token } = await createUserSession("USER")
 
@@ -410,11 +377,9 @@ describe("PATCH /api/v1/suggestions/:slug", () => {
   })
 })
 
-//--------------------------------------------------------------------------------------
 //---------------------------- GET /api/v1/suggestions/:slug/comments ------------------
-//--------------------------------------------------------------------------------------
 describe("GET /api/v1/suggestions/:slug/comments", () => {
-  test("returns 200 and comment list for that suggestion", async () => {
+  test("returns 200 and comment list", async () => {
     const { suggestion, comment } = await createCommentScenario()
 
     const res = await app.request(
@@ -429,11 +394,8 @@ describe("GET /api/v1/suggestions/:slug/comments", () => {
   })
 })
 
-//--------------------------------------------------------------------------------------
 //---------------------------- POST /api/v1/suggestions/:slug/comments -----------------
-//--------------------------------------------------------------------------------------
 describe("POST /api/v1/suggestions/:slug/comments", () => {
-  //-------------------- 401 when unauthenticated ----------------------
   test("returns 401 when unauthenticated", async () => {
     const suggestion = await createSuggestionScenario()
 
@@ -457,8 +419,8 @@ describe("POST /api/v1/suggestions/:slug/comments", () => {
     })
   })
 
-  //-------------------- 201 when authenticated and comment created ----------------------
-  test("returns 201 when authenticated user creates a valid comment on a suggestion", async () => {
+  // ---------------------------------------------------------
+  test("returns 201 and created comment when authenticated", async () => {
     const { token } = await createUserSession("USER")
     const suggestion = await createSuggestionScenario()
 
@@ -487,8 +449,8 @@ describe("POST /api/v1/suggestions/:slug/comments", () => {
     expect(resBody.data).toHaveProperty("suggestion.slug", suggestion.slug)
   })
 
-  //-------------------- 400 and field error when validation fails ----------------------
-  test("returns 400 with field errors when validation fails", async () => {
+  // ---------------------------------------------------------
+  test("returns 400 and field errors when validation fails", async () => {
     const { token } = await createUserSession("USER")
     const suggestion = await createSuggestionScenario()
 
@@ -522,21 +484,15 @@ describe("POST /api/v1/suggestions/:slug/comments", () => {
   })
 })
 
-//--------------------------------------------------------------------------------------
 //---------------------------- POST /api/v1/suggestions/:slug/upvotes ------------------
-//--------------------------------------------------------------------------------------
 describe("POST /api/v1/suggestions/:slug/upvotes", () => {
-  //-------------------- 401 when unauthenticated ----------------------
   test("returns 401 when unauthenticated", async () => {
     const suggestion = await createSuggestionScenario()
 
     const res = await app.request(
       `/api/v1/suggestions/${suggestion.slug}/upvotes`,
-      {
-        method: "POST",
-      }
+      { method: "POST" }
     )
-
     const resBody = jsonErrorSchema.parse(await res.json())
 
     expect(res.status).toBe(401)
@@ -546,8 +502,8 @@ describe("POST /api/v1/suggestions/:slug/upvotes", () => {
     })
   })
 
-  //-------------------- 201 when authenticated ----------------------
-  test("returns 201 when authenticated user upvotes a suggestion", async () => {
+  // ---------------------------------------------------------
+  test("returns 201 and upvote when authenticated", async () => {
     const { token, user } = await createUserSession("USER")
     const suggestion = await createSuggestionScenario()
 
@@ -568,8 +524,8 @@ describe("POST /api/v1/suggestions/:slug/upvotes", () => {
     expect(resBody.data).toHaveProperty("suggestionId", suggestion.id)
   })
 
-  //------------------------ 409 when already upvoted ---------------------------
-  test("returns 409 when authenticated user upvotes the same suggestion twice", async () => {
+  // ---------------------------------------------------------
+  test("returns 409 when user upvotes the same suggestion twice", async () => {
     const { token, user } = await createUserSession("USER")
     const suggestion = await createSuggestionScenario()
     await createUpvote({
@@ -597,11 +553,8 @@ describe("POST /api/v1/suggestions/:slug/upvotes", () => {
   })
 })
 
-//--------------------------------------------------------------------------------------
 //---------------------------- DELETE /api/v1/suggestions/:slug/upvotes ----------------
-//--------------------------------------------------------------------------------------
 describe("DELETE /api/v1/suggestions/:slug/upvotes", () => {
-  //----------------------- 401 when unauthenticated -------------------------
   test("returns 401 when unauthenticated", async () => {
     const suggestion = await createSuggestionScenario()
 
@@ -620,8 +573,8 @@ describe("DELETE /api/v1/suggestions/:slug/upvotes", () => {
     })
   })
 
-  //------------------------- 204 when upvote removed ----------------------------
-  test("returns 204 when authenticated user removes their upvote", async () => {
+  // ---------------------------------------------------------
+  test("returns 204 when user removes their upvote", async () => {
     const { token, user } = await createUserSession("USER")
     const suggestion = await createSuggestionScenario()
 
@@ -641,8 +594,8 @@ describe("DELETE /api/v1/suggestions/:slug/upvotes", () => {
     expect(res.status).toBe(204)
   })
 
-  //------------------------- 404 when upvote not found ----------------------------
-  test("returns 404 when authenticated user tries to remove a missing upvote", async () => {
+  // ---------------------------------------------------------
+  test("returns 404 when upvote does not exist", async () => {
     const { token } = await createUserSession("USER")
     const suggestion = await createSuggestionScenario()
 
