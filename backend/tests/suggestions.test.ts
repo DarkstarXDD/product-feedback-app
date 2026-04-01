@@ -68,7 +68,7 @@ describe("GET /api/v1/suggestions", () => {
   })
 
   // ---------------------------------------------------------
-  test("returns 400 and field errors when pagination query params are invalid", async () => {
+  test("returns 400 when pagination query params are invalid", async () => {
     const res = await app.request("/api/v1/suggestions?page=0&pageSize=abc")
     const resBody = jsonErrorSchema.parse(await res.json())
 
@@ -166,7 +166,7 @@ describe("POST /api/v1/suggestions", () => {
   })
 
   // ---------------------------------------------------------
-  test("returns 400 and field errors when validation fails", async () => {
+  test("returns 400 when validation fails", async () => {
     const { token } = await createUserSession("USER")
 
     const res = await app.request("/api/v1/suggestions", {
@@ -315,7 +315,7 @@ describe("PATCH /api/v1/suggestions/:slug", () => {
   })
 
   // ---------------------------------------------------------
-  test("returns 400 and field errors when validation fails", async () => {
+  test("returns 400 when validation fails", async () => {
     const { token, user } = await createUserSession("USER")
     const suggestion = await createSuggestionScenario(user.id)
 
@@ -450,7 +450,7 @@ describe("POST /api/v1/suggestions/:slug/comments", () => {
   })
 
   // ---------------------------------------------------------
-  test("returns 400 and field errors when validation fails", async () => {
+  test("returns 400 when validation fails", async () => {
     const { token } = await createUserSession("USER")
     const suggestion = await createSuggestionScenario()
 

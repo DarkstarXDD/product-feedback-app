@@ -65,7 +65,7 @@ describe("POST /api/v1/auth/signup", () => {
   })
 
   // ---------------------------------------------------------
-  test("returns 400 and field errors when missing required fields", async () => {
+  test("returns 400 when missing required fields", async () => {
     const res = await app.request("/api/v1/auth/signup", {
       body: JSON.stringify({}),
       headers: new Headers({ "Content-Type": "application/json" }),
@@ -91,7 +91,7 @@ describe("POST /api/v1/auth/signup", () => {
   })
 
   // ---------------------------------------------------------
-  test("returns 400 and field errors when confirm password mismatch", async () => {
+  test("returns 400 when confirm password mismatch", async () => {
     const payload = createUserData()
 
     const res = await app.request("/api/v1/auth/signup", {
@@ -113,7 +113,7 @@ describe("POST /api/v1/auth/signup", () => {
   })
 
   // ---------------------------------------------------------
-  test("returns 400 and field errors when password is shorter than minimum", async () => {
+  test("returns 400 when password is shorter than minimum", async () => {
     const payload = createUserData()
 
     const res = await app.request("/api/v1/auth/signup", {
@@ -141,7 +141,7 @@ describe("POST /api/v1/auth/signup", () => {
   })
 
   // ---------------------------------------------------------
-  test("returns 400 and field errors when email format is invalid", async () => {
+  test("returns 400 when email format is invalid", async () => {
     const payload = createUserData()
 
     const res = await app.request("/api/v1/auth/signup", {
@@ -166,7 +166,7 @@ describe("POST /api/v1/auth/signup", () => {
   })
 
   // ---------------------------------------------------------
-  test("returns 409 and field errors when username already exists", async () => {
+  test("returns 409 when username already exists", async () => {
     const payload = createUserData()
     const duplicatePayload = createUserData()
 
@@ -202,7 +202,7 @@ describe("POST /api/v1/auth/signup", () => {
   })
 
   // ---------------------------------------------------------
-  test("returns 409 and field errors when email already exists", async () => {
+  test("returns 409 when email already exists", async () => {
     const firstPayload = createUserData()
     const duplicatePayload = createUserData()
 
@@ -296,7 +296,7 @@ describe("POST /api/v1/auth/signin", () => {
   })
 
   // ---------------------------------------------------------
-  test("returns 401 and form errors when password is invalid", async () => {
+  test("returns 401 when password is invalid", async () => {
     const { user } = await createUser("USER")
 
     const signinRes = await app.request("/api/v1/auth/signin", {

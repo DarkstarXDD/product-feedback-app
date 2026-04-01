@@ -117,7 +117,7 @@ describe("GET /api/v1/comments/:id", () => {
   })
 
   // ---------------------------------------------------------
-  test("returns 404 when comment idoes not exist", async () => {
+  test("returns 404 when comment does not exist", async () => {
     const res = await app.request(`/api/v1/comments/123`)
     const resBody = jsonErrorSchema.parse(await res.json())
 
@@ -131,7 +131,7 @@ describe("GET /api/v1/comments/:id", () => {
 
 //--------------------------- PATCH /api/v1/comments/:id ---------------------------------
 describe("PATCH /api/v1/comments/:id", () => {
-  test("returns 401 when unauthorized", async () => {
+  test("returns 401 when unauthenticated", async () => {
     const { comment } = await createCommentScenario()
 
     const res = await app.request(`/api/v1/comments/${comment.id}`, {
@@ -223,7 +223,7 @@ describe("PATCH /api/v1/comments/:id", () => {
   })
 
   // ---------------------------------------------------------
-  test("returns 400 and field errors when validation fails", async () => {
+  test("returns 400 when validation fails", async () => {
     const { token, user } = await createUserSession("USER")
     const { comment } = await createCommentScenario(user.id)
 

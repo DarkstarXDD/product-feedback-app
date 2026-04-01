@@ -285,7 +285,7 @@ describe("PATCH /api/v1/users/:username", () => {
   })
 
   // ---------------------------------------------------------
-  test("returns 400 and form errors when payload is empty", async () => {
+  test("returns 400 when payload is empty", async () => {
     const { token, user } = await createUserSession("USER")
 
     const res = await app.request(`/api/v1/users/${user.username}`, {
