@@ -56,20 +56,14 @@ export function jsonError(
   options?: JsonErrorOptions
 ): never {
   throw new HTTPException(options?.status, {
-    res: c.json(
-      {
-        ...body,
-        errors: body.errors ? { formErrors: [], ...body.errors } : undefined,
-      },
-      options?.status
-    ),
+    res: c.json(body, options?.status),
     message: body.message,
   })
 }
 
 /** A thin wrapper for `notFound` errors. Returns 404. Wraps `jsonError`. */
 export function notFound(c: Context, message = "Not found"): never {
-  return jsonError(c, { message, code: "NOT_FOUND" }, { status: 404 })
+  return jsonError(c, { code: "NOT_FOUND", message }, { status: 404 })
 }
 
 /** A thin wrapper for `unauthorized` errors. Returns 401. Wraps `jsonError`. */
@@ -80,14 +74,14 @@ export function unauthorized(
 ): never {
   return jsonError(
     c,
-    { message, code: "UNAUTHORIZED", errors },
+    { code: "UNAUTHORIZED", message, errors },
     { status: 401 }
   )
 }
 
 /** A thin wrapper for `forbidden` errors. Returns 403. Wraps `jsonError`. */
 export function forbidden(c: Context, message = "Forbidden"): never {
-  return jsonError(c, { message, code: "FORBIDDEN" }, { status: 403 })
+  return jsonError(c, { code: "FORBIDDEN", message }, { status: 403 })
 }
 
 /** A thin wrapper for `conflict` errors. Returns 409. Wraps `jsonError`. */
@@ -96,7 +90,7 @@ export function conflict(
   message = "Conflict",
   errors?: JsonErrorBody["errors"]
 ): never {
-  return jsonError(c, { message, code: "CONFLICT", errors }, { status: 409 })
+  return jsonError(c, { code: "CONFLICT", message, errors }, { status: 409 })
 }
 
 /** A thin wrapper for `internalError` errors. Returns 500. Wraps `jsonError`. */
@@ -104,5 +98,5 @@ export function internalError(
   c: Context,
   message = "Internal server error"
 ): never {
-  return jsonError(c, { message, code: "INTERNAL_ERROR" }, { status: 500 })
+  return jsonError(c, { code: "INTERNAL_ERROR", message }, { status: 500 })
 }

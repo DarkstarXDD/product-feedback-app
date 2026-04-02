@@ -19,14 +19,21 @@ export function zodValidator<
 >(target: Target, schema: T) {
   return validator(target, schema, (value, c) => {
     if (!value.success) {
+      const { fieldErrors, formErrors } = formatZodErrors(
+        new z.ZodError(value.error as z.core.$ZodIssue[])
+      )
+
+      const errors = {
+        ...(formErrors.length > 0 && { formErrors }),
+        ...(Object.keys(fieldErrors).length > 0 && { fieldErrors }),
+      }
+
       return jsonError(
         c,
         {
-          errors: formatZodErrors(
-            new z.ZodError(value.error as z.core.$ZodIssue[])
-          ),
-          message: "Server validation fails",
           code: "VALIDATION_ERROR",
+          message: "Server validation fails",
+          errors,
         },
         { status: 400 }
       )
