@@ -8,12 +8,13 @@ import type { Context } from "hono"
 
 import { HTTPException } from "hono/http-exception"
 
+import type { Pagination } from "@/lib/pagination"
 import type { ERROR_CODES } from "@/lib/consts"
 
 // ------------------------- Success Response ----------------------------
 export interface JsonSuccessBody<T> {
   data: T
-  meta?: Record<string, unknown>
+  meta?: { pagination: Pagination }
 }
 
 type JsonSuccessOptions = {
@@ -36,8 +37,8 @@ export function jsonSuccess<T>(
 export type ErrorCode = (typeof ERROR_CODES)[number]
 
 export interface JsonErrorBody {
-  message: string
   code: ErrorCode
+  message: string
   errors?: { fieldErrors?: Record<string, string[]>; formErrors?: string[] }
 }
 
