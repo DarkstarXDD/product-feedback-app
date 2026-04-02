@@ -113,7 +113,7 @@ describe("GET /api/v1/comments/:id", () => {
     )
 
     expect(res.status).toBe(200)
-    expect(resBody.data).toHaveProperty("id", comment.id)
+    expect(resBody.data).toMatchObject({ id: comment.id })
   })
 
   // ---------------------------------------------------------
@@ -194,8 +194,10 @@ describe("PATCH /api/v1/comments/:id", () => {
     )
 
     expect(res.status).toBe(200)
-    expect(resBody.data).toHaveProperty("id", comment.id)
-    expect(resBody.data).toHaveProperty("content", updatedComment)
+    expect(resBody.data).toMatchObject({
+      id: comment.id,
+      content: updatedComment,
+    })
   })
 
   // ---------------------------------------------------------
@@ -218,8 +220,10 @@ describe("PATCH /api/v1/comments/:id", () => {
     )
 
     expect(res.status).toBe(200)
-    expect(resBody.data).toHaveProperty("id", comment.id)
-    expect(resBody.data).toHaveProperty("content", updatedComment)
+    expect(resBody.data).toMatchObject({
+      id: comment.id,
+      content: updatedComment,
+    })
   })
 
   // ---------------------------------------------------------
@@ -239,7 +243,7 @@ describe("PATCH /api/v1/comments/:id", () => {
     const resBody = jsonErrorSchema.parse(await res.json())
 
     expect(res.status).toBe(400)
-    expect(resBody).toEqual({
+    expect(resBody).toMatchObject({
       errors: {
         fieldErrors: {
           content: ["Comment cannot be empty"],

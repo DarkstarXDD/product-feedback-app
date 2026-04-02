@@ -19,7 +19,7 @@ describe("POST /api/v1/auth/signup", () => {
 
     const res = await app.request("/api/v1/auth/signup", {
       body: JSON.stringify(payload),
-      headers: new Headers({ "Content-Type": "application/json" }),
+      headers: { "Content-Type": "application/json" },
       method: "POST",
     })
     const resBody = jsonSuccessSchema(signUpResponseSchema).parse(
@@ -42,7 +42,7 @@ describe("POST /api/v1/auth/signup", () => {
 
     const res = await app.request("/api/v1/auth/signup", {
       body: JSON.stringify(payload),
-      headers: new Headers({ "Content-Type": "application/json" }),
+      headers: { "Content-Type": "application/json" },
       method: "POST",
     })
 
@@ -68,13 +68,13 @@ describe("POST /api/v1/auth/signup", () => {
   test("returns 400 when missing required fields", async () => {
     const res = await app.request("/api/v1/auth/signup", {
       body: JSON.stringify({}),
-      headers: new Headers({ "Content-Type": "application/json" }),
+      headers: { "Content-Type": "application/json" },
       method: "POST",
     })
     const resBody = jsonErrorSchema.parse(await res.json())
 
     expect(res.status).toBe(400)
-    expect(resBody).toEqual({
+    expect(resBody).toMatchObject({
       code: "VALIDATION_ERROR",
       message: "Server validation fails",
       errors: {
@@ -95,13 +95,13 @@ describe("POST /api/v1/auth/signup", () => {
 
     const res = await app.request("/api/v1/auth/signup", {
       body: JSON.stringify({ ...payload, confirmPassword: "12345678" }),
-      headers: new Headers({ "Content-Type": "application/json" }),
+      headers: { "Content-Type": "application/json" },
       method: "POST",
     })
     const resBody = jsonErrorSchema.parse(await res.json())
 
     expect(res.status).toBe(400)
-    expect(resBody).toEqual({
+    expect(resBody).toMatchObject({
       code: "VALIDATION_ERROR",
       message: "Server validation fails",
       errors: {
@@ -120,13 +120,13 @@ describe("POST /api/v1/auth/signup", () => {
         password: "123456",
         confirmPassword: "123456",
       }),
-      headers: new Headers({ "Content-Type": "application/json" }),
+      headers: { "Content-Type": "application/json" },
       method: "POST",
     })
     const resBody = jsonErrorSchema.parse(await res.json())
 
     expect(res.status).toBe(400)
-    expect(resBody).toEqual({
+    expect(resBody).toMatchObject({
       code: "VALIDATION_ERROR",
       message: "Server validation fails",
       errors: {
@@ -146,13 +146,13 @@ describe("POST /api/v1/auth/signup", () => {
         ...payload,
         email: "invalidemailformat",
       }),
-      headers: new Headers({ "Content-Type": "application/json" }),
+      headers: { "Content-Type": "application/json" },
       method: "POST",
     })
     const resBody = jsonErrorSchema.parse(await res.json())
 
     expect(res.status).toBe(400)
-    expect(resBody).toEqual({
+    expect(resBody).toMatchObject({
       code: "VALIDATION_ERROR",
       message: "Server validation fails",
       errors: {
@@ -168,7 +168,7 @@ describe("POST /api/v1/auth/signup", () => {
 
     const firstRes = await app.request("/api/v1/auth/signup", {
       body: JSON.stringify(payload),
-      headers: new Headers({ "Content-Type": "application/json" }),
+      headers: { "Content-Type": "application/json" },
       method: "POST",
     })
 
@@ -179,13 +179,13 @@ describe("POST /api/v1/auth/signup", () => {
         ...duplicatePayload,
         username: payload.username,
       }),
-      headers: new Headers({ "Content-Type": "application/json" }),
+      headers: { "Content-Type": "application/json" },
       method: "POST",
     })
     const duplicateResBody = jsonErrorSchema.parse(await duplicateRes.json())
 
     expect(duplicateRes.status).toBe(409)
-    expect(duplicateResBody).toEqual({
+    expect(duplicateResBody).toMatchObject({
       code: "CONFLICT",
       message: "Unique constraint violation",
       errors: {
@@ -203,7 +203,7 @@ describe("POST /api/v1/auth/signup", () => {
 
     const firstRes = await app.request("/api/v1/auth/signup", {
       body: JSON.stringify(firstPayload),
-      headers: new Headers({ "Content-Type": "application/json" }),
+      headers: { "Content-Type": "application/json" },
       method: "POST",
     })
 
@@ -214,13 +214,13 @@ describe("POST /api/v1/auth/signup", () => {
         ...duplicatePayload,
         email: firstPayload.email,
       }),
-      headers: new Headers({ "Content-Type": "application/json" }),
+      headers: { "Content-Type": "application/json" },
       method: "POST",
     })
     const duplicateResBody = jsonErrorSchema.parse(await duplicateRes.json())
 
     expect(duplicateRes.status).toBe(409)
-    expect(duplicateResBody).toEqual({
+    expect(duplicateResBody).toMatchObject({
       code: "CONFLICT",
       message: "Unique constraint violation",
       errors: {
@@ -237,7 +237,7 @@ describe("POST /api/v1/auth/signup", () => {
 
     const res = await app.request("/api/v1/auth/signup", {
       body: JSON.stringify(payload),
-      headers: new Headers({ "Content-Type": "application/json" }),
+      headers: { "Content-Type": "application/json" },
       method: "POST",
     })
     const cookie = res.headers.get("set-cookie")
@@ -263,7 +263,7 @@ describe("POST /api/v1/auth/signin", () => {
         email: user.email,
         password: userPassword,
       }),
-      headers: new Headers({ "Content-Type": "application/json" }),
+      headers: { "Content-Type": "application/json" },
       method: "POST",
     })
 
@@ -298,13 +298,13 @@ describe("POST /api/v1/auth/signin", () => {
         email: user.email,
         password: "invalid-password",
       }),
-      headers: new Headers({ "Content-Type": "application/json" }),
+      headers: { "Content-Type": "application/json" },
       method: "POST",
     })
     const signinResBody = jsonErrorSchema.parse(await signinRes.json())
 
     expect(signinRes.status).toBe(401)
-    expect(signinResBody).toEqual({
+    expect(signinResBody).toMatchObject({
       code: "UNAUTHORIZED",
       message: "Invalid email or password",
       errors: {

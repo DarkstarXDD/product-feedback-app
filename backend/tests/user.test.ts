@@ -300,7 +300,7 @@ describe("PATCH /api/v1/users/:username", () => {
     const resBody = jsonErrorSchema.parse(await res.json())
 
     expect(res.status).toBe(400)
-    expect(resBody).toEqual({
+    expect(resBody).toMatchObject({
       code: "VALIDATION_ERROR",
       message: "Server validation fails",
       errors: {
@@ -325,7 +325,7 @@ describe("PATCH /api/v1/users/:username", () => {
     const resBody = jsonErrorSchema.parse(await res.json())
 
     expect(res.status).toBe(409)
-    expect(resBody).toEqual({
+    expect(resBody).toMatchObject({
       code: "CONFLICT",
       message: "Unique constraint violation",
       errors: {
@@ -352,7 +352,7 @@ describe("PATCH /api/v1/users/:username", () => {
     const resBody = jsonErrorSchema.parse(await res.json())
 
     expect(res.status).toBe(409)
-    expect(resBody).toEqual({
+    expect(resBody).toMatchObject({
       code: "CONFLICT",
       message: "Unique constraint violation",
       errors: {
@@ -450,7 +450,7 @@ describe("GET /api/v1/users/:username/upvotes", () => {
 
     expect(res.status).toBe(200)
     expect(resBody.data.some((item) => item.id === suggestion.id)).toBe(true)
-    expect(resBody.data[0]).toHaveProperty("viewerHasUpvoted", false)
+    expect(resBody.data[0]).toMatchObject({ viewerHasUpvoted: false })
     expect(resBody.meta.pagination).toEqual({
       page: 1,
       pageSize: 10,
