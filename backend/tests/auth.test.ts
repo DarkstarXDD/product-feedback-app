@@ -37,6 +37,27 @@ describe("POST /api/v1/auth/signup", () => {
   })
 
   // ---------------------------------------------------------
+  test("returns 201 and sets auth cookie", async () => {
+    const payload = createUserData()
+
+    const res = await app.request("/api/v1/auth/signup", {
+      body: JSON.stringify(payload),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+    })
+    const cookie = res.headers.get("set-cookie")
+
+    expect(res.status).toBe(201)
+    expect(cookie).toBeTruthy()
+    expect(cookie).toContain("token=")
+    expect(cookie).toContain("HttpOnly")
+    expect(cookie).toContain("Secure")
+    expect(cookie).toContain("SameSite=Lax")
+    expect(cookie).toContain("Path=/")
+    expect(cookie).toContain("Max-Age=604800")
+  })
+
+  // ---------------------------------------------------------
   test("returns 201 and persists created user in database", async () => {
     const payload = createUserData()
 
@@ -230,32 +251,11 @@ describe("POST /api/v1/auth/signup", () => {
       },
     })
   })
-
-  // ---------------------------------------------------------
-  test("returns 201 and sets auth cookie", async () => {
-    const payload = createUserData()
-
-    const res = await app.request("/api/v1/auth/signup", {
-      body: JSON.stringify(payload),
-      headers: { "Content-Type": "application/json" },
-      method: "POST",
-    })
-    const cookie = res.headers.get("set-cookie")
-
-    expect(res.status).toBe(201)
-    expect(cookie).toBeTruthy()
-    expect(cookie).toContain("token=")
-    expect(cookie).toContain("HttpOnly")
-    expect(cookie).toContain("Secure")
-    expect(cookie).toContain("SameSite=Lax")
-    expect(cookie).toContain("Path=/")
-    expect(cookie).toContain("Max-Age=604800")
-  })
 })
 
 //--------------------------- POST /api/v1/auth/signin -------------------------------------
 describe("POST /api/v1/auth/signin", () => {
-  test("returns 200 and sets auth cookie", async () => {
+  test("returns 200 and signed in user", async () => {
     const { userPassword, user } = await createUser("USER")
 
     const signinRes = await app.request("/api/v1/auth/signin", {
@@ -270,7 +270,6 @@ describe("POST /api/v1/auth/signin", () => {
     const signinResBody = jsonSuccessSchema(signInResponseSchema).parse(
       await signinRes.json()
     )
-    const cookie = signinRes.headers.get("set-cookie")
 
     expect(signinRes.status).toBe(200)
     expect(signinResBody.data).toMatchObject({
@@ -280,6 +279,23 @@ describe("POST /api/v1/auth/signin", () => {
       email: user.email,
     })
     expect(signinResBody.data).not.toHaveProperty("password")
+  })
+
+  // ---------------------------------------------------------
+  test("returns 200 and sets auth cookie", async () => {
+    const { userPassword, user } = await createUser("USER")
+
+    const signinRes = await app.request("/api/v1/auth/signin", {
+      body: JSON.stringify({
+        email: user.email,
+        password: userPassword,
+      }),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+    })
+    const cookie = signinRes.headers.get("set-cookie")
+
+    expect(signinRes.status).toBe(200)
     expect(cookie).toBeTruthy()
     expect(cookie).toContain("token=")
     expect(cookie).toContain("HttpOnly")
