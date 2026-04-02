@@ -241,7 +241,6 @@ describe("PATCH /api/v1/comments/:id", () => {
     expect(res.status).toBe(400)
     expect(resBody).toEqual({
       errors: {
-        formErrors: [],
         fieldErrors: {
           content: ["Comment cannot be empty"],
         },

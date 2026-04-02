@@ -189,7 +189,6 @@ describe("POST /api/v1/suggestions", () => {
       code: "VALIDATION_ERROR",
       message: "Server validation fails",
       errors: {
-        formErrors: [],
         fieldErrors: {
           categoryId: ["Please pick a valid category"],
           title: ["Title cannot be empty"],
@@ -339,7 +338,6 @@ describe("PATCH /api/v1/suggestions/:slug", () => {
       code: "VALIDATION_ERROR",
       message: "Server validation fails",
       errors: {
-        formErrors: [],
         fieldErrors: {
           description: ["Description cannot be empty"],
           categoryId: ["Please pick a valid category"],
@@ -475,10 +473,7 @@ describe("POST /api/v1/suggestions/:slug/comments", () => {
       code: "VALIDATION_ERROR",
       message: "Server validation fails",
       errors: {
-        fieldErrors: {
-          content: ["Comment cannot be empty"],
-        },
-        formErrors: [],
+        fieldErrors: { content: ["Comment cannot be empty"] },
       },
     })
   })
