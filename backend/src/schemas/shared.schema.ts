@@ -1,6 +1,6 @@
 import * as z from "zod"
 
-import type { JsonSuccessBody, JsonErrorBody } from "@/lib/responses"
+import type { JsonErrorBody } from "@/lib/responses"
 
 import { paginationResponseSchema } from "@/schemas/pagination.schema"
 import { ERROR_CODES } from "@/lib/consts"
@@ -33,11 +33,8 @@ export const jsonErrorSchema: z.ZodType<JsonErrorBody> = z.object({
 /** Wraps a response payload schema in the standard jsonSuccess envelope. */
 export function jsonSuccessSchema<TOutput, TInput = TOutput>(
   dataSchema: z.ZodType<TOutput, TInput>
-): z.ZodType<JsonSuccessBody<TOutput>, JsonSuccessBody<TInput>> {
-  return z.object({
-    data: dataSchema,
-    meta: z.record(z.string(), z.unknown()).optional(),
-  })
+) {
+  return z.object({ data: dataSchema })
 }
 
 /** Wraps a response payload schema in the standard jsonSuccess envelope with a typed pagination meta. */

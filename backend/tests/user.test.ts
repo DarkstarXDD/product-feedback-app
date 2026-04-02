@@ -305,7 +305,6 @@ describe("PATCH /api/v1/users/:username", () => {
       message: "Server validation fails",
       errors: {
         formErrors: ["At least one field is required"],
-        fieldErrors: {},
       },
     })
   })
@@ -330,7 +329,6 @@ describe("PATCH /api/v1/users/:username", () => {
       code: "CONFLICT",
       message: "Unique constraint violation",
       errors: {
-        formErrors: [],
         fieldErrors: {
           email: ["Email already exists"],
         },
@@ -358,7 +356,6 @@ describe("PATCH /api/v1/users/:username", () => {
       code: "CONFLICT",
       message: "Unique constraint violation",
       errors: {
-        formErrors: [],
         fieldErrors: {
           username: ["Username taken. Please pick a different username"],
         },

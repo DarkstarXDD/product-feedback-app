@@ -78,7 +78,6 @@ describe("POST /api/v1/auth/signup", () => {
       code: "VALIDATION_ERROR",
       message: "Server validation fails",
       errors: {
-        formErrors: [],
         fieldErrors: {
           name: ["Invalid name"],
           username: ["Invalid username"],
@@ -106,7 +105,6 @@ describe("POST /api/v1/auth/signup", () => {
       code: "VALIDATION_ERROR",
       message: "Server validation fails",
       errors: {
-        formErrors: [],
         fieldErrors: { confirmPassword: ["Passwords don't match"] },
       },
     })
@@ -132,7 +130,6 @@ describe("POST /api/v1/auth/signup", () => {
       code: "VALIDATION_ERROR",
       message: "Server validation fails",
       errors: {
-        formErrors: [],
         fieldErrors: {
           password: ["Password must be at least 8 characters long"],
         },
@@ -159,7 +156,6 @@ describe("POST /api/v1/auth/signup", () => {
       code: "VALIDATION_ERROR",
       message: "Server validation fails",
       errors: {
-        formErrors: [],
         fieldErrors: { email: ["Invalid email"] },
       },
     })
@@ -193,7 +189,6 @@ describe("POST /api/v1/auth/signup", () => {
       code: "CONFLICT",
       message: "Unique constraint violation",
       errors: {
-        formErrors: [],
         fieldErrors: {
           username: ["Username taken. Please pick a different username"],
         },
@@ -229,7 +224,6 @@ describe("POST /api/v1/auth/signup", () => {
       code: "CONFLICT",
       message: "Unique constraint violation",
       errors: {
-        formErrors: [],
         fieldErrors: {
           email: ["Email already exists"],
         },
