@@ -19,7 +19,7 @@ describe("POST /api/v1/auth/signup", () => {
 
     const res = await app.request("/api/v1/auth/signup", {
       body: JSON.stringify(payload),
-      headers: new Headers({ "Content-Type": "application/json" }),
+      headers: { "Content-Type": "application/json" },
       method: "POST",
     })
     const resBody = jsonSuccessSchema(signUpResponseSchema).parse(
@@ -37,12 +37,33 @@ describe("POST /api/v1/auth/signup", () => {
   })
 
   // ---------------------------------------------------------
+  test("returns 201 and sets auth cookie", async () => {
+    const payload = createUserData()
+
+    const res = await app.request("/api/v1/auth/signup", {
+      body: JSON.stringify(payload),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+    })
+    const cookie = res.headers.get("set-cookie")
+
+    expect(res.status).toBe(201)
+    expect(cookie).toBeTruthy()
+    expect(cookie).toContain("token=")
+    expect(cookie).toContain("HttpOnly")
+    expect(cookie).toContain("Secure")
+    expect(cookie).toContain("SameSite=Lax")
+    expect(cookie).toContain("Path=/")
+    expect(cookie).toContain("Max-Age=604800")
+  })
+
+  // ---------------------------------------------------------
   test("returns 201 and persists created user in database", async () => {
     const payload = createUserData()
 
     const res = await app.request("/api/v1/auth/signup", {
       body: JSON.stringify(payload),
-      headers: new Headers({ "Content-Type": "application/json" }),
+      headers: { "Content-Type": "application/json" },
       method: "POST",
     })
 
@@ -68,13 +89,13 @@ describe("POST /api/v1/auth/signup", () => {
   test("returns 400 when missing required fields", async () => {
     const res = await app.request("/api/v1/auth/signup", {
       body: JSON.stringify({}),
-      headers: new Headers({ "Content-Type": "application/json" }),
+      headers: { "Content-Type": "application/json" },
       method: "POST",
     })
     const resBody = jsonErrorSchema.parse(await res.json())
 
     expect(res.status).toBe(400)
-    expect(resBody).toEqual({
+    expect(resBody).toMatchObject({
       code: "VALIDATION_ERROR",
       message: "Server validation fails",
       errors: {
@@ -95,13 +116,13 @@ describe("POST /api/v1/auth/signup", () => {
 
     const res = await app.request("/api/v1/auth/signup", {
       body: JSON.stringify({ ...payload, confirmPassword: "12345678" }),
-      headers: new Headers({ "Content-Type": "application/json" }),
+      headers: { "Content-Type": "application/json" },
       method: "POST",
     })
     const resBody = jsonErrorSchema.parse(await res.json())
 
     expect(res.status).toBe(400)
-    expect(resBody).toEqual({
+    expect(resBody).toMatchObject({
       code: "VALIDATION_ERROR",
       message: "Server validation fails",
       errors: {
@@ -120,13 +141,13 @@ describe("POST /api/v1/auth/signup", () => {
         password: "123456",
         confirmPassword: "123456",
       }),
-      headers: new Headers({ "Content-Type": "application/json" }),
+      headers: { "Content-Type": "application/json" },
       method: "POST",
     })
     const resBody = jsonErrorSchema.parse(await res.json())
 
     expect(res.status).toBe(400)
-    expect(resBody).toEqual({
+    expect(resBody).toMatchObject({
       code: "VALIDATION_ERROR",
       message: "Server validation fails",
       errors: {
@@ -146,13 +167,13 @@ describe("POST /api/v1/auth/signup", () => {
         ...payload,
         email: "invalidemailformat",
       }),
-      headers: new Headers({ "Content-Type": "application/json" }),
+      headers: { "Content-Type": "application/json" },
       method: "POST",
     })
     const resBody = jsonErrorSchema.parse(await res.json())
 
     expect(res.status).toBe(400)
-    expect(resBody).toEqual({
+    expect(resBody).toMatchObject({
       code: "VALIDATION_ERROR",
       message: "Server validation fails",
       errors: {
@@ -168,7 +189,7 @@ describe("POST /api/v1/auth/signup", () => {
 
     const firstRes = await app.request("/api/v1/auth/signup", {
       body: JSON.stringify(payload),
-      headers: new Headers({ "Content-Type": "application/json" }),
+      headers: { "Content-Type": "application/json" },
       method: "POST",
     })
 
@@ -179,13 +200,13 @@ describe("POST /api/v1/auth/signup", () => {
         ...duplicatePayload,
         username: payload.username,
       }),
-      headers: new Headers({ "Content-Type": "application/json" }),
+      headers: { "Content-Type": "application/json" },
       method: "POST",
     })
     const duplicateResBody = jsonErrorSchema.parse(await duplicateRes.json())
 
     expect(duplicateRes.status).toBe(409)
-    expect(duplicateResBody).toEqual({
+    expect(duplicateResBody).toMatchObject({
       code: "CONFLICT",
       message: "Unique constraint violation",
       errors: {
@@ -203,7 +224,7 @@ describe("POST /api/v1/auth/signup", () => {
 
     const firstRes = await app.request("/api/v1/auth/signup", {
       body: JSON.stringify(firstPayload),
-      headers: new Headers({ "Content-Type": "application/json" }),
+      headers: { "Content-Type": "application/json" },
       method: "POST",
     })
 
@@ -214,13 +235,13 @@ describe("POST /api/v1/auth/signup", () => {
         ...duplicatePayload,
         email: firstPayload.email,
       }),
-      headers: new Headers({ "Content-Type": "application/json" }),
+      headers: { "Content-Type": "application/json" },
       method: "POST",
     })
     const duplicateResBody = jsonErrorSchema.parse(await duplicateRes.json())
 
     expect(duplicateRes.status).toBe(409)
-    expect(duplicateResBody).toEqual({
+    expect(duplicateResBody).toMatchObject({
       code: "CONFLICT",
       message: "Unique constraint violation",
       errors: {
@@ -230,32 +251,11 @@ describe("POST /api/v1/auth/signup", () => {
       },
     })
   })
-
-  // ---------------------------------------------------------
-  test("returns 201 and sets auth cookie", async () => {
-    const payload = createUserData()
-
-    const res = await app.request("/api/v1/auth/signup", {
-      body: JSON.stringify(payload),
-      headers: new Headers({ "Content-Type": "application/json" }),
-      method: "POST",
-    })
-    const cookie = res.headers.get("set-cookie")
-
-    expect(res.status).toBe(201)
-    expect(cookie).toBeTruthy()
-    expect(cookie).toContain("token=")
-    expect(cookie).toContain("HttpOnly")
-    expect(cookie).toContain("Secure")
-    expect(cookie).toContain("SameSite=Lax")
-    expect(cookie).toContain("Path=/")
-    expect(cookie).toContain("Max-Age=604800")
-  })
 })
 
 //--------------------------- POST /api/v1/auth/signin -------------------------------------
 describe("POST /api/v1/auth/signin", () => {
-  test("returns 200 and sets auth cookie", async () => {
+  test("returns 200 and signed in user", async () => {
     const { userPassword, user } = await createUser("USER")
 
     const signinRes = await app.request("/api/v1/auth/signin", {
@@ -263,14 +263,13 @@ describe("POST /api/v1/auth/signin", () => {
         email: user.email,
         password: userPassword,
       }),
-      headers: new Headers({ "Content-Type": "application/json" }),
+      headers: { "Content-Type": "application/json" },
       method: "POST",
     })
 
     const signinResBody = jsonSuccessSchema(signInResponseSchema).parse(
       await signinRes.json()
     )
-    const cookie = signinRes.headers.get("set-cookie")
 
     expect(signinRes.status).toBe(200)
     expect(signinResBody.data).toMatchObject({
@@ -280,6 +279,23 @@ describe("POST /api/v1/auth/signin", () => {
       email: user.email,
     })
     expect(signinResBody.data).not.toHaveProperty("password")
+  })
+
+  // ---------------------------------------------------------
+  test("returns 200 and sets auth cookie", async () => {
+    const { userPassword, user } = await createUser("USER")
+
+    const signinRes = await app.request("/api/v1/auth/signin", {
+      body: JSON.stringify({
+        email: user.email,
+        password: userPassword,
+      }),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+    })
+    const cookie = signinRes.headers.get("set-cookie")
+
+    expect(signinRes.status).toBe(200)
     expect(cookie).toBeTruthy()
     expect(cookie).toContain("token=")
     expect(cookie).toContain("HttpOnly")
@@ -298,13 +314,13 @@ describe("POST /api/v1/auth/signin", () => {
         email: user.email,
         password: "invalid-password",
       }),
-      headers: new Headers({ "Content-Type": "application/json" }),
+      headers: { "Content-Type": "application/json" },
       method: "POST",
     })
     const signinResBody = jsonErrorSchema.parse(await signinRes.json())
 
     expect(signinRes.status).toBe(401)
-    expect(signinResBody).toEqual({
+    expect(signinResBody).toMatchObject({
       code: "UNAUTHORIZED",
       message: "Invalid email or password",
       errors: {

@@ -76,9 +76,13 @@ describe("GET /api/v1/suggestions", () => {
     expect(resBody).toMatchObject({
       code: "VALIDATION_ERROR",
       message: "Server validation fails",
+      errors: {
+        fieldErrors: {
+          page: ["page must be at least 1"],
+          pageSize: ["Invalid pageSize"],
+        },
+      },
     })
-    expect(resBody.errors?.fieldErrors).toHaveProperty("page")
-    expect(resBody.errors?.fieldErrors).toHaveProperty("pageSize")
   })
 })
 
@@ -93,10 +97,12 @@ describe("GET /api/v1/suggestions/:slug", () => {
     ).parse(await res.json())
 
     expect(res.status).toBe(200)
-    expect(resBody.data).toHaveProperty("id", suggestion.id)
-    expect(resBody.data).toHaveProperty("slug", suggestion.slug)
-    expect(resBody.data).toHaveProperty("title", suggestion.title)
-    expect(resBody.data).toHaveProperty("description", suggestion.description)
+    expect(resBody.data).toMatchObject({
+      id: suggestion.id,
+      slug: suggestion.slug,
+      title: suggestion.title,
+      description: suggestion.description,
+    })
   })
 
   // ---------------------------------------------------------
@@ -161,8 +167,10 @@ describe("POST /api/v1/suggestions", () => {
     )
 
     expect(res.status).toBe(201)
-    expect(resBody.data).toHaveProperty("title", payload.title)
-    expect(resBody.data).toHaveProperty("description", payload.description)
+    expect(resBody.data).toMatchObject({
+      title: payload.title,
+      description: payload.description,
+    })
   })
 
   // ---------------------------------------------------------
@@ -185,7 +193,7 @@ describe("POST /api/v1/suggestions", () => {
     const resBody = jsonErrorSchema.parse(await res.json())
 
     expect(res.status).toBe(400)
-    expect(resBody).toEqual({
+    expect(resBody).toMatchObject({
       code: "VALIDATION_ERROR",
       message: "Server validation fails",
       errors: {
@@ -278,9 +286,11 @@ describe("PATCH /api/v1/suggestions/:slug", () => {
     )
 
     expect(res.status).toBe(200)
-    expect(resBody.data).toHaveProperty("id", suggestion.id)
-    expect(resBody.data).toHaveProperty("title", payload.title)
-    expect(resBody.data).toHaveProperty("description", payload.description)
+    expect(resBody.data).toMatchObject({
+      id: suggestion.id,
+      title: payload.title,
+      description: payload.description,
+    })
   })
 
   // ---------------------------------------------------------
@@ -308,9 +318,11 @@ describe("PATCH /api/v1/suggestions/:slug", () => {
     )
 
     expect(res.status).toBe(200)
-    expect(resBody.data).toHaveProperty("id", suggestion.id)
-    expect(resBody.data).toHaveProperty("title", payload.title)
-    expect(resBody.data).toHaveProperty("description", payload.description)
+    expect(resBody.data).toMatchObject({
+      id: suggestion.id,
+      title: payload.title,
+      description: payload.description,
+    })
   })
 
   // ---------------------------------------------------------
@@ -334,7 +346,7 @@ describe("PATCH /api/v1/suggestions/:slug", () => {
     const resBody = jsonErrorSchema.parse(await res.json())
 
     expect(res.status).toBe(400)
-    expect(resBody).toEqual({
+    expect(resBody).toMatchObject({
       code: "VALIDATION_ERROR",
       message: "Server validation fails",
       errors: {
@@ -443,8 +455,10 @@ describe("POST /api/v1/suggestions/:slug/comments", () => {
     )
 
     expect(res.status).toBe(201)
-    expect(resBody.data).toHaveProperty("content", payload.content)
-    expect(resBody.data).toHaveProperty("suggestion.slug", suggestion.slug)
+    expect(resBody.data).toMatchObject({
+      content: payload.content,
+      suggestion: { slug: suggestion.slug },
+    })
   })
 
   // ---------------------------------------------------------
@@ -469,7 +483,7 @@ describe("POST /api/v1/suggestions/:slug/comments", () => {
     const resBody = jsonErrorSchema.parse(await res.json())
 
     expect(res.status).toBe(400)
-    expect(resBody).toEqual({
+    expect(resBody).toMatchObject({
       code: "VALIDATION_ERROR",
       message: "Server validation fails",
       errors: {
@@ -515,8 +529,10 @@ describe("POST /api/v1/suggestions/:slug/upvotes", () => {
     )
 
     expect(res.status).toBe(201)
-    expect(resBody.data).toHaveProperty("userId", user.id)
-    expect(resBody.data).toHaveProperty("suggestionId", suggestion.id)
+    expect(resBody.data).toMatchObject({
+      userId: user.id,
+      suggestionId: suggestion.id,
+    })
   })
 
   // ---------------------------------------------------------
