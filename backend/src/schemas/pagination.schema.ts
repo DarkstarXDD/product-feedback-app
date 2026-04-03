@@ -36,8 +36,8 @@ export type PaginationQuery = z.infer<typeof paginationSchema>
 export const paginationResponseSchema: z.ZodType<Pagination> = z.object({
   page: z.number().meta({ example: 1, "x-order": 1 }),
   pageSize: z.number().meta({ example: 10, "x-order": 2 }),
-  totalItems: z.number().meta({ example: 100, "x-order": 3 }),
-  totalPages: z.number().meta({ example: 10, "x-order": 4 }),
-  hasNextPage: z.boolean().meta({ example: true, "x-order": 5 }),
-  hasPreviousPage: z.boolean().meta({ example: false, "x-order": 6 }),
+  hasNextPage: z.boolean().meta({ example: true, "x-order": 3 }),
+  hasPreviousPage: z.boolean().meta({ example: false, "x-order": 4 }),
+  totalItems: z.number().meta({ example: 100, "x-order": 5 }),
+  totalPages: z.number().meta({ example: 10, "x-order": 6 }),
 })
