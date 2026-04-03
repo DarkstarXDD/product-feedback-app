@@ -21,6 +21,7 @@ import {
   getRandomCategoryId,
   createUserSession,
   createSuggestion,
+  createComment,
   createUpvote,
   createUser,
   cleanupDb,
@@ -395,12 +396,62 @@ describe("GET /api/v1/suggestions/:slug/comments", () => {
     const res = await app.request(
       `/api/v1/suggestions/${suggestion.slug}/comments`
     )
-    const resBody = jsonSuccessSchema(z.array(commentResponseSchema)).parse(
-      await res.json()
-    )
+    const resBody = paginatedSuccessSchema(
+      z.array(commentResponseSchema)
+    ).parse(await res.json())
 
     expect(res.status).toBe(200)
     expect(resBody.data.some((item) => item.id === comment.id)).toBe(true)
+  })
+
+  // ---------------------------------------------------------
+  test("returns 200 and correct pagination metadata when multiple pages exist", async () => {
+    const { user } = await createUser("USER")
+    const suggestion = await createSuggestionScenario()
+
+    for (let i = 0; i < 20; i++) {
+      await createComment({ suggestionId: suggestion.id, ownerId: user.id })
+    }
+
+    const res = await app.request(
+      `/api/v1/suggestions/${suggestion.slug}/comments?page=2&pageSize=10`
+    )
+    const resBody = paginatedSuccessSchema(
+      z.array(commentResponseSchema)
+    ).parse(await res.json())
+
+    expect(res.status).toBe(200)
+    expect(resBody.data).toHaveLength(10)
+    expect(resBody.meta.pagination).toEqual({
+      page: 2,
+      pageSize: 10,
+      hasPreviousPage: true,
+      hasNextPage: false,
+      totalItems: 20,
+      totalPages: 2,
+    })
+  })
+
+  // ---------------------------------------------------------
+  test("returns 400 when pagination query params are invalid", async () => {
+    const suggestion = await createSuggestionScenario()
+
+    const res = await app.request(
+      `/api/v1/suggestions/${suggestion.slug}/comments?page=0&pageSize=abc`
+    )
+    const resBody = jsonErrorSchema.parse(await res.json())
+
+    expect(res.status).toBe(400)
+    expect(resBody).toMatchObject({
+      code: "VALIDATION_ERROR",
+      message: "Server validation fails",
+      errors: {
+        fieldErrors: {
+          page: ["page must be at least 1"],
+          pageSize: ["Invalid pageSize"],
+        },
+      },
+    })
   })
 })
 

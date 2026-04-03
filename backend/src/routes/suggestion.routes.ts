@@ -81,13 +81,12 @@ suggestionRouter.get(
     const user = c.get("user")
     const { pageSize, page } = c.req.valid("query")
 
-    const skip = (page - 1) * pageSize
-
     const [totalItems, suggestions] = await Promise.all([
       prisma.suggestion.count(),
       prisma.suggestion.findMany({
+        orderBy: { createdAt: "asc" },
+        skip: (page - 1) * pageSize,
         take: pageSize,
-        skip,
         select: user
           ? suggestionWithViewerUpvoteSelect(user.id)
           : suggestionBaseSelect,
@@ -97,8 +96,8 @@ suggestionRouter.get(
     return jsonSuccess(
       c,
       {
-        meta: { pagination: buildPagination({ page, pageSize, totalItems }) },
         data: suggestions.map(mapSuggestionWithUpvoteStatus),
+        meta: { pagination: buildPagination({ page, pageSize, totalItems }) },
       },
       { status: 200 }
     )
@@ -111,7 +110,8 @@ suggestionRouter.get(
   describeRoute({
     tags: ["Suggestions"],
     summary: "Get a Suggestion",
-    description: "Returns a single suggestion by slug, including its comments.",
+    description:
+      "Returns a single suggestion by slug, including maximum of 10 comments. Use /:slug/comments to load all the comments.",
     responses: {
       200: {
         content: {
@@ -151,9 +151,7 @@ suggestionRouter.get(
 
     return jsonSuccess(
       c,
-      {
-        data: mapSuggestionWithUpvoteStatus(suggestion),
-      },
+      { data: mapSuggestionWithUpvoteStatus(suggestion) },
       { status: 200 }
     )
   }
@@ -290,11 +288,11 @@ suggestionRouter.patch(
 
     try {
       const suggestion = await prisma.suggestion.update({
-        select: suggestionUpdateSelect,
         data: { ...parsedData },
         where: user.role === "ADMIN" ? { slug } : { userId: user.id, slug },
+        select: suggestionUpdateSelect,
       })
-      return jsonSuccess(c, { data: suggestion })
+      return jsonSuccess(c, { data: suggestion }, { status: 200 })
     } catch (e) {
       if (
         e instanceof Prisma.PrismaClientKnownRequestError &&
@@ -357,7 +355,7 @@ suggestionRouter.post(
     const user = getUserOrThrow(c)
     const parsedData = c.req.valid("json")
 
-    /** Can't use  foreign key approach if one connect is used.
+    /** Can't use foreign key approach if one connect is used.
      *  So both suggestion and user needs to use the `connect` appraoch.
      *  https://www.prisma.io/docs/orm/reference/prisma-client-reference#examples-28
      */
@@ -380,27 +378,49 @@ suggestionRouter.get(
   describeRoute({
     tags: ["Suggestions"],
     summary: "Get All Comments for a Suggestion",
-    description: "Returns all comments for a suggestion.",
+    description: "Returns a paginated list of comments for a suggestion.",
     responses: {
       200: {
         content: {
           "application/json": {
-            schema: resolver(jsonSuccessSchema(z.array(commentResponseSchema))),
+            schema: resolver(
+              paginatedSuccessSchema(z.array(commentResponseSchema))
+            ),
           },
         },
         description: "Successfully retrieved comments.",
       },
+      400: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description:
+          "Bad Request. Occurs when the query parameters fail validation.",
+      },
     },
   }),
+  zodValidator("query", paginationSchema),
   async (c) => {
     const slug = c.req.param("slug")
+    const { page, pageSize } = c.req.valid("query")
 
-    const comments = await prisma.comment.findMany({
-      where: { suggestion: { slug } },
-      select: commentSelect,
+    const [totalItems, comments] = await Promise.all([
+      prisma.comment.count({ where: { suggestion: { slug } } }),
+      prisma.comment.findMany({
+        orderBy: { createdAt: "asc" },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        where: { suggestion: { slug } },
+        select: commentSelect,
+      }),
+    ])
+
+    return jsonSuccess(c, {
+      data: comments,
+      meta: { pagination: buildPagination({ page, pageSize, totalItems }) },
     })
-
-    return jsonSuccess(c, { data: comments })
   }
 )
 
