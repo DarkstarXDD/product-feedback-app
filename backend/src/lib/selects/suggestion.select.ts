@@ -46,6 +46,7 @@ export const suggestionWithCommentsSelect = {
   ...suggestionBaseSelect,
   comments: {
     orderBy: { createdAt: "asc" },
+    take: 10,
     select: {
       id: true,
       content: true,
