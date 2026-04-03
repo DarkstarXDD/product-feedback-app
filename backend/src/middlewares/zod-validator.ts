@@ -14,8 +14,8 @@ import { jsonError } from "@/lib/responses"
  * That data can be retreived using `c.req.valid(targetName)` inside other middleware or handlers.
  */
 export function zodValidator<
-  T extends z.ZodType,
   Target extends keyof ValidationTargets,
+  T extends z.ZodType,
 >(target: Target, schema: T) {
   return validator(target, schema, (value, c) => {
     if (!value.success) {
