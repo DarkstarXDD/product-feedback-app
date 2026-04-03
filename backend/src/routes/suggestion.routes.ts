@@ -460,33 +460,21 @@ suggestionRouter.post(
     const slug = c.req.param("slug")
     const user = getUserOrThrow(c)
 
-    const suggestion = await prisma.suggestion.findUnique({
-      select: { id: true },
-      where: { slug },
-    })
-
-    if (!suggestion) {
-      return notFound(c, "Suggestion not found")
-    }
-
     try {
       const upvote = await prisma.upvote.create({
         data: {
-          suggestionId: suggestion.id,
-          userId: user.id,
+          suggestion: { connect: { slug } },
+          user: { connect: { id: user.id } },
         },
         select: upvoteSelect,
       })
 
       return jsonSuccess(c, { data: upvote }, { status: 201 })
     } catch (e) {
-      if (
-        e instanceof Prisma.PrismaClientKnownRequestError &&
-        e.code === "P2002"
-      ) {
-        return conflict(c, "Suggestion already upvoted")
+      if (e instanceof Prisma.PrismaClientKnownRequestError) {
+        if (e.code === "P2025") return notFound(c, "Suggestion not found")
+        if (e.code === "P2002") return conflict(c, "Suggestion already upvoted")
       }
-
       throw e
     }
   }
