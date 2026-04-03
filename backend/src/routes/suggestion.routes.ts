@@ -345,6 +345,14 @@ suggestionRouter.post(
         },
         description: "Forbidden. User does not have the required role.",
       },
+      404: {
+        content: {
+          "application/json": {
+            schema: resolver(jsonErrorSchema),
+          },
+        },
+        description: "Not Found. Suggestion does not exist.",
+      },
     },
   }),
   resolveAuthUser,
@@ -359,16 +367,26 @@ suggestionRouter.post(
      *  So both suggestion and user needs to use the `connect` appraoch.
      *  https://www.prisma.io/docs/orm/reference/prisma-client-reference#examples-28
      */
-    const comment = await prisma.comment.create({
-      data: {
-        user: { connect: { id: user.id } },
-        suggestion: { connect: { slug } },
-        content: parsedData.content,
-      },
-      select: commentSelect,
-    })
+    try {
+      const comment = await prisma.comment.create({
+        data: {
+          user: { connect: { id: user.id } },
+          suggestion: { connect: { slug } },
+          content: parsedData.content,
+        },
+        select: commentSelect,
+      })
 
-    return jsonSuccess(c, { data: comment }, { status: 201 })
+      return jsonSuccess(c, { data: comment }, { status: 201 })
+    } catch (e) {
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === "P2025"
+      ) {
+        return notFound(c, "Suggestion not found")
+      }
+      throw e
+    }
   }
 )
 
