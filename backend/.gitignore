@@ -1,8 +1,10 @@
-# dependencies (bun install)
+# dependencies
 node_modules
 
-# dotenv environment variable files
+# environment variable files
 .env*
+!.env.development
+!.env.test
 
 # Omit the generated Prisma client
 /src/db/generated/*
