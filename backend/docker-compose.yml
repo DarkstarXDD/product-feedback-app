@@ -1,3 +1,5 @@
+name: product-feedback-app
+
 services:
   db_dev:
     image: postgres:18
@@ -9,7 +11,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_dev_data:/var/lib/postgresql/data
+      - postgres_dev_data:/var/lib/postgresql
 
   db_test:
     image: postgres:18
@@ -21,7 +23,7 @@ services:
     ports:
       - "5433:5432"
     volumes:
-      - postgres_test_data:/var/lib/postgresql/data
+      - postgres_test_data:/var/lib/postgresql
 
 volumes:
   postgres_dev_data:
