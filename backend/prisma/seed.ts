@@ -1,11 +1,11 @@
-import { PrismaLibSql } from "@prisma/adapter-libsql"
+import { PrismaPg } from "@prisma/adapter-pg"
 
 import env from "@/lib/env"
 
 import { PrismaClient } from "../src/db/generated/prisma/client"
 import { categories, statuses } from "../src/lib/data"
 
-const adapter = new PrismaLibSql({ url: env.DATABASE_URL })
+const adapter = new PrismaPg({ connectionString: env.DATABASE_URL })
 
 const prisma = new PrismaClient({ adapter })
 
