@@ -1,15 +1,28 @@
 services:
-  db:
+  db_dev:
     image: postgres:18
     restart: unless-stopped
     environment:
       POSTGRES_USER: myuser
       POSTGRES_PASSWORD: mypassword
-      POSTGRES_DB: mydb
+      POSTGRES_DB: dev_db
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql
+      - postgres_dev_data:/var/lib/postgresql/data
+
+  db_test:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: test_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
 
 volumes:
-  postgres_data:
+  postgres_dev_data:
+  postgres_test_data:
