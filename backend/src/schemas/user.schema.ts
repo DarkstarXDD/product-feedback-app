@@ -20,6 +20,11 @@ export const userSchema = z.object({
     .string("Invalid username")
     .min(1, "Username cannot be empty")
     .max(30, "Username cannot have more than 30 characters")
+    .transform((val) => val.toLowerCase().trim())
+    .refine((val) => /^[a-z0-9_-]+$/.test(val), {
+      message:
+        "Username can only contain lowercase letters, numbers, underscores, or hyphens",
+    })
     .meta({
       example: "johndoe",
       description: "Unique username.",
