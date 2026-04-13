@@ -20,11 +20,9 @@ import env from "@/lib/env"
 // Turn off Pino pretty when in production
 const p = pino({
   ...(env.NODE_ENV !== "production"
-    ? {
-        transport: { target: "pino-pretty" },
-      }
+    ? { transport: { target: "pino-pretty" } }
     : {}),
-  level: "trace", // Enable all log levels
+  level: env.NODE_ENV === "test" ? "silent" : "trace",
 })
 
 const logLayer = new LogLayer({
