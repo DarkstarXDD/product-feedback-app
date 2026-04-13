@@ -5,7 +5,7 @@ import type { JsonErrorBody } from "@/lib/responses"
 import { paginationResponseSchema } from "@/schemas/pagination.schema"
 import { ERROR_CODES } from "@/lib/consts"
 
-/** Describes the standard jsonError response body. */
+/** Describes the standard `jsonError` response body. */
 export const jsonErrorSchema: z.ZodType<JsonErrorBody> = z.object({
   code: z.enum(ERROR_CODES),
   message: z.string(),
@@ -23,14 +23,12 @@ export const jsonErrorSchema: z.ZodType<JsonErrorBody> = z.object({
       formErrors: z
         .array(z.string())
         .optional()
-        .meta({
-          example: ["Invalid email or password"],
-        }),
+        .meta({ example: ["Invalid email or password"] }),
     })
     .optional(),
 })
 
-/** Wraps a response payload schema in the standard jsonSuccess envelope. */
+/** Describes the standard `jsonSucess` response body. */
 export function jsonSuccessSchema<TOutput, TInput = TOutput>(
   dataSchema: z.ZodType<TOutput, TInput>
 ) {
