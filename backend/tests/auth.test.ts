@@ -183,6 +183,34 @@ describe("POST /api/v1/auth/signup", () => {
   })
 
   // ---------------------------------------------------------
+  test("returns 400 when username contains a space", async () => {
+    const payload = createUserData()
+
+    const res = await app.request("/api/v1/auth/signup", {
+      body: JSON.stringify({
+        ...payload,
+        username: "john doe",
+      }),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+    })
+    const resBody = jsonErrorSchema.parse(await res.json())
+
+    expect(res.status).toBe(400)
+    expect(resBody).toMatchObject({
+      code: "VALIDATION_ERROR",
+      message: "Server validation fails",
+      errors: {
+        fieldErrors: {
+          username: [
+            "Username can only contain lowercase letters, numbers, underscores, or hyphens",
+          ],
+        },
+      },
+    })
+  })
+
+  // ---------------------------------------------------------
   test("returns 409 when username already exists", async () => {
     const payload = createUserData()
     const duplicatePayload = createUserData()
