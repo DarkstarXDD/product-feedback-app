@@ -24,11 +24,17 @@ import {
   jsonErrorSchema,
 } from "@/schemas/shared.schema"
 import {
+  jsonSuccess,
+  jsonError,
+  forbidden,
+  conflict,
+  notFound,
+} from "@/lib/responses"
+import {
   commentResponseSchema,
   commentCreateSchema,
 } from "@/schemas/comment.schema"
 import { mapSuggestionWithUpvoteStatus } from "@/lib/mappers/suggestion.mapper"
-import { jsonSuccess, forbidden, conflict, notFound } from "@/lib/responses"
 import { resolveAuthUser } from "@/middlewares/resolve-auth-user.middleware"
 import { requireRole } from "@/middlewares/require-role.middleware"
 import { upvoteResponseSchema } from "@/schemas/upvote.schema"
@@ -179,7 +185,8 @@ suggestionRouter.post(
             schema: resolver(jsonErrorSchema),
           },
         },
-        description: "Bad Request. Request body fails validation.",
+        description:
+          "Bad Request. Request body fails validation or categoryId does not exist.",
       },
       401: {
         content: {
@@ -206,16 +213,34 @@ suggestionRouter.post(
     const user = getUserOrThrow(c)
     const parsedData = c.req.valid("json")
 
-    const suggestion = await prisma.suggestion.create({
-      data: {
-        ...parsedData,
-        slug: generateSlug(parsedData.title),
-        userId: user.id,
-      },
-      select: suggestionCreateSelect,
-    })
+    try {
+      const suggestion = await prisma.suggestion.create({
+        data: {
+          ...parsedData,
+          slug: generateSlug(parsedData.title),
+          userId: user.id,
+        },
+        select: suggestionCreateSelect,
+      })
 
-    return jsonSuccess(c, { data: suggestion }, { status: 201 })
+      return jsonSuccess(c, { data: suggestion }, { status: 201 })
+    } catch (e) {
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === "P2003"
+      ) {
+        return jsonError(
+          c,
+          {
+            code: "VALIDATION_ERROR",
+            message: "Server validation fails",
+            errors: { fieldErrors: { categoryId: ["Invalid category Id"] } },
+          },
+          { status: 400 }
+        )
+      }
+      throw e
+    }
   }
 )
 
