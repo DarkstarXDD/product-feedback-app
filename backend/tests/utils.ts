@@ -11,7 +11,10 @@ export function createUserData() {
 
   return {
     name: faker.person.fullName(),
-    username: faker.internet.username(),
+    username: faker.internet
+      .username()
+      .toLowerCase()
+      .replace(/[^a-z0-9_-]/g, "_"),
     email: faker.internet.email(),
     password: password,
     confirmPassword: password,
