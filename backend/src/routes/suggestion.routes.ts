@@ -266,7 +266,8 @@ suggestionRouter.patch(
             schema: resolver(jsonErrorSchema),
           },
         },
-        description: "Bad Request. Request body fails validation.",
+        description:
+          "Bad Request. Request body fails validation or categoryId does not exist.",
       },
       401: {
         content: {
@@ -319,11 +320,19 @@ suggestionRouter.patch(
       })
       return jsonSuccess(c, { data: suggestion }, { status: 200 })
     } catch (e) {
-      if (
-        e instanceof Prisma.PrismaClientKnownRequestError &&
-        e.code === "P2025"
-      ) {
-        return forbidden(c, "Not allowed or forbidden")
+      if (e instanceof Prisma.PrismaClientKnownRequestError) {
+        if (e.code === "P2025") return forbidden(c, "Not allowed or forbidden")
+        if (e.code === "P2003") {
+          return jsonError(
+            c,
+            {
+              code: "VALIDATION_ERROR",
+              message: "Server validation fails",
+              errors: { fieldErrors: { categoryId: ["Invalid category Id"] } },
+            },
+            { status: 400 }
+          )
+        }
       }
       throw e
     }
