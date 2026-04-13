@@ -6,7 +6,7 @@ import * as z from "zod"
 import { formatZodErrors } from "@/lib/utils"
 import { jsonError } from "@/lib/responses"
 
-/** An abstraction on top of 'validator` from `hono-openapi'.
+/** An abstraction on top of `validator` from `hono-openapi`.
  * Accepts the `target` and a `schema`.
  * Grabs the value from the target on the incoming request and validates it using the schema.
  * If validation fails, returns a `jsonError`.
