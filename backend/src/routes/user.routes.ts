@@ -1,4 +1,4 @@
-import { describeRoute, resolver } from "hono-openapi"
+import { describeRoute } from "hono-openapi"
 import { Hono } from "hono"
 import * as z from "zod"
 
@@ -28,6 +28,7 @@ import { getTargetUserOrThrow } from "@/lib/context-helpers"
 import { zodValidator } from "@/middlewares/zod-validator"
 import { userUpdateSchema } from "@/schemas/user.schema"
 import { buildPagination } from "@/lib/pagination"
+import { jsonResponse } from "@/lib/openapi"
 import { prisma } from "@/db/client"
 
 const userRoutes = new Hono<AppContext>()
@@ -40,38 +41,22 @@ userRoutes.get(
     summary: "Get All Users",
     description: "Returns a paginated list of all users. Admin only.",
     responses: {
-      200: {
-        content: {
-          "application/json": {
-            schema: resolver(paginatedSuccessSchema(privateUserResponseSchema)),
-          },
-        },
-        description: "Successfully retrieved users.",
-      },
-      400: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonErrorSchema),
-          },
-        },
-        description: "Bad Request. Query parameters fail validation.",
-      },
-      401: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonErrorSchema),
-          },
-        },
-        description: "Unauthorized. User is not authenticated.",
-      },
-      403: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonErrorSchema),
-          },
-        },
-        description: "Forbidden. User does not have the required role.",
-      },
+      200: jsonResponse(
+        paginatedSuccessSchema(privateUserResponseSchema),
+        "Successfully retrieved users."
+      ),
+      400: jsonResponse(
+        jsonErrorSchema,
+        "Bad Request. Query parameters fail validation."
+      ),
+      401: jsonResponse(
+        jsonErrorSchema,
+        "Unauthorized. User is not authenticated."
+      ),
+      403: jsonResponse(
+        jsonErrorSchema,
+        "Forbidden. User does not have the required role."
+      ),
     },
   }),
   resolveAuthUser,
@@ -106,22 +91,11 @@ userRoutes.get(
     description:
       "Returns a user by username. Admins and the user themselves receive the full response. Unauthenticated users or other users receive only `name` and `username`.",
     responses: {
-      200: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonSuccessSchema(privateUserResponseSchema)),
-          },
-        },
-        description: "Successfully retrieved user.",
-      },
-      404: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonErrorSchema),
-          },
-        },
-        description: "Not Found. User does not exist.",
-      },
+      200: jsonResponse(
+        jsonSuccessSchema(privateUserResponseSchema),
+        "Successfully retrieved user."
+      ),
+      404: jsonResponse(jsonErrorSchema, "Not Found. User does not exist."),
     },
   }),
   resolveAuthUser,
@@ -156,46 +130,26 @@ userRoutes.patch(
     summary: "Update a User",
     description: "Updates an existing user by username.",
     responses: {
-      200: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonSuccessSchema(privateUserResponseSchema)),
-          },
-        },
-        description: "Successfully updated user.",
-      },
-      400: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonErrorSchema),
-          },
-        },
-        description: "Bad Request. Request body fails validation.",
-      },
-      401: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonErrorSchema),
-          },
-        },
-        description: "Unauthorized. User is not authenticated.",
-      },
-      403: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonErrorSchema),
-          },
-        },
-        description: "Forbidden. User does not have access.",
-      },
-      409: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonErrorSchema),
-          },
-        },
-        description: "Conflict. Email or username already exists.",
-      },
+      200: jsonResponse(
+        jsonSuccessSchema(privateUserResponseSchema),
+        "Successfully updated user."
+      ),
+      400: jsonResponse(
+        jsonErrorSchema,
+        "Bad Request. Request body fails validation."
+      ),
+      401: jsonResponse(
+        jsonErrorSchema,
+        "Unauthorized. User is not authenticated."
+      ),
+      403: jsonResponse(
+        jsonErrorSchema,
+        "Forbidden. User does not have access."
+      ),
+      409: jsonResponse(
+        jsonErrorSchema,
+        "Conflict. Email or username already exists."
+      ),
     },
   }),
   resolveAuthUser,
@@ -247,26 +201,16 @@ userRoutes.get(
     summary: "Get All Suggestions of a User",
     description: "Returns a paginated list of suggestions created by a user.",
     responses: {
-      200: {
-        content: {
-          "application/json": {
-            schema: resolver(
-              paginatedSuccessSchema(
-                z.array(suggestionWithViewerUpvoteResponseSchema)
-              )
-            ),
-          },
-        },
-        description: "Successfully retrieved suggestions.",
-      },
-      400: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonErrorSchema),
-          },
-        },
-        description: "Bad Request. Query parameters fail validation.",
-      },
+      200: jsonResponse(
+        paginatedSuccessSchema(
+          z.array(suggestionWithViewerUpvoteResponseSchema)
+        ),
+        "Successfully retrieved suggestions."
+      ),
+      400: jsonResponse(
+        jsonErrorSchema,
+        "Bad Request. Query parameters fail validation."
+      ),
     },
   }),
   resolveAuthUser,
@@ -310,26 +254,16 @@ userRoutes.get(
     summary: "Get All Upvoted Suggestions of a User",
     description: "Returns a paginated list of suggestions upvoted by a user.",
     responses: {
-      200: {
-        content: {
-          "application/json": {
-            schema: resolver(
-              paginatedSuccessSchema(
-                z.array(suggestionWithViewerUpvoteResponseSchema)
-              )
-            ),
-          },
-        },
-        description: "Successfully retrieved upvoted suggestions.",
-      },
-      400: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonErrorSchema),
-          },
-        },
-        description: "Bad Request. Query parameters fail validation.",
-      },
+      200: jsonResponse(
+        paginatedSuccessSchema(
+          z.array(suggestionWithViewerUpvoteResponseSchema)
+        ),
+        "Successfully retrieved upvoted suggestions."
+      ),
+      400: jsonResponse(
+        jsonErrorSchema,
+        "Bad Request. Query parameters fail validation."
+      ),
     },
   }),
   resolveAuthUser,
@@ -373,22 +307,14 @@ userRoutes.get(
     summary: "Get All Comments of a User",
     description: "Returns a paginated list of comments made by a user.",
     responses: {
-      200: {
-        content: {
-          "application/json": {
-            schema: resolver(paginatedSuccessSchema(commentResponseSchema)),
-          },
-        },
-        description: "Successfully retrieved comments.",
-      },
-      400: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonErrorSchema),
-          },
-        },
-        description: "Bad Request. Query parameters fail validation.",
-      },
+      200: jsonResponse(
+        paginatedSuccessSchema(commentResponseSchema),
+        "Successfully retrieved comments."
+      ),
+      400: jsonResponse(
+        jsonErrorSchema,
+        "Bad Request. Query parameters fail validation."
+      ),
     },
   }),
   zodValidator("query", paginationSchema),
