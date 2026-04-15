@@ -1,4 +1,4 @@
-import { describeRoute, resolver } from "hono-openapi"
+import { describeRoute } from "hono-openapi"
 import { Hono } from "hono"
 
 import {
@@ -18,6 +18,7 @@ import { commentSelect } from "@/lib/selects/comment.select"
 import { zodValidator } from "@/middlewares/zod-validator"
 import { getUserOrThrow } from "@/lib/context-helpers"
 import { buildPagination } from "@/lib/pagination"
+import { jsonResponse } from "@/lib/openapi"
 import { Prisma, prisma } from "@/db/client"
 
 const commentsRouter = new Hono()
@@ -30,38 +31,22 @@ commentsRouter.get(
     summary: "Get All Comments",
     description: "Returns a paginated list of all comments. Admin only.",
     responses: {
-      200: {
-        content: {
-          "application/json": {
-            schema: resolver(paginatedSuccessSchema(commentResponseSchema)),
-          },
-        },
-        description: "Successfully retrieved comments.",
-      },
-      400: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonErrorSchema),
-          },
-        },
-        description: "Bad Request. Query parameters fail validation.",
-      },
-      401: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonErrorSchema),
-          },
-        },
-        description: "Unauthorized. User is not authenticated.",
-      },
-      403: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonErrorSchema),
-          },
-        },
-        description: "Forbidden. User does not have the required role.",
-      },
+      200: jsonResponse(
+        paginatedSuccessSchema(commentResponseSchema),
+        "Successfully retrieved comments."
+      ),
+      400: jsonResponse(
+        jsonErrorSchema,
+        "Bad Request. Query parameters fail validation."
+      ),
+      401: jsonResponse(
+        jsonErrorSchema,
+        "Unauthorized. User is not authenticated."
+      ),
+      403: jsonResponse(
+        jsonErrorSchema,
+        "Forbidden. User does not have the required role."
+      ),
     },
   }),
   resolveAuthUser,
@@ -99,22 +84,11 @@ commentsRouter.get(
     summary: "Get a Comment",
     description: "Returns a single comment by id.",
     responses: {
-      200: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonSuccessSchema(commentResponseSchema)),
-          },
-        },
-        description: "Successfully retrieved comment.",
-      },
-      404: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonErrorSchema),
-          },
-        },
-        description: "Not Found. Comment does not exist.",
-      },
+      200: jsonResponse(
+        jsonSuccessSchema(commentResponseSchema),
+        "Successfully retrieved comment."
+      ),
+      404: jsonResponse(jsonErrorSchema, "Not Found. Comment does not exist."),
     },
   }),
   async (c) => {
@@ -141,46 +115,23 @@ commentsRouter.patch(
     summary: "Update a Comment",
     description: "Updates an existing comment by id.",
     responses: {
-      200: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonSuccessSchema(commentResponseSchema)),
-          },
-        },
-        description: "Successfully updated comment.",
-      },
-      400: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonErrorSchema),
-          },
-        },
-        description: "Bad Request. Request body fails validation.",
-      },
-      401: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonErrorSchema),
-          },
-        },
-        description: "Unauthorized. User is not authenticated.",
-      },
-      403: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonErrorSchema),
-          },
-        },
-        description: "Forbidden. User does not own the comment.",
-      },
-      404: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonErrorSchema),
-          },
-        },
-        description: "Not Found. Comment does not exist.",
-      },
+      200: jsonResponse(
+        jsonSuccessSchema(commentResponseSchema),
+        "Successfully updated comment."
+      ),
+      400: jsonResponse(
+        jsonErrorSchema,
+        "Bad Request. Request body fails validation."
+      ),
+      401: jsonResponse(
+        jsonErrorSchema,
+        "Unauthorized. User is not authenticated."
+      ),
+      403: jsonResponse(
+        jsonErrorSchema,
+        "Forbidden. User does not own the comment."
+      ),
+      404: jsonResponse(jsonErrorSchema, "Not Found. Comment does not exist."),
     },
   }),
   resolveAuthUser,
