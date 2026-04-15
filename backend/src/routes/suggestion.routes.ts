@@ -1,4 +1,4 @@
-import { describeRoute, resolver } from "hono-openapi"
+import { describeRoute } from "hono-openapi"
 import { Hono } from "hono"
 import * as z from "zod"
 
@@ -44,6 +44,7 @@ import { upvoteSelect } from "@/lib/selects/upvote.select"
 import { zodValidator } from "@/middlewares/zod-validator"
 import { getUserOrThrow } from "@/lib/context-helpers"
 import { buildPagination } from "@/lib/pagination"
+import { jsonResponse } from "@/lib/openapi"
 import { generateSlug } from "@/lib/utils"
 import { Prisma } from "@/db/client"
 import { prisma } from "@/db/client"
@@ -58,27 +59,16 @@ suggestionRouter.get(
     summary: "Get All Suggestions",
     description: "Returns a paginated list of suggestions.",
     responses: {
-      200: {
-        content: {
-          "application/json": {
-            schema: resolver(
-              paginatedSuccessSchema(
-                z.array(suggestionWithViewerUpvoteResponseSchema)
-              )
-            ),
-          },
-        },
-        description: "Successfully retrieved suggestions.",
-      },
-      400: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonErrorSchema),
-          },
-        },
-        description:
-          "Bad Request. Occurs when the query parameters fail validation.",
-      },
+      200: jsonResponse(
+        paginatedSuccessSchema(
+          z.array(suggestionWithViewerUpvoteResponseSchema)
+        ),
+        "Successfully retrieved suggestions."
+      ),
+      400: jsonResponse(
+        jsonErrorSchema,
+        "Bad Request. Occurs when the query parameters fail validation."
+      ),
     },
   }),
   resolveAuthUser,
@@ -119,24 +109,14 @@ suggestionRouter.get(
     description:
       "Returns a single suggestion by slug, including maximum of 10 comments. Use /:slug/comments to load all the comments.",
     responses: {
-      200: {
-        content: {
-          "application/json": {
-            schema: resolver(
-              jsonSuccessSchema(suggestionWithCommentsResponseSchema)
-            ),
-          },
-        },
-        description: "Successfully retrieved suggestion.",
-      },
-      404: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonErrorSchema),
-          },
-        },
-        description: "Not Found. Suggestion does not exist.",
-      },
+      200: jsonResponse(
+        jsonSuccessSchema(suggestionWithCommentsResponseSchema),
+        "Successfully retrieved suggestion."
+      ),
+      404: jsonResponse(
+        jsonErrorSchema,
+        "Not Found. Suggestion does not exist."
+      ),
     },
   }),
   resolveAuthUser,
@@ -171,39 +151,22 @@ suggestionRouter.post(
     summary: "Create a Suggestion",
     description: "Creates a new suggestion.",
     responses: {
-      201: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonSuccessSchema(suggestionCreateResponseSchema)),
-          },
-        },
-        description: "Successfully created suggestion.",
-      },
-      400: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonErrorSchema),
-          },
-        },
-        description:
-          "Bad Request. Request body fails validation or categoryId does not exist.",
-      },
-      401: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonErrorSchema),
-          },
-        },
-        description: "Unauthorized. User is not authenticated.",
-      },
-      403: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonErrorSchema),
-          },
-        },
-        description: "Forbidden. User does not have the required role.",
-      },
+      201: jsonResponse(
+        jsonSuccessSchema(suggestionCreateResponseSchema),
+        "Successfully created suggestion."
+      ),
+      400: jsonResponse(
+        jsonErrorSchema,
+        "Bad Request. Request body fails validation or categoryId does not exist."
+      ),
+      401: jsonResponse(
+        jsonErrorSchema,
+        "Unauthorized. User is not authenticated."
+      ),
+      403: jsonResponse(
+        jsonErrorSchema,
+        "Forbidden. User does not have the required role."
+      ),
     },
   }),
   resolveAuthUser,
@@ -252,47 +215,26 @@ suggestionRouter.patch(
     summary: "Update a Suggestion",
     description: "Updates an existing suggestion by slug.",
     responses: {
-      200: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonSuccessSchema(suggestionUpdateResponseSchema)),
-          },
-        },
-        description: "Successfully updated suggestion.",
-      },
-      400: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonErrorSchema),
-          },
-        },
-        description:
-          "Bad Request. Request body fails validation or categoryId does not exist.",
-      },
-      401: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonErrorSchema),
-          },
-        },
-        description: "Unauthorized. User is not authenticated.",
-      },
-      403: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonErrorSchema),
-          },
-        },
-        description: "Forbidden. User does not own the suggestion.",
-      },
-      404: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonErrorSchema),
-          },
-        },
-        description: "Not Found. Suggestion does not exist.",
-      },
+      200: jsonResponse(
+        jsonSuccessSchema(suggestionUpdateResponseSchema),
+        "Successfully updated suggestion."
+      ),
+      400: jsonResponse(
+        jsonErrorSchema,
+        "Bad Request. Request body fails validation or categoryId does not exist."
+      ),
+      401: jsonResponse(
+        jsonErrorSchema,
+        "Unauthorized. User is not authenticated."
+      ),
+      403: jsonResponse(
+        jsonErrorSchema,
+        "Forbidden. User does not own the suggestion."
+      ),
+      404: jsonResponse(
+        jsonErrorSchema,
+        "Not Found. Suggestion does not exist."
+      ),
     },
   }),
   resolveAuthUser,
@@ -347,46 +289,26 @@ suggestionRouter.post(
     summary: "Create a Comment",
     description: "Creates a new comment on a suggestion.",
     responses: {
-      201: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonSuccessSchema(commentResponseSchema)),
-          },
-        },
-        description: "Successfully created comment.",
-      },
-      400: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonErrorSchema),
-          },
-        },
-        description: "Bad Request. Request body fails validation.",
-      },
-      401: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonErrorSchema),
-          },
-        },
-        description: "Unauthorized. User is not authenticated.",
-      },
-      403: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonErrorSchema),
-          },
-        },
-        description: "Forbidden. User does not have the required role.",
-      },
-      404: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonErrorSchema),
-          },
-        },
-        description: "Not Found. Suggestion does not exist.",
-      },
+      201: jsonResponse(
+        jsonSuccessSchema(commentResponseSchema),
+        "Successfully created comment."
+      ),
+      400: jsonResponse(
+        jsonErrorSchema,
+        "Bad Request. Request body fails validation."
+      ),
+      401: jsonResponse(
+        jsonErrorSchema,
+        "Unauthorized. User is not authenticated."
+      ),
+      403: jsonResponse(
+        jsonErrorSchema,
+        "Forbidden. User does not have the required role."
+      ),
+      404: jsonResponse(
+        jsonErrorSchema,
+        "Not Found. Suggestion does not exist."
+      ),
     },
   }),
   resolveAuthUser,
@@ -432,25 +354,14 @@ suggestionRouter.get(
     summary: "Get All Comments for a Suggestion",
     description: "Returns a paginated list of comments for a suggestion.",
     responses: {
-      200: {
-        content: {
-          "application/json": {
-            schema: resolver(
-              paginatedSuccessSchema(z.array(commentResponseSchema))
-            ),
-          },
-        },
-        description: "Successfully retrieved comments.",
-      },
-      400: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonErrorSchema),
-          },
-        },
-        description:
-          "Bad Request. Occurs when the query parameters fail validation.",
-      },
+      200: jsonResponse(
+        paginatedSuccessSchema(z.array(commentResponseSchema)),
+        "Successfully retrieved comments."
+      ),
+      400: jsonResponse(
+        jsonErrorSchema,
+        "Bad Request. Occurs when the query parameters fail validation."
+      ),
     },
   }),
   zodValidator("query", paginationSchema),
@@ -484,46 +395,26 @@ suggestionRouter.post(
     summary: "Upvote a Suggestion",
     description: "Creates an upvote on a suggestion.",
     responses: {
-      201: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonSuccessSchema(upvoteResponseSchema)),
-          },
-        },
-        description: "Successfully upvoted suggestion.",
-      },
-      401: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonErrorSchema),
-          },
-        },
-        description: "Unauthorized. User is not authenticated.",
-      },
-      403: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonErrorSchema),
-          },
-        },
-        description: "Forbidden. User does not have the required role.",
-      },
-      404: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonErrorSchema),
-          },
-        },
-        description: "Not Found. Suggestion does not exist.",
-      },
-      409: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonErrorSchema),
-          },
-        },
-        description: "Conflict. Suggestion already upvoted.",
-      },
+      201: jsonResponse(
+        jsonSuccessSchema(upvoteResponseSchema),
+        "Successfully upvoted suggestion."
+      ),
+      401: jsonResponse(
+        jsonErrorSchema,
+        "Unauthorized. User is not authenticated."
+      ),
+      403: jsonResponse(
+        jsonErrorSchema,
+        "Forbidden. User does not have the required role."
+      ),
+      404: jsonResponse(
+        jsonErrorSchema,
+        "Not Found. Suggestion does not exist."
+      ),
+      409: jsonResponse(
+        jsonErrorSchema,
+        "Conflict. Suggestion already upvoted."
+      ),
     },
   }),
   resolveAuthUser,
@@ -563,30 +454,15 @@ suggestionRouter.delete(
       204: {
         description: "Successfully removed upvote.",
       },
-      401: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonErrorSchema),
-          },
-        },
-        description: "Unauthorized. User is not authenticated.",
-      },
-      403: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonErrorSchema),
-          },
-        },
-        description: "Forbidden. User does not have the required role.",
-      },
-      404: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonErrorSchema),
-          },
-        },
-        description: "Not Found. Upvote does not exist.",
-      },
+      401: jsonResponse(
+        jsonErrorSchema,
+        "Unauthorized. User is not authenticated."
+      ),
+      403: jsonResponse(
+        jsonErrorSchema,
+        "Forbidden. User does not have the required role."
+      ),
+      404: jsonResponse(jsonErrorSchema, "Not Found. Upvote does not exist."),
     },
   }),
   resolveAuthUser,
