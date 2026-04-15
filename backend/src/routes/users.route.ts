@@ -31,10 +31,10 @@ import { buildPagination } from "@/lib/pagination"
 import { jsonResponse } from "@/lib/openapi"
 import { prisma } from "@/db/client"
 
-const userRoutes = new Hono<AppContext>()
+const usersRouter = new Hono<AppContext>()
 
 // ------------------------------- Get All Users --------------------------------
-userRoutes.get(
+usersRouter.get(
   "/",
   describeRoute({
     tags: ["Users"],
@@ -83,7 +83,7 @@ userRoutes.get(
 )
 
 // ------------------------------- Get a User ----------------------------------
-userRoutes.get(
+usersRouter.get(
   "/:username",
   describeRoute({
     tags: ["Users"],
@@ -123,7 +123,7 @@ userRoutes.get(
 )
 
 // --------------------------------- Update a User ------------------------------
-userRoutes.patch(
+usersRouter.patch(
   "/:username",
   describeRoute({
     tags: ["Users"],
@@ -194,7 +194,7 @@ userRoutes.patch(
 )
 
 // ---------------------------- Get All Suggestions of a User -------------------------
-userRoutes.get(
+usersRouter.get(
   "/:username/suggestions",
   describeRoute({
     tags: ["Users"],
@@ -247,7 +247,7 @@ userRoutes.get(
 )
 
 // ---------------------------- Get All Upvoted Suggestions of a User -------------------------
-userRoutes.get(
+usersRouter.get(
   "/:username/upvotes",
   describeRoute({
     tags: ["Users"],
@@ -300,7 +300,7 @@ userRoutes.get(
 )
 
 // ------------------------------- GET All Comments of a User --------------------------------
-userRoutes.get(
+usersRouter.get(
   "/:username/comments",
   describeRoute({
     tags: ["Users"],
@@ -344,4 +344,4 @@ userRoutes.get(
   }
 )
 
-export default userRoutes
+export default usersRouter

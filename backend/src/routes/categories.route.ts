@@ -9,10 +9,10 @@ import { jsonSuccess } from "@/lib/responses"
 import { jsonResponse } from "@/lib/openapi"
 import { prisma } from "@/db/client"
 
-const categoryRoutes = new Hono()
+const categoriesRouter = new Hono()
 
 // ------------------------------- GET All Categories --------------------------------
-categoryRoutes.get(
+categoriesRouter.get(
   "/",
   describeRoute({
     tags: ["Categories"],
@@ -35,4 +35,4 @@ categoryRoutes.get(
   }
 )
 
-export default categoryRoutes
+export default categoriesRouter

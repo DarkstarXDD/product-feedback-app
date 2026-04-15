@@ -9,10 +9,10 @@ import { jsonSuccess } from "@/lib/responses"
 import { jsonResponse } from "@/lib/openapi"
 import { prisma } from "@/db/client"
 
-const statusRoutes = new Hono()
+const statusesRouter = new Hono()
 
 // ------------------------------- GET All Statuses --------------------------------
-statusRoutes.get(
+statusesRouter.get(
   "/",
   describeRoute({
     tags: ["Statuses"],
@@ -35,4 +35,4 @@ statusRoutes.get(
   }
 )
 
-export default statusRoutes
+export default statusesRouter

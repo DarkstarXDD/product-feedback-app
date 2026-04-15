@@ -49,10 +49,10 @@ import { generateSlug } from "@/lib/utils"
 import { Prisma } from "@/db/client"
 import { prisma } from "@/db/client"
 
-const suggestionRouter = new Hono()
+const suggestionsRouter = new Hono()
 
 // ------------------------------- GET All Suggestions --------------------------------
-suggestionRouter.get(
+suggestionsRouter.get(
   "/",
   describeRoute({
     tags: ["Suggestions"],
@@ -101,7 +101,7 @@ suggestionRouter.get(
 )
 
 // ------------------------------- GET a Suggestion --------------------------------
-suggestionRouter.get(
+suggestionsRouter.get(
   "/:slug",
   describeRoute({
     tags: ["Suggestions"],
@@ -144,7 +144,7 @@ suggestionRouter.get(
 )
 
 // ------------------------------- Create a Suggestion --------------------------------
-suggestionRouter.post(
+suggestionsRouter.post(
   "/",
   describeRoute({
     tags: ["Suggestions"],
@@ -208,7 +208,7 @@ suggestionRouter.post(
 )
 
 // ------------------------------- Update a Suggestion --------------------------------
-suggestionRouter.patch(
+suggestionsRouter.patch(
   "/:slug",
   describeRoute({
     tags: ["Suggestions"],
@@ -282,7 +282,7 @@ suggestionRouter.patch(
 )
 
 // ------------------------------- Create a Comment for a Suggestion --------------------------------
-suggestionRouter.post(
+suggestionsRouter.post(
   "/:slug/comments",
   describeRoute({
     tags: ["Suggestions"],
@@ -347,7 +347,7 @@ suggestionRouter.post(
 )
 
 // ------------------------------- Get All Comments for a Suggestion --------------------------------
-suggestionRouter.get(
+suggestionsRouter.get(
   "/:slug/comments",
   describeRoute({
     tags: ["Suggestions"],
@@ -388,7 +388,7 @@ suggestionRouter.get(
 )
 
 // ------------------------------- Create an Upvote for a Suggestion --------------------------------
-suggestionRouter.post(
+suggestionsRouter.post(
   "/:slug/upvotes",
   describeRoute({
     tags: ["Suggestions"],
@@ -444,7 +444,7 @@ suggestionRouter.post(
 )
 
 // ------------------------------- Delete an Upvote for a Suggestion --------------------------------
-suggestionRouter.delete(
+suggestionsRouter.delete(
   "/:slug/upvotes",
   describeRoute({
     tags: ["Suggestions"],
@@ -494,4 +494,4 @@ suggestionRouter.delete(
 
 // Delete suggestion is not yet implemented.
 
-export default suggestionRouter
+export default suggestionsRouter
