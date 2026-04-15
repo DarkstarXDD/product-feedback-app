@@ -4,7 +4,7 @@ import * as z from "zod"
 
 import { categoryResponseSchema } from "@/schemas/category.schema"
 import { categorySelect } from "@/lib/selects/category.select"
-import { jsonSuccessSchema } from "@/schemas/shared.schema"
+import { jsonSuccessSchema } from "@/schemas/response.schema"
 import { jsonSuccess } from "@/lib/responses"
 import { jsonResponse } from "@/lib/openapi"
 import { prisma } from "@/db/client"

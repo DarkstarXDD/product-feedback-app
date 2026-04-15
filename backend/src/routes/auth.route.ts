@@ -14,7 +14,7 @@ import {
   hashPassword,
   createJWT,
 } from "@/lib/session"
-import { jsonSuccessSchema, jsonErrorSchema } from "@/schemas/shared.schema"
+import { jsonSuccessSchema, jsonErrorSchema } from "@/schemas/response.schema"
 import { unauthorized, jsonSuccess, conflict } from "@/lib/responses"
 import { privateUserSelect } from "@/lib/selects/user.select"
 import { zodValidator } from "@/middleware/zod-validator"

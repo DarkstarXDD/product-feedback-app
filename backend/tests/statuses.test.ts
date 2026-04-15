@@ -2,7 +2,7 @@ import { describe, expect, test } from "vitest"
 import * as z from "zod"
 
 import { statusResponseSchema } from "@/schemas/status.schema"
-import { jsonSuccessSchema } from "@/schemas/shared.schema"
+import { jsonSuccessSchema } from "@/schemas/response.schema"
 import app from "@/app"
 
 describe("GET /api/v1/statuses", () => {

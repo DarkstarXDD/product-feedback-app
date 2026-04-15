@@ -2,7 +2,7 @@ import { describe, expect, test } from "vitest"
 import * as z from "zod"
 
 import { categoryResponseSchema } from "@/schemas/category.schema"
-import { jsonSuccessSchema } from "@/schemas/shared.schema"
+import { jsonSuccessSchema } from "@/schemas/response.schema"
 import app from "@/app"
 
 describe("GET /api/v1/categories", () => {

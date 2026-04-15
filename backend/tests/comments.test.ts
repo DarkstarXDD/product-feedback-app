@@ -6,7 +6,7 @@ import {
   paginatedSuccessSchema,
   jsonSuccessSchema,
   jsonErrorSchema,
-} from "@/schemas/shared.schema"
+} from "@/schemas/response.schema"
 import { commentResponseSchema } from "@/schemas/comment.schema"
 import app from "@/app"
 

@@ -12,7 +12,7 @@ import {
   paginatedSuccessSchema,
   jsonSuccessSchema,
   jsonErrorSchema,
-} from "@/schemas/shared.schema"
+} from "@/schemas/response.schema"
 import { suggestionWithViewerUpvoteResponseSchema } from "@/schemas/suggestion.schema"
 import { privateUserSelect, publicUserSelect } from "@/lib/selects/user.select"
 import { mapSuggestionWithUpvoteStatus } from "@/lib/mappers/suggestion.mapper"
