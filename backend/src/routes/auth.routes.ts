@@ -1,4 +1,4 @@
-import { describeRoute, resolver } from "hono-openapi"
+import { describeRoute } from "hono-openapi"
 import { deleteCookie } from "hono/cookie"
 import { Hono } from "hono"
 
@@ -18,6 +18,7 @@ import { jsonSuccessSchema, jsonErrorSchema } from "@/schemas/shared.schema"
 import { unauthorized, jsonSuccess, conflict } from "@/lib/responses"
 import { privateUserSelect } from "@/lib/selects/user.select"
 import { zodValidator } from "@/middlewares/zod-validator"
+import { jsonResponse } from "@/lib/openapi"
 import { prisma } from "@/db/client"
 
 const authRouter = new Hono()
@@ -30,31 +31,18 @@ authRouter.post(
     summary: "Sign Up",
     description: "Create a new User.",
     responses: {
-      201: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonSuccessSchema(signUpResponseSchema)),
-          },
-        },
-        description: "Successfully created a user.",
-      },
-      400: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonErrorSchema),
-          },
-        },
-        description: "Bad Request. Request body fails validation.",
-      },
-      409: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonErrorSchema),
-          },
-        },
-        description:
-          "Conflict. Provided email or username already exists in the database.",
-      },
+      201: jsonResponse(
+        jsonSuccessSchema(signUpResponseSchema),
+        "Successfully created a user."
+      ),
+      400: jsonResponse(
+        jsonErrorSchema,
+        "Bad Request. Request body fails validation."
+      ),
+      409: jsonResponse(
+        jsonErrorSchema,
+        "Conflict. Provided email or username already exists in the database."
+      ),
     },
   }),
   zodValidator("json", signUpSchema),
@@ -103,30 +91,18 @@ authRouter.post(
     summary: "Sign In",
     description: "Sign in to your account.",
     responses: {
-      200: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonSuccessSchema(signInResponseSchema)),
-          },
-        },
-        description: "Successfully signed in.",
-      },
-      400: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonErrorSchema),
-          },
-        },
-        description: "Bad Request. Request body fails validation.",
-      },
-      401: {
-        content: {
-          "application/json": {
-            schema: resolver(jsonErrorSchema),
-          },
-        },
-        description: "Unauthorized. Email or password is invalid.",
-      },
+      200: jsonResponse(
+        jsonSuccessSchema(signInResponseSchema),
+        "Successfully signed in."
+      ),
+      400: jsonResponse(
+        jsonErrorSchema,
+        "Bad Request. Request body fails validation."
+      ),
+      401: jsonResponse(
+        jsonErrorSchema,
+        "Unauthorized. Email or password is invalid."
+      ),
     },
   }),
   zodValidator("json", signInSchema),
