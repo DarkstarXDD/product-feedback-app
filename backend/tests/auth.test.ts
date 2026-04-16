@@ -4,7 +4,7 @@ import {
   signUpResponseSchema,
   signInResponseSchema,
 } from "@/schemas/auth.schema"
-import { jsonSuccessSchema, jsonErrorSchema } from "@/schemas/shared.schema"
+import { jsonSuccessSchema, jsonErrorSchema } from "@/schemas/response.schema"
 import { prisma } from "@/db/client"
 import app from "@/app"
 

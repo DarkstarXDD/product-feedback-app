@@ -12,29 +12,29 @@ import {
   paginatedSuccessSchema,
   jsonSuccessSchema,
   jsonErrorSchema,
-} from "@/schemas/shared.schema"
+} from "@/schemas/response.schema"
 import { suggestionWithViewerUpvoteResponseSchema } from "@/schemas/suggestion.schema"
 import { privateUserSelect, publicUserSelect } from "@/lib/selects/user.select"
 import { mapSuggestionWithUpvoteStatus } from "@/lib/mappers/suggestion.mapper"
-import { withTargetAccess } from "@/middlewares/with-target-access.middleware"
-import { resolveAuthUser } from "@/middlewares/resolve-auth-user.middleware"
-import { requireRole } from "@/middlewares/require-role.middleware"
+import { withTargetAccess } from "@/middleware/with-target-access"
 import { privateUserResponseSchema } from "@/schemas/user.schema"
 import { jsonSuccess, conflict, notFound } from "@/lib/responses"
+import { resolveAuthUser } from "@/middleware/resolve-auth-user"
 import { commentResponseSchema } from "@/schemas/comment.schema"
 import { paginationSchema } from "@/schemas/pagination.schema"
 import { commentSelect } from "@/lib/selects/comment.select"
 import { getTargetUserOrThrow } from "@/lib/context-helpers"
-import { zodValidator } from "@/middlewares/zod-validator"
+import { zodValidator } from "@/middleware/zod-validator"
 import { userUpdateSchema } from "@/schemas/user.schema"
+import { requireRole } from "@/middleware/require-role"
 import { buildPagination } from "@/lib/pagination"
 import { jsonResponse } from "@/lib/openapi"
 import { prisma } from "@/db/client"
 
-const userRoutes = new Hono<AppContext>()
+const usersRouter = new Hono<AppContext>()
 
 // ------------------------------- Get All Users --------------------------------
-userRoutes.get(
+usersRouter.get(
   "/",
   describeRoute({
     tags: ["Users"],
@@ -83,7 +83,7 @@ userRoutes.get(
 )
 
 // ------------------------------- Get a User ----------------------------------
-userRoutes.get(
+usersRouter.get(
   "/:username",
   describeRoute({
     tags: ["Users"],
@@ -123,7 +123,7 @@ userRoutes.get(
 )
 
 // --------------------------------- Update a User ------------------------------
-userRoutes.patch(
+usersRouter.patch(
   "/:username",
   describeRoute({
     tags: ["Users"],
@@ -194,7 +194,7 @@ userRoutes.patch(
 )
 
 // ---------------------------- Get All Suggestions of a User -------------------------
-userRoutes.get(
+usersRouter.get(
   "/:username/suggestions",
   describeRoute({
     tags: ["Users"],
@@ -247,7 +247,7 @@ userRoutes.get(
 )
 
 // ---------------------------- Get All Upvoted Suggestions of a User -------------------------
-userRoutes.get(
+usersRouter.get(
   "/:username/upvotes",
   describeRoute({
     tags: ["Users"],
@@ -300,7 +300,7 @@ userRoutes.get(
 )
 
 // ------------------------------- GET All Comments of a User --------------------------------
-userRoutes.get(
+usersRouter.get(
   "/:username/comments",
   describeRoute({
     tags: ["Users"],
@@ -344,4 +344,4 @@ userRoutes.get(
   }
 )
 
-export default userRoutes
+export default usersRouter

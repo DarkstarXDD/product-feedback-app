@@ -5,17 +5,17 @@ import {
   paginatedSuccessSchema,
   jsonSuccessSchema,
   jsonErrorSchema,
-} from "@/schemas/shared.schema"
+} from "@/schemas/response.schema"
 import {
   commentResponseSchema,
   commentUpdateSchema,
 } from "@/schemas/comment.schema"
-import { resolveAuthUser } from "@/middlewares/resolve-auth-user.middleware"
-import { requireRole } from "@/middlewares/require-role.middleware"
 import { jsonSuccess, forbidden, notFound } from "@/lib/responses"
+import { resolveAuthUser } from "@/middleware/resolve-auth-user"
 import { paginationSchema } from "@/schemas/pagination.schema"
 import { commentSelect } from "@/lib/selects/comment.select"
-import { zodValidator } from "@/middlewares/zod-validator"
+import { zodValidator } from "@/middleware/zod-validator"
+import { requireRole } from "@/middleware/require-role"
 import { getUserOrThrow } from "@/lib/context-helpers"
 import { buildPagination } from "@/lib/pagination"
 import { jsonResponse } from "@/lib/openapi"

@@ -8,12 +8,12 @@ import { LogLayer } from "loglayer"
 import { Hono } from "hono"
 import { pino } from "pino"
 
-import suggestionRouter from "@/routes/suggestion.routes"
-import categoryRoutes from "@/routes/category.routes"
+import suggestionsRouter from "@/routes/suggestions.route"
+import categoriesRouter from "@/routes/categories.route"
 import commentsRouter from "@/routes/comments.route"
-import statusRoutes from "@/routes/status.routes"
-import authRouter from "@/routes/auth.routes"
-import userRoutes from "@/routes/user.routes"
+import statusesRouter from "@/routes/statuses.route"
+import usersRouter from "@/routes/users.route"
+import authRouter from "@/routes/auth.route"
 import { jsonError } from "@/lib/responses"
 import env from "@/lib/env"
 
@@ -75,10 +75,10 @@ app.get(
 app.get("/scalar", Scalar({ url: "/openapi.json" }))
 
 api.route("/auth", authRouter)
-api.route("/users", userRoutes)
-api.route("/categories", categoryRoutes)
-api.route("/statuses", statusRoutes)
-api.route("/suggestions", suggestionRouter)
+api.route("/users", usersRouter)
+api.route("/categories", categoriesRouter)
+api.route("/statuses", statusesRouter)
+api.route("/suggestions", suggestionsRouter)
 api.route("/comments", commentsRouter)
 
 /** Mount API instance on app. */

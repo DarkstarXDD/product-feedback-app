@@ -14,10 +14,10 @@ import {
   hashPassword,
   createJWT,
 } from "@/lib/session"
-import { jsonSuccessSchema, jsonErrorSchema } from "@/schemas/shared.schema"
+import { jsonSuccessSchema, jsonErrorSchema } from "@/schemas/response.schema"
 import { unauthorized, jsonSuccess, conflict } from "@/lib/responses"
 import { privateUserSelect } from "@/lib/selects/user.select"
-import { zodValidator } from "@/middlewares/zod-validator"
+import { zodValidator } from "@/middleware/zod-validator"
 import { jsonResponse } from "@/lib/openapi"
 import { prisma } from "@/db/client"
 
