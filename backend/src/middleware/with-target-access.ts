@@ -14,31 +14,30 @@ type WithTargetAccessContext = {
   Variables: Pick<HonoInstanceVariables, "targetUser" | "access" | "user">
 }
 
-type WithTargetAccessOptions = {
+type Options = {
   requireSelfOrAdmin?: boolean
 }
 
 /**
- * Loads target user from :username, computes access flags, and optionally enforces self/admin access.
+ * Looks up targetUser and sets it in context. If `targetUser` is not found throws an error.
+ * Computes and sets `isSelf` and `isAdmin`.
+ * If `requireSelfOrAdmin` is true and user is not self or admin, throws an error.
  *
- * - Always sets `targetUser` and `access` when target exists.
- * - If `requireSelfOrAdmin` is enabled, returns 401 (unauthenticated) or 403 (forbidden).
+ * This middleware should be mounted on a route that has a `:username` param. Otherwise this will throw an error.
  */
 export function withTargetAccess(
-  options: WithTargetAccessOptions = {}
+  options: Options = {}
 ): MiddlewareHandler<WithTargetAccessContext> {
   return async (c, next) => {
     const username = c.req.param("username")
 
     if (!username) {
-      // Should never happen in production.
-      // If it does, this middleware was mounted on a route that does not have a :username param.
       return internalError(c)
     }
 
     const targetUser = await prisma.user.findUnique({
-      select: { username: true, id: true },
       where: { username },
+      select: { id: true, username: true },
     })
 
     if (!targetUser) {
@@ -46,7 +45,7 @@ export function withTargetAccess(
     }
 
     const user = c.get("user")
-    const isAdmin = user?.role === "ADMIN"
+    const isAdmin = !!user && user.role === "ADMIN"
     const isSelf = !!user && user.id === targetUser.id
 
     c.set("targetUser", targetUser)
