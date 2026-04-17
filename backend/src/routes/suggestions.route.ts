@@ -42,7 +42,6 @@ import { commentSelect } from "@/lib/selects/comment.select"
 import { upvoteSelect } from "@/lib/selects/upvote.select"
 import { zodValidator } from "@/middleware/zod-validator"
 import { requireRole } from "@/middleware/require-role"
-import { getUserOrThrow } from "@/lib/context-helpers"
 import { buildPagination } from "@/lib/pagination"
 import { jsonResponse } from "@/lib/openapi"
 import { generateSlug } from "@/lib/utils"
@@ -173,7 +172,7 @@ suggestionsRouter.post(
   requireRole("ADMIN", "USER"),
   zodValidator("json", suggestionCreateSchema),
   async (c) => {
-    const user = getUserOrThrow(c)
+    const user = c.get("user")
     const parsedData = c.req.valid("json")
 
     try {
@@ -241,7 +240,7 @@ suggestionsRouter.patch(
   requireRole("ADMIN", "USER"),
   zodValidator("json", suggestionUpdateSchema),
   async (c) => {
-    const user = getUserOrThrow(c)
+    const user = c.get("user")
     const slug = c.req.param("slug")
     const parsedData = c.req.valid("json")
 
@@ -316,7 +315,7 @@ suggestionsRouter.post(
   zodValidator("json", commentCreateSchema),
   async (c) => {
     const slug = c.req.param("slug")
-    const user = getUserOrThrow(c)
+    const user = c.get("user")
     const parsedData = c.req.valid("json")
 
     /** Can't use foreign key approach if one connect is used.
@@ -421,7 +420,7 @@ suggestionsRouter.post(
   requireRole("ADMIN", "USER"),
   async (c) => {
     const slug = c.req.param("slug")
-    const user = getUserOrThrow(c)
+    const user = c.get("user")
 
     try {
       const upvote = await prisma.upvote.create({
@@ -469,7 +468,7 @@ suggestionsRouter.delete(
   requireRole("ADMIN", "USER"),
   async (c) => {
     const slug = c.req.param("slug")
-    const user = getUserOrThrow(c)
+    const user = c.get("user")
 
     /**
      * `delete` would need a unique clause like `id` or the compound

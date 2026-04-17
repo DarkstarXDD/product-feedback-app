@@ -16,7 +16,6 @@ import { paginationSchema } from "@/schemas/pagination.schema"
 import { commentSelect } from "@/lib/selects/comment.select"
 import { zodValidator } from "@/middleware/zod-validator"
 import { requireRole } from "@/middleware/require-role"
-import { getUserOrThrow } from "@/lib/context-helpers"
 import { buildPagination } from "@/lib/pagination"
 import { jsonResponse } from "@/lib/openapi"
 import { Prisma, prisma } from "@/db/client"
@@ -139,7 +138,7 @@ commentsRouter.patch(
   zodValidator("json", commentUpdateSchema),
   async (c) => {
     const commentId = c.req.param("id")
-    const { id, role } = getUserOrThrow(c)
+    const { id, role } = c.get("user")
     const parsedData = c.req.valid("json")
 
     const existing = await prisma.comment.findUnique({
