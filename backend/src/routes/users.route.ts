@@ -21,7 +21,6 @@ import { resolveAuthUser } from "@/middleware/resolve-auth-user"
 import { commentResponseSchema } from "@/schemas/comment.schema"
 import { paginationSchema } from "@/schemas/pagination.schema"
 import { commentSelect } from "@/lib/selects/comment.select"
-import { getTargetUserOrThrow } from "@/lib/context-helpers"
 import { zodValidator } from "@/middleware/zod-validator"
 import { userUpdateSchema } from "@/schemas/user.schema"
 import { requireRole } from "@/middleware/require-role"
@@ -100,12 +99,10 @@ usersRouter.get(
   withTargetAccess(),
   async (c) => {
     const access = c.get("access")
-    const targetUser = getTargetUserOrThrow(c)
+    const targetUser = c.get("targetUser")
 
     const select =
-      access && (access.isAdmin || access.isSelf)
-        ? privateUserSelect
-        : publicUserSelect
+      access.isAdmin || access.isSelf ? privateUserSelect : publicUserSelect
 
     const user = await prisma.user.findUnique({
       where: { id: targetUser.id },
@@ -154,7 +151,7 @@ usersRouter.patch(
   withTargetAccess({ requireSelfOrAdmin: true }),
   zodValidator("json", userUpdateSchema),
   async (c) => {
-    const targetUser = getTargetUserOrThrow(c)
+    const targetUser = c.get("targetUser")
     const parsedData = c.req.valid("json")
 
     // Check conflicts only for fields being updated, excluding target user
