@@ -13,17 +13,9 @@ export type AuthUser = {
 }
 
 export type HonoInstanceVariables = {
-  access?: {
-    isAdmin: boolean
-    isSelf: boolean
-  }
-
-  targetUser?: {
-    username: string
-    id: string
-  }
-
   user?: AuthUser
+  access: { isAdmin: boolean; isSelf: boolean }
+  targetUser: { id: string; username: string }
 } & JwtVariables<JwtPayload | undefined>
 
 export type AppContext = {
