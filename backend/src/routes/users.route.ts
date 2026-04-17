@@ -2,8 +2,6 @@ import { describeRoute } from "hono-openapi"
 import { Hono } from "hono"
 import * as z from "zod"
 
-import type { AppContext } from "@/lib/types"
-
 import {
   suggestionWithViewerUpvoteSelect,
   suggestionBaseSelect,
@@ -31,7 +29,7 @@ import { buildPagination } from "@/lib/pagination"
 import { jsonResponse } from "@/lib/openapi"
 import { prisma } from "@/db/client"
 
-const usersRouter = new Hono<AppContext>()
+const usersRouter = new Hono()
 
 // ------------------------------- Get All Users --------------------------------
 usersRouter.get(

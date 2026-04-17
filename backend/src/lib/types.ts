@@ -12,7 +12,7 @@ type AuthUser = {
   role: Role
 }
 
-type HonoInstanceVariables = {
+export type HonoInstanceVariables = {
   access?: {
     isAdmin: boolean
     isSelf: boolean
