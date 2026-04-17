@@ -14,7 +14,7 @@ type WithTargetAccessContext = {
   Variables: Pick<HonoInstanceVariables, "targetUser" | "access" | "user">
 }
 
-type WithTargetAccessOptions = {
+type Options = {
   requireSelfOrAdmin?: boolean
 }
 
@@ -25,7 +25,7 @@ type WithTargetAccessOptions = {
  * - If `requireSelfOrAdmin` is enabled, returns 401 (unauthenticated) or 403 (forbidden).
  */
 export function withTargetAccess(
-  options: WithTargetAccessOptions = {}
+  options: Options = {}
 ): MiddlewareHandler<WithTargetAccessContext> {
   return async (c, next) => {
     const username = c.req.param("username")
