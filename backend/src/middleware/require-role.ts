@@ -10,8 +10,8 @@ type RequireRoleContext = {
 }
 
 /**
- * Requires an authenticated user and enforces that the user's role is one of the allowed roles.
- * Returns 401 if unauthenticated and 403 if authenticated but not permitted.
+ * Guarantees that `user` exists with the required roles.
+ * If user doesn't exist returns 401. If user doesn't have the role returns 403.
  */
 export function requireRole(
   ...allowedRoles: Role[]
