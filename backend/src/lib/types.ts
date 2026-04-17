@@ -4,7 +4,7 @@ export type JwtPayload = { userId: string; exp: number }
 
 export type Role = "ADMIN" | "USER"
 
-type AuthUser = {
+export type AuthUser = {
   username: string
   email: string
   name: string

@@ -1,12 +1,11 @@
 import type { MiddlewareHandler } from "hono"
 
-import type { HonoInstanceVariables, Role } from "@/lib/types"
-import type {} from "@/lib/types"
+import type { AuthUser, Role } from "@/lib/types"
 
 import { unauthorized, forbidden } from "@/lib/responses"
 
 type RequireRoleContext = {
-  Variables: Pick<HonoInstanceVariables, "user">
+  Variables: { user: AuthUser }
 }
 
 /**
@@ -23,6 +22,7 @@ export function requireRole(
   return async (c, next) => {
     const user = c.get("user")
 
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (!user) {
       return unauthorized(c)
     }
@@ -34,3 +34,12 @@ export function requireRole(
     await next()
   }
 }
+
+/**
+ * This middleware guarantees `user` is defined. If not, it returns 401 before calling next().
+ * To reflect that guarantee, `user` is typed as `AuthUser` (not `AuthUser | undefined`) so
+ * downstream handlers in the chain see a non-optional user after this middleware runs.
+ *
+ * The trade-off: TypeScript now considers `user` always defined inside this body too,
+ * making the `if (!user)` guard above appear redundant. That's why the eslint-disable.
+ */
