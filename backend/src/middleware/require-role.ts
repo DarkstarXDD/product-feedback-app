@@ -6,7 +6,7 @@ import type {} from "@/lib/types"
 import { unauthorized, forbidden } from "@/lib/responses"
 
 type RequireRoleContext = {
-  Variables: Pick<HonoInstanceVariables, "jwtPayload" | "user">
+  Variables: Pick<HonoInstanceVariables, "user">
 }
 
 /**

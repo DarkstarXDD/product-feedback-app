@@ -1,6 +1,6 @@
 import type { MiddlewareHandler } from "hono"
 
-import type { AppContext } from "@/lib/types"
+import type { HonoInstanceVariables } from "@/lib/types"
 
 import {
   internalError,
@@ -9,6 +9,10 @@ import {
   notFound,
 } from "@/lib/responses"
 import { prisma } from "@/db/client"
+
+type WithTargetAccessContext = {
+  Variables: Pick<HonoInstanceVariables, "targetUser" | "access" | "user">
+}
 
 type WithTargetAccessOptions = {
   requireSelfOrAdmin?: boolean
@@ -22,7 +26,7 @@ type WithTargetAccessOptions = {
  */
 export function withTargetAccess(
   options: WithTargetAccessOptions = {}
-): MiddlewareHandler<AppContext> {
+): MiddlewareHandler<WithTargetAccessContext> {
   return async (c, next) => {
     const username = c.req.param("username")
 
