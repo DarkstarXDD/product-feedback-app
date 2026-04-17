@@ -3,8 +3,7 @@ import type { MiddlewareHandler } from "hono"
 import { getCookie } from "hono/cookie"
 import { verify } from "hono/jwt"
 
-import type { HonoInstanceVariables } from "@/lib/types"
-import type { JwtPayload } from "@/lib/types"
+import type { HonoInstanceVariables, JwtPayload } from "@/lib/types"
 
 import { prisma } from "@/db/client"
 import env from "@/lib/env"
