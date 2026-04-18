@@ -38,8 +38,8 @@ export const resolveAuthUser: MiddlewareHandler<
   }
 
   const user = await prisma.user.findUnique({
-    select: { username: true, email: true, role: true, name: true, id: true },
     where: { id: jwtPayload.userId },
+    select: { id: true, name: true, username: true, email: true, role: true },
   })
 
   if (user) {

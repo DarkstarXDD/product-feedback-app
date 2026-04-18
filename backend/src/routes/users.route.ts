@@ -73,8 +73,8 @@ usersRouter.get(
     ])
 
     return jsonSuccess(c, {
-      meta: { pagination: buildPagination({ page, pageSize, totalItems }) },
       data: users,
+      meta: { pagination: buildPagination({ page, pageSize, totalItems }) },
     })
   }
 )
@@ -101,19 +101,17 @@ usersRouter.get(
     const access = c.get("access")
     const targetUser = c.get("targetUser")
 
-    const select =
-      access.isAdmin || access.isSelf ? privateUserSelect : publicUserSelect
-
     const user = await prisma.user.findUnique({
       where: { id: targetUser.id },
-      select,
+      select:
+        access.isAdmin || access.isSelf ? privateUserSelect : publicUserSelect,
     })
 
     if (!user) {
       return notFound(c, "User not found")
     }
 
-    return jsonSuccess(c, { data: user })
+    return jsonSuccess(c, { data: user }, { status: 200 })
   }
 )
 
