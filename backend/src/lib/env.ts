@@ -5,6 +5,7 @@ import { formatZodErrors } from "@/lib/utils"
 const envSchema = z.object({
   JWT_SECRET: z.string("JWT Secret is not defined"),
   DATABASE_URL: z.url("Database URL is not defined"),
+  DIRECT_URL: z.url("Direct database URL is not defined"),
   NODE_ENV: z.string().default("development"),
 })
 
