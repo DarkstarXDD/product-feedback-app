@@ -3,12 +3,6 @@ import { deleteCookie } from "hono/cookie"
 import { Hono } from "hono"
 
 import {
-  signInResponseSchema,
-  signUpResponseSchema,
-  signUpSchema,
-  signInSchema,
-} from "@/schemas/auth.schema"
-import {
   verifyPassword,
   setAuthCookie,
   hashPassword,
@@ -16,6 +10,8 @@ import {
 } from "@/lib/session"
 import { jsonSuccessSchema, jsonErrorSchema } from "@/schemas/response.schema"
 import { unauthorized, jsonSuccess, conflict } from "@/lib/responses"
+import { signUpSchema, signInSchema } from "@/schemas/auth.schema"
+import { privateUserResponseSchema } from "@/schemas/user.schema"
 import { privateUserSelect } from "@/lib/selects/user.select"
 import { zodValidator } from "@/middleware/zod-validator"
 import { jsonResponse } from "@/lib/openapi"
@@ -32,7 +28,7 @@ authRouter.post(
     description: "Create a new User.",
     responses: {
       201: jsonResponse(
-        jsonSuccessSchema(signUpResponseSchema),
+        jsonSuccessSchema(privateUserResponseSchema),
         "Successfully created a user."
       ),
       400: jsonResponse(
@@ -92,7 +88,7 @@ authRouter.post(
     description: "Sign in to your account.",
     responses: {
       200: jsonResponse(
-        jsonSuccessSchema(signInResponseSchema),
+        jsonSuccessSchema(privateUserResponseSchema),
         "Successfully signed in."
       ),
       400: jsonResponse(

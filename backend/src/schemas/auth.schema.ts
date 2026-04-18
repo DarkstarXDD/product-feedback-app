@@ -1,6 +1,5 @@
 import * as z from "zod"
 
-import { privateUserResponseSchema } from "@/schemas/user.schema"
 import { userSchema } from "@/schemas/user.schema"
 
 // --------------------- SignUp Schema -----------------------
@@ -28,9 +27,6 @@ export const signUpSchema = userSchema
     path: ["confirmPassword"],
   })
 
-// --------------------- SignUp Response Schema -----------------------
-export const signUpResponseSchema = privateUserResponseSchema
-
 // ------------------------ SignIn Schema ---------------------
 export const signInSchema = z.object({
   email: z.email("Invalid email").toLowerCase().meta({
@@ -48,6 +44,3 @@ export const signInSchema = z.object({
       "x-order": 2,
     }),
 })
-
-// --------------------- SignIn Response Schema -----------------------
-export const signInResponseSchema = privateUserResponseSchema
