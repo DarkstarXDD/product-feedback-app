@@ -13,9 +13,9 @@ export function buildPagination({
   pageSize,
   totalItems,
 }: {
-  totalItems: number
-  pageSize: number
   page: number
+  pageSize: number
+  totalItems: number
 }): Pagination {
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
 
