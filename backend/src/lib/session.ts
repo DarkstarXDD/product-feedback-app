@@ -2,10 +2,12 @@ import type { Context } from "hono"
 
 import { compare, hash } from "bcryptjs"
 import { setCookie } from "hono/cookie"
-import { sign } from "hono/jwt"
+import { verify, sign } from "hono/jwt"
 
 import { JWT_TTL_SECONDS } from "@/lib/consts"
 import env from "@/lib/env"
+
+export type JWTPayload = { userId: string; exp: number }
 
 /** Returns the hash for a plain string password. A wrapper around `hash` from `bcryptjs` with a fixed salt. */
 export async function hashPassword(password: string) {
@@ -36,4 +38,14 @@ export function setAuthCookie(context: Context, token: string) {
     secure: true,
     path: "/",
   })
+}
+
+/** Verifies the JWT and returns the payload or undefined. */
+export async function verifyJWT(token: string) {
+  try {
+    const jwtPayload = await verify(token, env.JWT_SECRET, { alg: "HS256" })
+    return jwtPayload as JWTPayload
+  } catch {
+    return undefined
+  }
 }
