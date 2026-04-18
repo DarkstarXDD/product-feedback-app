@@ -4,6 +4,7 @@ import { getCookie } from "hono/cookie"
 
 import type { HonoInstanceVariables } from "@/lib/types"
 
+import { privateUserSelect } from "@/lib/selects/user.select"
 import { verifyJWT } from "@/lib/session"
 import { prisma } from "@/db/client"
 
@@ -35,7 +36,7 @@ export const resolveAuthUser: MiddlewareHandler<
 
   const user = await prisma.user.findUnique({
     where: { id: jwtPayload.userId },
-    select: { id: true, name: true, username: true, email: true, role: true },
+    select: privateUserSelect,
   })
 
   if (user) {

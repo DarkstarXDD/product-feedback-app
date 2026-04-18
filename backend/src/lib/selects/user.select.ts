@@ -25,6 +25,10 @@ export const privateUserSelect = {
   _count: true,
 } as const satisfies Prisma.UserSelect
 
+export type PrivateUser = Prisma.UserGetPayload<{
+  select: typeof privateUserSelect
+}>
+
 export type PrivateUserResponse = Serialize<
   Prisma.UserGetPayload<{
     select: typeof privateUserSelect
