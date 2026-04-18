@@ -72,8 +72,8 @@ authRouter.post(
     }
 
     const user = await prisma.user.create({
+      data: { name, username, email, password: hashedPassword },
       select: privateUserSelect,
-      data: { password: hashedPassword, username, email, name },
     })
 
     const token = await createJWT(user.id)
