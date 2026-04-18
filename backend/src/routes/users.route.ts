@@ -39,7 +39,7 @@ usersRouter.get(
     description: "Returns a paginated list of all users. Admin only.",
     responses: {
       200: jsonResponse(
-        paginatedSuccessSchema(privateUserResponseSchema),
+        paginatedSuccessSchema(z.array(privateUserResponseSchema)),
         "Successfully retrieved users."
       ),
       400: jsonResponse(
