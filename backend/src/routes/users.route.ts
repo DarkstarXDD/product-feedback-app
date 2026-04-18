@@ -61,14 +61,13 @@ usersRouter.get(
   zodValidator("query", paginationSchema),
   async (c) => {
     const { pageSize, page } = c.req.valid("query")
-    const skip = (page - 1) * pageSize
 
     const [totalItems, users] = await Promise.all([
       prisma.user.count(),
       prisma.user.findMany({
         select: privateUserSelect,
         take: pageSize,
-        skip,
+        skip: (page - 1) * pageSize,
       }),
     ])
 
@@ -212,7 +211,6 @@ usersRouter.get(
     const username = c.req.param("username")
     const user = c.get("user")
     const { pageSize, page } = c.req.valid("query")
-    const skip = (page - 1) * pageSize
 
     const [totalItems, suggestions] = await Promise.all([
       prisma.suggestion.count({
@@ -224,7 +222,7 @@ usersRouter.get(
           : suggestionBaseSelect,
         where: { user: { username } },
         take: pageSize,
-        skip,
+        skip: (page - 1) * pageSize,
       }),
     ])
 
@@ -265,7 +263,6 @@ usersRouter.get(
     const username = c.req.param("username")
     const user = c.get("user")
     const { pageSize, page } = c.req.valid("query")
-    const skip = (page - 1) * pageSize
 
     const where = { upvotes: { some: { user: { username } } } } as const
 
@@ -277,7 +274,7 @@ usersRouter.get(
           : suggestionBaseSelect,
         take: pageSize,
         where,
-        skip,
+        skip: (page - 1) * pageSize,
       }),
     ])
 
@@ -314,7 +311,6 @@ usersRouter.get(
   async (c) => {
     const username = c.req.param("username")
     const { pageSize, page } = c.req.valid("query")
-    const skip = (page - 1) * pageSize
 
     const [totalItems, comments] = await Promise.all([
       prisma.comment.count({ where: { user: { username } } }),
@@ -322,7 +318,7 @@ usersRouter.get(
         select: commentSelect,
         take: pageSize,
         where: { user: { username } },
-        skip,
+        skip: (page - 1) * pageSize,
       }),
     ])
 
