@@ -1,12 +1,12 @@
 import type { MiddlewareHandler } from "hono"
 
 import { getCookie } from "hono/cookie"
-import { verify } from "hono/jwt"
 
-import type { HonoInstanceVariables, JwtPayload } from "@/lib/types"
+import type { HonoInstanceVariables } from "@/lib/types"
 
+import { privateUserSelect } from "@/lib/selects/user.select"
+import { verifyJWT } from "@/lib/session"
 import { prisma } from "@/db/client"
-import env from "@/lib/env"
 
 type ResolveAuthUserContext = {
   Variables: Pick<HonoInstanceVariables, "jwtPayload" | "user">
@@ -26,20 +26,17 @@ export const resolveAuthUser: MiddlewareHandler<
     return
   }
 
-  let jwtPayload: JwtPayload
-  try {
-    jwtPayload = (await verify(token, env.JWT_SECRET, {
-      alg: "HS256",
-    })) as JwtPayload
-  } catch {
+  const jwtPayload = await verifyJWT(token)
+
+  if (!jwtPayload) {
     c.set("jwtPayload", undefined)
     await next()
     return
   }
 
   const user = await prisma.user.findUnique({
-    select: { username: true, email: true, role: true, name: true, id: true },
     where: { id: jwtPayload.userId },
+    select: privateUserSelect,
   })
 
   if (user) {

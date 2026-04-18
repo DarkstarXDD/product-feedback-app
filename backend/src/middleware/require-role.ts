@@ -1,11 +1,12 @@
 import type { MiddlewareHandler } from "hono"
 
-import type { AuthUser, Role } from "@/lib/types"
+import type { PrivateUser } from "@/lib/selects/user.select"
+import type { Role } from "@/lib/types"
 
 import { unauthorized, forbidden } from "@/lib/responses"
 
 type RequireRoleContext = {
-  Variables: { user: AuthUser }
+  Variables: { user: PrivateUser }
 }
 
 /**

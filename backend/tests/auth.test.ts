@@ -1,10 +1,7 @@
 import { beforeEach, describe, expect, test } from "vitest"
 
-import {
-  signUpResponseSchema,
-  signInResponseSchema,
-} from "@/schemas/auth.schema"
 import { jsonSuccessSchema, jsonErrorSchema } from "@/schemas/response.schema"
+import { privateUserResponseSchema } from "@/schemas/user.schema"
 import { prisma } from "@/db/client"
 import app from "@/app"
 
@@ -22,7 +19,7 @@ describe("POST /api/v1/auth/signup", () => {
       headers: { "Content-Type": "application/json" },
       method: "POST",
     })
-    const resBody = jsonSuccessSchema(signUpResponseSchema).parse(
+    const resBody = jsonSuccessSchema(privateUserResponseSchema).parse(
       await res.json()
     )
 
@@ -295,7 +292,7 @@ describe("POST /api/v1/auth/signin", () => {
       method: "POST",
     })
 
-    const signinResBody = jsonSuccessSchema(signInResponseSchema).parse(
+    const signinResBody = jsonSuccessSchema(privateUserResponseSchema).parse(
       await signinRes.json()
     )
 

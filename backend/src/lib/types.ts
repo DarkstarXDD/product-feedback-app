@@ -1,22 +1,15 @@
 import type { JwtVariables } from "hono/jwt"
 
-export type JwtPayload = { userId: string; exp: number }
+import type { PrivateUser } from "@/lib/selects/user.select"
+import type { JWTPayload } from "@/lib/session"
 
-export type Role = "ADMIN" | "USER"
-
-export type AuthUser = {
-  username: string
-  email: string
-  name: string
-  id: string
-  role: Role
-}
+export type { Role } from "@/db/client"
 
 export type HonoInstanceVariables = {
-  user?: AuthUser
+  user?: PrivateUser
   access: { isAdmin: boolean; isSelf: boolean }
   targetUser: { id: string; username: string }
-} & JwtVariables<JwtPayload | undefined>
+} & JwtVariables<JWTPayload | undefined>
 
 export type AppContext = {
   Variables: HonoInstanceVariables
