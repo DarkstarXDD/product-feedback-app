@@ -1,12 +1,11 @@
-import { type HonoLogLayerVariables, honoLogLayer } from "@loglayer/hono"
-import { PinoTransport } from "@loglayer/transport-pino"
+import { structuredLogger } from "@hono/structured-logger"
 import { HTTPException } from "hono/http-exception"
 import { Scalar } from "@scalar/hono-api-reference"
 import { openAPIRouteHandler } from "hono-openapi"
 import { poweredBy } from "hono/powered-by"
-import { LogLayer } from "loglayer"
+import { requestId } from "hono/request-id"
+import { type Logger, pino } from "pino"
 import { Hono } from "hono"
-import { pino } from "pino"
 
 import suggestionsRouter from "@/routes/suggestions.route"
 import categoriesRouter from "@/routes/categories.route"
@@ -17,27 +16,35 @@ import authRouter from "@/routes/auth.route"
 import { jsonError } from "@/lib/responses"
 import env from "@/lib/env"
 
-// Turn off Pino pretty when in production
-const p = pino({
-  ...(env.NODE_ENV !== "production"
-    ? { transport: { target: "pino-pretty" } }
-    : {}),
+// Pino-pretty is disabled in production. Logging is disabled in testing.
+const pinoLogger = pino({
+  transport:
+    env.NODE_ENV !== "production" ? { target: "pino-pretty" } : undefined,
   level: env.NODE_ENV === "test" ? "silent" : "trace",
 })
 
-const logLayer = new LogLayer({
-  transport: new PinoTransport({
-    logger: p,
-  }),
-})
-
-const app = new Hono<{ Variables: HonoLogLayerVariables }>()
+const app = new Hono<{ Variables: { pinoLogger: Logger } }>()
 const api = new Hono()
 
 app.use(poweredBy())
-app.use(honoLogLayer({ instance: logLayer }))
+app.use(requestId())
 
-/** By default Hono returns a text response for notFound. I wanted a JSON response. */
+app.use(
+  structuredLogger({
+    createLogger: (c) => pinoLogger.child({ requestId: c.var.requestId }),
+    onRequest: (logger, c) => {
+      logger.info(
+        {
+          method: c.req.method,
+          path: c.req.path,
+          userAgent: c.req.header("user-agent"),
+        },
+        "incoming request"
+      )
+    },
+  })
+)
+
 app.notFound((c) => {
   return jsonError(
     c,
@@ -48,9 +55,6 @@ app.notFound((c) => {
 
 /** Global error handler. */
 app.onError((err, c) => {
-  const logger = c.get("logger")
-  logger.errorOnly(err)
-
   if (err instanceof HTTPException) {
     return err.getResponse()
   }
