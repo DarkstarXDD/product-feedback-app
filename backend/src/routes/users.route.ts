@@ -333,4 +333,33 @@ usersRouter.get(
   }
 )
 
+// ------------------------------- Delete a User --------------------------------
+usersRouter.delete(
+  "/:username",
+  describeRoute({
+    tags: ["Users"],
+    summary: "Delete a User",
+    description: "Deletes a user by username.",
+    responses: {
+      204: { description: "Successfully deleted user." },
+      401: jsonResponse(
+        jsonErrorSchema,
+        "Unauthorized. User is not authenticated."
+      ),
+      403: jsonResponse(
+        jsonErrorSchema,
+        "Forbidden. User does not have access."
+      ),
+      404: jsonResponse(jsonErrorSchema, "Not Found. User does not exist."),
+    },
+  }),
+  resolveAuthUser,
+  withTargetAccess({ requireSelfOrAdmin: true }),
+  async (c) => {
+    const targetUser = c.get("targetUser")
+    await prisma.user.delete({ where: { id: targetUser.id } })
+    return c.body(null, 204)
+  }
+)
+
 export default usersRouter
