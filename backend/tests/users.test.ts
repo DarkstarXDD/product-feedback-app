@@ -541,3 +541,81 @@ describe("GET /api/v1/users/:username/comments", () => {
     })
   })
 })
+
+//--------------------------- DELETE /api/v1/users/:username ---------------------------------
+describe("DELETE /api/v1/users/:username", () => {
+  test("returns 401 when unauthenticated", async () => {
+    const { user } = await createUser("USER")
+
+    const res = await app.request(`/api/v1/users/${user.username}`, {
+      method: "DELETE",
+    })
+    const resBody = jsonErrorSchema.parse(await res.json())
+
+    expect(res.status).toBe(401)
+    expect(resBody).toMatchObject({
+      code: "UNAUTHORIZED",
+      message: "Unauthorized",
+    })
+  })
+
+  // ---------------------------------------------------------
+  test("returns 403 when user tries to delete another user", async () => {
+    const { token } = await createUserSession("USER")
+    const { user: targetUser } = await createUser("USER")
+
+    const res = await app.request(`/api/v1/users/${targetUser.username}`, {
+      headers: { cookie: `token=${token}` },
+      method: "DELETE",
+    })
+    const resBody = jsonErrorSchema.parse(await res.json())
+
+    expect(res.status).toBe(403)
+    expect(resBody).toMatchObject({
+      code: "FORBIDDEN",
+      message: "Forbidden",
+    })
+  })
+
+  // ---------------------------------------------------------
+  test("returns 204 when user deletes themselves", async () => {
+    const { token, user } = await createUserSession("USER")
+
+    const res = await app.request(`/api/v1/users/${user.username}`, {
+      headers: { cookie: `token=${token}` },
+      method: "DELETE",
+    })
+
+    expect(res.status).toBe(204)
+  })
+
+  // ---------------------------------------------------------
+  test("returns 204 when admin deletes any user", async () => {
+    const { token } = await createUserSession("ADMIN")
+    const { user: targetUser } = await createUser("USER")
+
+    const res = await app.request(`/api/v1/users/${targetUser.username}`, {
+      headers: { cookie: `token=${token}` },
+      method: "DELETE",
+    })
+
+    expect(res.status).toBe(204)
+  })
+
+  // ---------------------------------------------------------
+  test("returns 404 when user does not exist", async () => {
+    const { token } = await createUserSession("USER")
+
+    const res = await app.request(`/api/v1/users/does-not-exist`, {
+      headers: { cookie: `token=${token}` },
+      method: "DELETE",
+    })
+    const resBody = jsonErrorSchema.parse(await res.json())
+
+    expect(res.status).toBe(404)
+    expect(resBody).toMatchObject({
+      code: "NOT_FOUND",
+      message: "User not found",
+    })
+  })
+})

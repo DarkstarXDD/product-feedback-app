@@ -171,4 +171,57 @@ commentsRouter.patch(
   }
 )
 
+// ------------------------------- Delete a Comment --------------------------------
+commentsRouter.delete(
+  "/:id",
+  describeRoute({
+    tags: ["Comments"],
+    summary: "Delete a Comment",
+    description: "Deletes a comment by it's id.",
+    responses: {
+      204: { description: "Successfully deleted comment." },
+      401: jsonResponse(
+        jsonErrorSchema,
+        "Unauthorized. User is not authenticated."
+      ),
+      403: jsonResponse(
+        jsonErrorSchema,
+        "Forbidden. User does not own the comment."
+      ),
+      404: jsonResponse(jsonErrorSchema, "Not Found. Comment does not exist."),
+    },
+  }),
+  resolveAuthUser,
+  requireRole("ADMIN", "USER"),
+  async (c) => {
+    const commentId = c.req.param("id")
+    const { id, role } = c.get("user")
+
+    const comment = await prisma.comment.findUnique({
+      where: { id: commentId },
+      select: { id: true },
+    })
+
+    if (!comment) {
+      return notFound(c, "Comment not found")
+    }
+
+    try {
+      await prisma.comment.delete({
+        where:
+          role === "ADMIN" ? { id: commentId } : { id: commentId, userId: id },
+      })
+      return c.body(null, 204)
+    } catch (e) {
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === "P2025"
+      ) {
+        return forbidden(c, "Not allowed or forbidden")
+      }
+      throw e
+    }
+  }
+)
+
 export default commentsRouter

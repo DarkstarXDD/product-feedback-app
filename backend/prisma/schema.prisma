@@ -42,7 +42,7 @@ model Suggestion {
   title       String
   slug        String    @unique
   description String
-  user        User      @relation(fields: [userId], references: [id])
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId      String
   category    Category  @relation(fields: [categoryId], references: [id])
   categoryId  String
@@ -57,18 +57,18 @@ model Comment {
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
   content      String
-  user         User       @relation(fields: [userId], references: [id])
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId       String
-  suggestion   Suggestion @relation(fields: [suggestionId], references: [id])
+  suggestion   Suggestion @relation(fields: [suggestionId], references: [id], onDelete: Cascade)
   suggestionId String
 }
 
 model Upvote {
   id           String     @id @default(cuid())
   createdAt    DateTime   @default(now())
-  user         User       @relation(fields: [userId], references: [id])
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId       String
-  suggestion   Suggestion @relation(fields: [suggestionId], references: [id])
+  suggestion   Suggestion @relation(fields: [suggestionId], references: [id], onDelete: Cascade)
   suggestionId String
 
   @@unique([userId, suggestionId])
