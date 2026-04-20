@@ -79,18 +79,6 @@ export const suggestionWithCommentsAndViewerUpvoteSelect = (userId: string) =>
 /** Fields that are included in the response when a suggestion is created. */
 export const suggestionCreateSelect = suggestionBaseSelect
 
-export type SuggestionCreateResponse = Serialize<
-  Prisma.SuggestionGetPayload<{
-    select: typeof suggestionCreateSelect
-  }>
->
-
 // ------------------------------- Update Suggestion Response --------------------------------
 /** Fields that are included in the response when a suggestion is updated. */
 export const suggestionUpdateSelect = suggestionBaseSelect
-
-export type SuggestionUpdateResponse = Serialize<
-  Prisma.SuggestionGetPayload<{
-    select: typeof suggestionUpdateSelect
-  }>
->

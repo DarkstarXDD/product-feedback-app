@@ -23,7 +23,6 @@
   "dependencies": {
     "@hono/standard-validator": "0.2.2",
     "@hono/structured-logger": "0.1.0",
-    "@hono/zod-validator": "0.7.6",
     "@prisma/adapter-neon": "7.7.0",
     "@prisma/adapter-pg": "7.7.0",
     "@prisma/client": "7.7.0",
