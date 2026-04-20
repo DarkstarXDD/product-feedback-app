@@ -275,3 +275,82 @@ describe("PATCH /api/v1/comments/:id", () => {
     })
   })
 })
+
+//--------------------------- DELETE /api/v1/comments/:id ---------------------------------
+describe("DELETE /api/v1/comments/:id", () => {
+  test("returns 401 when unauthenticated", async () => {
+    const { comment } = await createCommentScenario()
+
+    const res = await app.request(`/api/v1/comments/${comment.id}`, {
+      method: "DELETE",
+    })
+    const resBody = jsonErrorSchema.parse(await res.json())
+
+    expect(res.status).toBe(401)
+    expect(resBody).toMatchObject({
+      code: "UNAUTHORIZED",
+      message: "Unauthorized",
+    })
+  })
+
+  // ---------------------------------------------------------
+  test("returns 403 when user tries to delete another user's comment", async () => {
+    const { token } = await createUserSession("USER")
+    const { comment } = await createCommentScenario()
+
+    const res = await app.request(`/api/v1/comments/${comment.id}`, {
+      headers: { cookie: `token=${token}` },
+      method: "DELETE",
+    })
+    const resBody = jsonErrorSchema.parse(await res.json())
+
+    expect(res.status).toBe(403)
+    expect(resBody).toMatchObject({
+      code: "FORBIDDEN",
+      message: "Not allowed or forbidden",
+    })
+  })
+
+  // ---------------------------------------------------------
+  test("returns 204 when user deletes their own comment", async () => {
+    const { token, user } = await createUserSession("USER")
+    const { comment } = await createCommentScenario(user.id)
+
+    const res = await app.request(`/api/v1/comments/${comment.id}`, {
+      headers: { cookie: `token=${token}` },
+      method: "DELETE",
+    })
+
+    expect(res.status).toBe(204)
+  })
+
+  // ---------------------------------------------------------
+  test("returns 204 when admin deletes any comment", async () => {
+    const { token } = await createUserSession("ADMIN")
+    const { comment } = await createCommentScenario()
+
+    const res = await app.request(`/api/v1/comments/${comment.id}`, {
+      headers: { cookie: `token=${token}` },
+      method: "DELETE",
+    })
+
+    expect(res.status).toBe(204)
+  })
+
+  // ---------------------------------------------------------
+  test("returns 404 when comment does not exist", async () => {
+    const { token } = await createUserSession("USER")
+
+    const res = await app.request(`/api/v1/comments/does-not-exist`, {
+      headers: { cookie: `token=${token}` },
+      method: "DELETE",
+    })
+    const resBody = jsonErrorSchema.parse(await res.json())
+
+    expect(res.status).toBe(404)
+    expect(resBody).toMatchObject({
+      code: "NOT_FOUND",
+      message: "Comment not found",
+    })
+  })
+})
