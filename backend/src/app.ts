@@ -1,7 +1,9 @@
+import { structuredLogger } from "@hono/structured-logger"
 import { HTTPException } from "hono/http-exception"
 import { Scalar } from "@scalar/hono-api-reference"
 import { openAPIRouteHandler } from "hono-openapi"
 import { poweredBy } from "hono/powered-by"
+import { requestId } from "hono/request-id"
 import { type Logger, pino } from "pino"
 import { Hono } from "hono"
 
@@ -14,11 +16,10 @@ import authRouter from "@/routes/auth.route"
 import { jsonError } from "@/lib/responses"
 import env from "@/lib/env"
 
-// Turn off Pino pretty when in production
+// Pino-pretty is disabled in production. Logging is disabled in testing.
 const pinoLogger = pino({
-  ...(env.NODE_ENV !== "production"
-    ? { transport: { target: "pino-pretty" } }
-    : {}),
+  transport:
+    env.NODE_ENV !== "production" ? { target: "pino-pretty" } : undefined,
   level: env.NODE_ENV === "test" ? "silent" : "trace",
 })
 
@@ -26,27 +27,24 @@ const app = new Hono<{ Variables: { pinoLogger: Logger } }>()
 const api = new Hono()
 
 app.use(poweredBy())
+app.use(requestId())
 
-app.use((c, next) => {
-  const requestLogger = pinoLogger.child({
-    requestId: crypto.randomUUID(),
-    path: c.req.path,
-    method: c.req.method,
+app.use(
+  structuredLogger({
+    createLogger: (c) => pinoLogger.child({ requestId: c.var.requestId }),
+    onRequest: (logger, c) => {
+      logger.info(
+        {
+          method: c.req.method,
+          path: c.req.path,
+          userAgent: c.req.header("user-agent"),
+        },
+        "incoming request"
+      )
+    },
   })
-  c.set("pinoLogger", requestLogger)
-  return next()
-})
+)
 
-app.use(async (c, next) => {
-  const log = c.get("pinoLogger")
-  log.info({ method: c.req.method, path: c.req.path }, "incoming request")
-
-  await next()
-
-  log.info({ status: c.res.status }, "request completed")
-})
-
-/** By default Hono returns a text response for notFound. I wanted a JSON response. */
 app.notFound((c) => {
   return jsonError(
     c,
