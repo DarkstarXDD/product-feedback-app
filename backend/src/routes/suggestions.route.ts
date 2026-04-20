@@ -491,6 +491,59 @@ suggestionsRouter.delete(
   }
 )
 
-// Delete suggestion is not yet implemented.
+// ------------------------------- Delete a Suggestion --------------------------------
+suggestionsRouter.delete(
+  "/:slug",
+  describeRoute({
+    tags: ["Suggestions"],
+    summary: "Delete a Suggestion",
+    description: "Delete a suggestion by slug.",
+    responses: {
+      204: { description: "Successfully deleted suggestion." },
+      401: jsonResponse(
+        jsonErrorSchema,
+        "Unauthorized. User is not authenticated."
+      ),
+      403: jsonResponse(
+        jsonErrorSchema,
+        "Forbidden. User does not own the suggestion."
+      ),
+      404: jsonResponse(
+        jsonErrorSchema,
+        "Not Found. Suggestion does not exist."
+      ),
+    },
+  }),
+  resolveAuthUser,
+  requireRole("ADMIN", "USER"),
+  async (c) => {
+    const slug = c.req.param("slug")
+    const { id, role } = c.get("user")
+
+    const suggestion = await prisma.suggestion.findUnique({
+      where: { slug },
+      select: { id: true },
+    })
+
+    if (!suggestion) {
+      return notFound(c, "Suggestion not found.")
+    }
+
+    try {
+      await prisma.suggestion.delete({
+        where: role === "ADMIN" ? { slug } : { slug, userId: id },
+      })
+      return c.body(null, 204)
+    } catch (e) {
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === "P2025"
+      ) {
+        return forbidden(c, "Not allowed or forbidden")
+      }
+      throw e
+    }
+  }
+)
 
 export default suggestionsRouter
