@@ -1,12 +1,9 @@
-import { type HonoLogLayerVariables, honoLogLayer } from "@loglayer/hono"
-import { PinoTransport } from "@loglayer/transport-pino"
 import { HTTPException } from "hono/http-exception"
 import { Scalar } from "@scalar/hono-api-reference"
 import { openAPIRouteHandler } from "hono-openapi"
 import { poweredBy } from "hono/powered-by"
-import { LogLayer } from "loglayer"
+import { type Logger, pino } from "pino"
 import { Hono } from "hono"
-import { pino } from "pino"
 
 import suggestionsRouter from "@/routes/suggestions.route"
 import categoriesRouter from "@/routes/categories.route"
@@ -18,24 +15,36 @@ import { jsonError } from "@/lib/responses"
 import env from "@/lib/env"
 
 // Turn off Pino pretty when in production
-const p = pino({
+const pinoLogger = pino({
   ...(env.NODE_ENV !== "production"
     ? { transport: { target: "pino-pretty" } }
     : {}),
   level: env.NODE_ENV === "test" ? "silent" : "trace",
 })
 
-const logLayer = new LogLayer({
-  transport: new PinoTransport({
-    logger: p,
-  }),
-})
-
-const app = new Hono<{ Variables: HonoLogLayerVariables }>()
+const app = new Hono<{ Variables: { pinoLogger: Logger } }>()
 const api = new Hono()
 
 app.use(poweredBy())
-app.use(honoLogLayer({ instance: logLayer }))
+
+app.use((c, next) => {
+  const requestLogger = pinoLogger.child({
+    requestId: crypto.randomUUID(),
+    path: c.req.path,
+    method: c.req.method,
+  })
+  c.set("pinoLogger", requestLogger)
+  return next()
+})
+
+app.use(async (c, next) => {
+  const log = c.get("pinoLogger")
+  log.info({ method: c.req.method, path: c.req.path }, "incoming request")
+
+  await next()
+
+  log.info({ status: c.res.status }, "request completed")
+})
 
 /** By default Hono returns a text response for notFound. I wanted a JSON response. */
 app.notFound((c) => {
@@ -48,9 +57,6 @@ app.notFound((c) => {
 
 /** Global error handler. */
 app.onError((err, c) => {
-  const logger = c.get("logger")
-  logger.errorOnly(err)
-
   if (err instanceof HTTPException) {
     return err.getResponse()
   }
