@@ -526,7 +526,7 @@ suggestionsRouter.delete(
     })
 
     if (!suggestion) {
-      return notFound(c, "Suggestion not found.")
+      return notFound(c, "Suggestion not found")
     }
 
     try {
