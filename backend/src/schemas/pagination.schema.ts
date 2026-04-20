@@ -2,9 +2,9 @@ import * as z from "zod"
 
 import type { Pagination } from "@/lib/pagination"
 
-export const DEFAULT_PAGE = 1
-export const DEFAULT_PAGE_SIZE = 10
-export const MAX_PAGE_SIZE = 50
+const DEFAULT_PAGE = 1
+const DEFAULT_PAGE_SIZE = 10
+const MAX_PAGE_SIZE = 50
 
 export const paginationSchema = z.object({
   pageSize: z.coerce
