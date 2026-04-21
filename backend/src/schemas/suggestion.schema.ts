@@ -1,7 +1,6 @@
 import * as z from "zod"
 
 import type {
-  SuggestionWithViewerUpvoteResponse,
   SuggestionWithCommentsResponse,
   SuggestionBaseResponse,
 } from "@/lib/selects/suggestion.select"
@@ -37,9 +36,13 @@ export const suggestionCreateSchema = z.object({
 
 // --------------------- Update Suggestion Schema -----------------------
 export const suggestionUpdateSchema = suggestionCreateSchema
+  .partial()
+  .refine((data) => Object.keys(data).length > 0, {
+    error: "At least one field is required",
+  })
 
 // --------------------- Suggestion Response Schema -----------------------
-export const suggestionResponseSchema = z.object({
+export const suggestionBaseResponseSchema = z.object({
   id: z.cuid().meta({
     pattern: undefined,
     example: "cmlubyi3l000094r6fw9v8djs",
@@ -90,22 +93,12 @@ export const suggestionResponseSchema = z.object({
       name: z.string().meta({ example: "John Doe" }),
     })
     .meta({ "x-order": 10 }),
+  viewerHasUpvoted: z.boolean().meta({ "x-order": 11 }),
 }) satisfies z.ZodType<SuggestionBaseResponse>
-
-// --------------------- Create/Update Suggestion Response Schemas -----------------------
-export const suggestionCreateResponseSchema = suggestionResponseSchema
-export const suggestionUpdateResponseSchema = suggestionResponseSchema
-
-// --------------------- Suggestion With Viewer Upvote Response Schema -----------------------
-export const suggestionWithViewerUpvoteResponseSchema: z.ZodType<SuggestionWithViewerUpvoteResponse> =
-  suggestionResponseSchema.extend({
-    viewerHasUpvoted: z.boolean().meta({ "x-order": 11 }),
-  })
 
 // --------------------- Suggestion With Comments Response Schema -----------------------
 export const suggestionWithCommentsResponseSchema: z.ZodType<SuggestionWithCommentsResponse> =
-  suggestionResponseSchema.extend({
-    viewerHasUpvoted: z.boolean().meta({ "x-order": 11 }),
+  suggestionBaseResponseSchema.extend({
     comments: z
       .array(
         z.object({

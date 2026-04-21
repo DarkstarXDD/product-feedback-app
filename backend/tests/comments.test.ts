@@ -3,7 +3,7 @@ import { faker } from "@faker-js/faker"
 import * as z from "zod"
 
 import {
-  paginatedSuccessSchema,
+  jsonPaginatedSuccessSchema,
   jsonSuccessSchema,
   jsonErrorSchema,
 } from "@/schemas/response.schema"
@@ -57,7 +57,7 @@ describe("GET /api/v1/comments", () => {
     const res = await app.request("/api/v1/comments", {
       headers: { cookie: `token=${token}` },
     })
-    const resBody = paginatedSuccessSchema(
+    const resBody = jsonPaginatedSuccessSchema(
       z.array(commentResponseSchema)
     ).parse(await res.json())
 
@@ -85,7 +85,7 @@ describe("GET /api/v1/comments", () => {
     const res = await app.request("/api/v1/comments?page=2&pageSize=10", {
       headers: { cookie: `token=${token}` },
     })
-    const resBody = paginatedSuccessSchema(
+    const resBody = jsonPaginatedSuccessSchema(
       z.array(commentResponseSchema)
     ).parse(await res.json())
 
@@ -170,7 +170,7 @@ describe("PATCH /api/v1/comments/:id", () => {
     expect(res.status).toBe(403)
     expect(resBody).toMatchObject({
       code: "FORBIDDEN",
-      message: "Not allowed or forbidden",
+      message: "Forbidden",
     })
   })
 
@@ -307,7 +307,7 @@ describe("DELETE /api/v1/comments/:id", () => {
     expect(res.status).toBe(403)
     expect(resBody).toMatchObject({
       code: "FORBIDDEN",
-      message: "Not allowed or forbidden",
+      message: "Forbidden",
     })
   })
 

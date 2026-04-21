@@ -12,7 +12,7 @@ import type { Pagination } from "@/lib/pagination"
 import type { ERROR_CODES } from "@/lib/consts"
 
 // ------------------------- Success Response ----------------------------
-export interface JsonSuccessBody<T> {
+interface JsonSuccessBody<T> {
   data: T
   meta?: { pagination: Pagination }
 }

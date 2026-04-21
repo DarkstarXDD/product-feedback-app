@@ -36,7 +36,7 @@ export function jsonSuccessSchema<TOutput, TInput = TOutput>(
 }
 
 /** Wraps a response payload schema in the standard jsonSuccess envelope with a typed pagination meta. */
-export function paginatedSuccessSchema<TOutput, TInput = TOutput>(
+export function jsonPaginatedSuccessSchema<TOutput, TInput = TOutput>(
   dataSchema: z.ZodType<TOutput, TInput>
 ) {
   return z.object({

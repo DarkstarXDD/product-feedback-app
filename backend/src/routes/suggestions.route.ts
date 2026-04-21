@@ -3,23 +3,19 @@ import { Hono } from "hono"
 import * as z from "zod"
 
 import {
-  suggestionWithViewerUpvoteResponseSchema,
+  suggestionWithCommentsAndUpvoteSelect,
+  suggestionWithCommentsSelect,
+  suggestionWithUpvoteSelect,
+  suggestionBaseSelect,
+} from "@/lib/selects/suggestion.select"
+import {
   suggestionWithCommentsResponseSchema,
-  suggestionCreateResponseSchema,
-  suggestionUpdateResponseSchema,
+  suggestionBaseResponseSchema,
   suggestionCreateSchema,
   suggestionUpdateSchema,
 } from "@/schemas/suggestion.schema"
 import {
-  suggestionWithCommentsAndViewerUpvoteSelect,
-  suggestionWithViewerUpvoteSelect,
-  suggestionWithCommentsSelect,
-  suggestionCreateSelect,
-  suggestionUpdateSelect,
-  suggestionBaseSelect,
-} from "@/lib/selects/suggestion.select"
-import {
-  paginatedSuccessSchema,
+  jsonPaginatedSuccessSchema,
   jsonSuccessSchema,
   jsonErrorSchema,
 } from "@/schemas/response.schema"
@@ -34,7 +30,7 @@ import {
   commentResponseSchema,
   commentCreateSchema,
 } from "@/schemas/comment.schema"
-import { mapSuggestionWithUpvoteStatus } from "@/lib/mappers/suggestion.mapper"
+import { withUpvoteStatus } from "@/lib/mappers/suggestion.mapper"
 import { resolveAuthUser } from "@/middleware/resolve-auth-user"
 import { upvoteResponseSchema } from "@/schemas/upvote.schema"
 import { paginationSchema } from "@/schemas/pagination.schema"
@@ -59,9 +55,7 @@ suggestionsRouter.get(
     description: "Returns a paginated list of suggestions.",
     responses: {
       200: jsonResponse(
-        paginatedSuccessSchema(
-          z.array(suggestionWithViewerUpvoteResponseSchema)
-        ),
+        jsonPaginatedSuccessSchema(z.array(suggestionBaseResponseSchema)),
         "Successfully retrieved suggestions."
       ),
       400: jsonResponse(
@@ -83,7 +77,7 @@ suggestionsRouter.get(
         skip: (page - 1) * pageSize,
         take: pageSize,
         select: user
-          ? suggestionWithViewerUpvoteSelect(user.id)
+          ? suggestionWithUpvoteSelect(user.id)
           : suggestionBaseSelect,
       }),
     ])
@@ -91,7 +85,7 @@ suggestionsRouter.get(
     return jsonSuccess(
       c,
       {
-        data: suggestions.map(mapSuggestionWithUpvoteStatus),
+        data: suggestions.map(withUpvoteStatus),
         meta: { pagination: buildPagination({ page, pageSize, totalItems }) },
       },
       { status: 200 }
@@ -126,7 +120,7 @@ suggestionsRouter.get(
     const suggestion = await prisma.suggestion.findUnique({
       where: { slug },
       select: user
-        ? suggestionWithCommentsAndViewerUpvoteSelect(user.id)
+        ? suggestionWithCommentsAndUpvoteSelect(user.id)
         : suggestionWithCommentsSelect,
     })
 
@@ -136,7 +130,7 @@ suggestionsRouter.get(
 
     return jsonSuccess(
       c,
-      { data: mapSuggestionWithUpvoteStatus(suggestion) },
+      { data: withUpvoteStatus(suggestion) },
       { status: 200 }
     )
   }
@@ -151,7 +145,7 @@ suggestionsRouter.post(
     description: "Creates a new suggestion.",
     responses: {
       201: jsonResponse(
-        jsonSuccessSchema(suggestionCreateResponseSchema),
+        jsonSuccessSchema(suggestionBaseResponseSchema),
         "Successfully created suggestion."
       ),
       400: jsonResponse(
@@ -173,19 +167,23 @@ suggestionsRouter.post(
   zodValidator("json", suggestionCreateSchema),
   async (c) => {
     const user = c.get("user")
-    const parsedData = c.req.valid("json")
+    const parsed = c.req.valid("json")
 
     try {
       const suggestion = await prisma.suggestion.create({
         data: {
-          ...parsedData,
-          slug: generateSlug(parsedData.title),
+          ...parsed,
+          slug: generateSlug(parsed.title),
           userId: user.id,
         },
-        select: suggestionCreateSelect,
+        select: suggestionBaseSelect,
       })
 
-      return jsonSuccess(c, { data: suggestion }, { status: 201 })
+      return jsonSuccess(
+        c,
+        { data: withUpvoteStatus(suggestion) },
+        { status: 201 }
+      )
     } catch (e) {
       if (
         e instanceof Prisma.PrismaClientKnownRequestError &&
@@ -215,7 +213,7 @@ suggestionsRouter.patch(
     description: "Updates an existing suggestion by slug.",
     responses: {
       200: jsonResponse(
-        jsonSuccessSchema(suggestionUpdateResponseSchema),
+        jsonSuccessSchema(suggestionBaseResponseSchema),
         "Successfully updated suggestion."
       ),
       400: jsonResponse(
@@ -242,11 +240,11 @@ suggestionsRouter.patch(
   async (c) => {
     const user = c.get("user")
     const slug = c.req.param("slug")
-    const parsedData = c.req.valid("json")
+    const parsed = c.req.valid("json")
 
     const existing = await prisma.suggestion.findUnique({
-      select: { id: true },
       where: { slug },
+      select: { id: true },
     })
 
     if (!existing) {
@@ -255,14 +253,18 @@ suggestionsRouter.patch(
 
     try {
       const suggestion = await prisma.suggestion.update({
-        data: { ...parsedData },
-        where: user.role === "ADMIN" ? { slug } : { userId: user.id, slug },
-        select: suggestionUpdateSelect,
+        data: { ...parsed },
+        where: user.role === "ADMIN" ? { slug } : { slug, userId: user.id },
+        select: suggestionWithUpvoteSelect(user.id),
       })
-      return jsonSuccess(c, { data: suggestion }, { status: 200 })
+      return jsonSuccess(
+        c,
+        { data: withUpvoteStatus(suggestion) },
+        { status: 200 }
+      )
     } catch (e) {
       if (e instanceof Prisma.PrismaClientKnownRequestError) {
-        if (e.code === "P2025") return forbidden(c, "Not allowed or forbidden")
+        if (e.code === "P2025") return forbidden(c)
         if (e.code === "P2003") {
           return jsonError(
             c,
@@ -316,7 +318,7 @@ suggestionsRouter.post(
   async (c) => {
     const slug = c.req.param("slug")
     const user = c.get("user")
-    const parsedData = c.req.valid("json")
+    const parsed = c.req.valid("json")
 
     /** Can't use foreign key approach if one connect is used.
      *  So both suggestion and user needs to use the `connect` appraoch.
@@ -327,7 +329,7 @@ suggestionsRouter.post(
         data: {
           user: { connect: { id: user.id } },
           suggestion: { connect: { slug } },
-          content: parsedData.content,
+          content: parsed.content,
         },
         select: commentSelect,
       })
@@ -354,7 +356,7 @@ suggestionsRouter.get(
     description: "Returns a paginated list of comments for a suggestion.",
     responses: {
       200: jsonResponse(
-        paginatedSuccessSchema(z.array(commentResponseSchema)),
+        jsonPaginatedSuccessSchema(z.array(commentResponseSchema)),
         "Successfully retrieved comments."
       ),
       400: jsonResponse(
@@ -371,10 +373,10 @@ suggestionsRouter.get(
     const [totalItems, comments] = await Promise.all([
       prisma.comment.count({ where: { suggestion: { slug } } }),
       prisma.comment.findMany({
+        where: { suggestion: { slug } },
         orderBy: { createdAt: "asc" },
         skip: (page - 1) * pageSize,
         take: pageSize,
-        where: { suggestion: { slug } },
         select: commentSelect,
       }),
     ])
@@ -539,7 +541,7 @@ suggestionsRouter.delete(
         e instanceof Prisma.PrismaClientKnownRequestError &&
         e.code === "P2025"
       ) {
-        return forbidden(c, "Not allowed or forbidden")
+        return forbidden(c)
       }
       throw e
     }

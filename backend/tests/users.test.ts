@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, test } from "vitest"
 import * as z from "zod"
 
 import {
-  paginatedSuccessSchema,
+  jsonPaginatedSuccessSchema,
   jsonSuccessSchema,
   jsonErrorSchema,
 } from "@/schemas/response.schema"
@@ -10,7 +10,7 @@ import {
   privateUserResponseSchema,
   publicUserResponseSchema,
 } from "@/schemas/user.schema"
-import { suggestionWithViewerUpvoteResponseSchema } from "@/schemas/suggestion.schema"
+import { suggestionBaseResponseSchema } from "@/schemas/suggestion.schema"
 import { commentResponseSchema } from "@/schemas/comment.schema"
 import app from "@/app"
 
@@ -65,7 +65,7 @@ describe("GET /api/v1/users", () => {
       headers: { cookie: `token=${token}` },
     })
 
-    const resBody = paginatedSuccessSchema(
+    const resBody = jsonPaginatedSuccessSchema(
       z.array(privateUserResponseSchema)
     ).parse(await res.json())
 
@@ -93,7 +93,7 @@ describe("GET /api/v1/users", () => {
       headers: { cookie: `token=${token}` },
     })
 
-    const resBody = paginatedSuccessSchema(
+    const resBody = jsonPaginatedSuccessSchema(
       z.array(privateUserResponseSchema)
     ).parse(await res.json())
 
@@ -392,8 +392,8 @@ describe("GET /api/v1/users/:username/suggestions", () => {
     const suggestion = await createSuggestionScenario(user.id)
 
     const res = await app.request(`/api/v1/users/${user.username}/suggestions`)
-    const resBody = paginatedSuccessSchema(
-      z.array(suggestionWithViewerUpvoteResponseSchema)
+    const resBody = jsonPaginatedSuccessSchema(
+      z.array(suggestionBaseResponseSchema)
     ).parse(await res.json())
 
     expect(res.status).toBe(200)
@@ -419,8 +419,8 @@ describe("GET /api/v1/users/:username/suggestions", () => {
     const res = await app.request(
       `/api/v1/users/${user.username}/suggestions?page=2&pageSize=10`
     )
-    const resBody = paginatedSuccessSchema(
-      z.array(suggestionWithViewerUpvoteResponseSchema)
+    const resBody = jsonPaginatedSuccessSchema(
+      z.array(suggestionBaseResponseSchema)
     ).parse(await res.json())
 
     expect(res.status).toBe(200)
@@ -444,8 +444,8 @@ describe("GET /api/v1/users/:username/upvotes", () => {
     await createUpvote({ suggestionId: suggestion.id, ownerId: user.id })
 
     const res = await app.request(`/api/v1/users/${user.username}/upvotes`)
-    const resBody = paginatedSuccessSchema(
-      z.array(suggestionWithViewerUpvoteResponseSchema)
+    const resBody = jsonPaginatedSuccessSchema(
+      z.array(suggestionBaseResponseSchema)
     ).parse(await res.json())
 
     expect(res.status).toBe(200)
@@ -473,8 +473,8 @@ describe("GET /api/v1/users/:username/upvotes", () => {
     const res = await app.request(
       `/api/v1/users/${user.username}/upvotes?page=2&pageSize=10`
     )
-    const resBody = paginatedSuccessSchema(
-      z.array(suggestionWithViewerUpvoteResponseSchema)
+    const resBody = jsonPaginatedSuccessSchema(
+      z.array(suggestionBaseResponseSchema)
     ).parse(await res.json())
 
     expect(res.status).toBe(200)
@@ -497,7 +497,7 @@ describe("GET /api/v1/users/:username/comments", () => {
     const { comment } = await createCommentScenario(user.id)
 
     const res = await app.request(`/api/v1/users/${user.username}/comments`)
-    const resBody = paginatedSuccessSchema(
+    const resBody = jsonPaginatedSuccessSchema(
       z.array(commentResponseSchema)
     ).parse(await res.json())
 
@@ -525,7 +525,7 @@ describe("GET /api/v1/users/:username/comments", () => {
     const res = await app.request(
       `/api/v1/users/${user.username}/comments?page=2&pageSize=10`
     )
-    const resBody = paginatedSuccessSchema(
+    const resBody = jsonPaginatedSuccessSchema(
       z.array(commentResponseSchema)
     ).parse(await res.json())
 

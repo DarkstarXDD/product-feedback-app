@@ -2,12 +2,11 @@ import { beforeEach, describe, expect, test } from "vitest"
 import * as z from "zod"
 
 import {
-  suggestionWithViewerUpvoteResponseSchema,
   suggestionWithCommentsResponseSchema,
-  suggestionCreateResponseSchema,
+  suggestionBaseResponseSchema,
 } from "@/schemas/suggestion.schema"
 import {
-  paginatedSuccessSchema,
+  jsonPaginatedSuccessSchema,
   jsonSuccessSchema,
   jsonErrorSchema,
 } from "@/schemas/response.schema"
@@ -35,8 +34,8 @@ describe("GET /api/v1/suggestions", () => {
     const suggestion = await createSuggestionScenario()
 
     const res = await app.request("/api/v1/suggestions")
-    const resBody = paginatedSuccessSchema(
-      z.array(suggestionWithViewerUpvoteResponseSchema)
+    const resBody = jsonPaginatedSuccessSchema(
+      z.array(suggestionBaseResponseSchema)
     ).parse(await res.json())
 
     expect(res.status).toBe(200)
@@ -52,8 +51,8 @@ describe("GET /api/v1/suggestions", () => {
     }
 
     const res = await app.request("/api/v1/suggestions?page=2&pageSize=10")
-    const resBody = paginatedSuccessSchema(
-      z.array(suggestionWithViewerUpvoteResponseSchema)
+    const resBody = jsonPaginatedSuccessSchema(
+      z.array(suggestionBaseResponseSchema)
     ).parse(await res.json())
 
     expect(res.status).toBe(200)
@@ -163,7 +162,7 @@ describe("POST /api/v1/suggestions", () => {
       method: "POST",
     })
 
-    const resBody = jsonSuccessSchema(suggestionCreateResponseSchema).parse(
+    const resBody = jsonSuccessSchema(suggestionBaseResponseSchema).parse(
       await res.json()
     )
 
@@ -258,7 +257,7 @@ describe("PATCH /api/v1/suggestions/:slug", () => {
     expect(res.status).toBe(403)
     expect(resBody).toMatchObject({
       code: "FORBIDDEN",
-      message: "Not allowed or forbidden",
+      message: "Forbidden",
     })
   })
 
@@ -282,7 +281,7 @@ describe("PATCH /api/v1/suggestions/:slug", () => {
       method: "PATCH",
     })
 
-    const resBody = jsonSuccessSchema(suggestionCreateResponseSchema).parse(
+    const resBody = jsonSuccessSchema(suggestionBaseResponseSchema).parse(
       await res.json()
     )
 
@@ -314,7 +313,7 @@ describe("PATCH /api/v1/suggestions/:slug", () => {
       method: "PATCH",
     })
 
-    const resBody = jsonSuccessSchema(suggestionCreateResponseSchema).parse(
+    const resBody = jsonSuccessSchema(suggestionBaseResponseSchema).parse(
       await res.json()
     )
 
@@ -396,7 +395,7 @@ describe("GET /api/v1/suggestions/:slug/comments", () => {
     const res = await app.request(
       `/api/v1/suggestions/${suggestion.slug}/comments`
     )
-    const resBody = paginatedSuccessSchema(
+    const resBody = jsonPaginatedSuccessSchema(
       z.array(commentResponseSchema)
     ).parse(await res.json())
 
@@ -416,7 +415,7 @@ describe("GET /api/v1/suggestions/:slug/comments", () => {
     const res = await app.request(
       `/api/v1/suggestions/${suggestion.slug}/comments?page=2&pageSize=10`
     )
-    const resBody = paginatedSuccessSchema(
+    const resBody = jsonPaginatedSuccessSchema(
       z.array(commentResponseSchema)
     ).parse(await res.json())
 
@@ -710,7 +709,7 @@ describe("DELETE /api/v1/suggestions/:slug", () => {
     expect(res.status).toBe(403)
     expect(resBody).toMatchObject({
       code: "FORBIDDEN",
-      message: "Not allowed or forbidden",
+      message: "Forbidden",
     })
   })
 

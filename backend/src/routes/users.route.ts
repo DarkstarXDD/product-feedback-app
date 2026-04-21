@@ -3,17 +3,17 @@ import { Hono } from "hono"
 import * as z from "zod"
 
 import {
-  suggestionWithViewerUpvoteSelect,
-  suggestionBaseSelect,
-} from "@/lib/selects/suggestion.select"
-import {
-  paginatedSuccessSchema,
+  jsonPaginatedSuccessSchema,
   jsonSuccessSchema,
   jsonErrorSchema,
 } from "@/schemas/response.schema"
-import { suggestionWithViewerUpvoteResponseSchema } from "@/schemas/suggestion.schema"
+import {
+  suggestionWithUpvoteSelect,
+  suggestionBaseSelect,
+} from "@/lib/selects/suggestion.select"
 import { privateUserSelect, publicUserSelect } from "@/lib/selects/user.select"
-import { mapSuggestionWithUpvoteStatus } from "@/lib/mappers/suggestion.mapper"
+import { suggestionBaseResponseSchema } from "@/schemas/suggestion.schema"
+import { withUpvoteStatus } from "@/lib/mappers/suggestion.mapper"
 import { withTargetAccess } from "@/middleware/with-target-access"
 import { privateUserResponseSchema } from "@/schemas/user.schema"
 import { jsonSuccess, conflict, notFound } from "@/lib/responses"
@@ -39,7 +39,7 @@ usersRouter.get(
     description: "Returns a paginated list of all users. Admin only.",
     responses: {
       200: jsonResponse(
-        paginatedSuccessSchema(z.array(privateUserResponseSchema)),
+        jsonPaginatedSuccessSchema(z.array(privateUserResponseSchema)),
         "Successfully retrieved users."
       ),
       400: jsonResponse(
@@ -60,7 +60,7 @@ usersRouter.get(
   requireRole("ADMIN"),
   zodValidator("query", paginationSchema),
   async (c) => {
-    const { pageSize, page } = c.req.valid("query")
+    const { page, pageSize } = c.req.valid("query")
 
     const [totalItems, users] = await Promise.all([
       prisma.user.count(),
@@ -71,10 +71,14 @@ usersRouter.get(
       }),
     ])
 
-    return jsonSuccess(c, {
-      data: users,
-      meta: { pagination: buildPagination({ page, pageSize, totalItems }) },
-    })
+    return jsonSuccess(
+      c,
+      {
+        data: users,
+        meta: { pagination: buildPagination({ page, pageSize, totalItems }) },
+      },
+      { status: 200 }
+    )
   }
 )
 
@@ -149,26 +153,25 @@ usersRouter.patch(
   zodValidator("json", userUpdateSchema),
   async (c) => {
     const targetUser = c.get("targetUser")
-    const parsedData = c.req.valid("json")
+    const parsed = c.req.valid("json")
 
-    // Check conflicts only for fields being updated, excluding target user
     const existing = await prisma.user.findFirst({
       where: {
-        OR: [
-          ...(parsedData.email ? [{ email: parsedData.email }] : []),
-          ...(parsedData.username ? [{ username: parsedData.username }] : []),
-        ],
         id: { not: targetUser.id },
+        OR: [
+          ...(parsed.email ? [{ email: parsed.email }] : []),
+          ...(parsed.username ? [{ username: parsed.username }] : []),
+        ],
       },
       select: { username: true, email: true },
     })
 
     if (existing) {
       const fieldErrors: Record<string, string[]> = {}
-      if (parsedData.email && existing.email === parsedData.email) {
+      if (parsed.email && existing.email === parsed.email) {
         fieldErrors.email = ["Email already exists"]
       }
-      if (parsedData.username && existing.username === parsedData.username) {
+      if (parsed.username && existing.username === parsed.username) {
         fieldErrors.username = [
           "Username taken. Please pick a different username",
         ]
@@ -177,11 +180,11 @@ usersRouter.patch(
     }
 
     const user = await prisma.user.update({
+      data: parsed,
       where: { id: targetUser.id },
       select: privateUserSelect,
-      data: parsedData,
     })
-    return jsonSuccess(c, { data: user })
+    return jsonSuccess(c, { data: user }, { status: 200 })
   }
 )
 
@@ -194,9 +197,7 @@ usersRouter.get(
     description: "Returns a paginated list of suggestions created by a user.",
     responses: {
       200: jsonResponse(
-        paginatedSuccessSchema(
-          z.array(suggestionWithViewerUpvoteResponseSchema)
-        ),
+        jsonPaginatedSuccessSchema(z.array(suggestionBaseResponseSchema)),
         "Successfully retrieved suggestions."
       ),
       400: jsonResponse(
@@ -210,17 +211,17 @@ usersRouter.get(
   async (c) => {
     const username = c.req.param("username")
     const user = c.get("user")
-    const { pageSize, page } = c.req.valid("query")
+    const { page, pageSize } = c.req.valid("query")
 
     const [totalItems, suggestions] = await Promise.all([
       prisma.suggestion.count({
         where: { user: { username } },
       }),
       prisma.suggestion.findMany({
-        select: user
-          ? suggestionWithViewerUpvoteSelect(user.id)
-          : suggestionBaseSelect,
         where: { user: { username } },
+        select: user
+          ? suggestionWithUpvoteSelect(user.id)
+          : suggestionBaseSelect,
         take: pageSize,
         skip: (page - 1) * pageSize,
       }),
@@ -229,8 +230,8 @@ usersRouter.get(
     return jsonSuccess(
       c,
       {
+        data: suggestions.map(withUpvoteStatus),
         meta: { pagination: buildPagination({ page, pageSize, totalItems }) },
-        data: suggestions.map(mapSuggestionWithUpvoteStatus),
       },
       { status: 200 }
     )
@@ -246,9 +247,7 @@ usersRouter.get(
     description: "Returns a paginated list of suggestions upvoted by a user.",
     responses: {
       200: jsonResponse(
-        paginatedSuccessSchema(
-          z.array(suggestionWithViewerUpvoteResponseSchema)
-        ),
+        jsonPaginatedSuccessSchema(z.array(suggestionBaseResponseSchema)),
         "Successfully retrieved upvoted suggestions."
       ),
       400: jsonResponse(
@@ -264,16 +263,16 @@ usersRouter.get(
     const user = c.get("user")
     const { pageSize, page } = c.req.valid("query")
 
-    const where = { upvotes: { some: { user: { username } } } } as const
+    const where = { upvotes: { some: { user: { username } } } }
 
     const [totalItems, suggestions] = await Promise.all([
       prisma.suggestion.count({ where }),
       prisma.suggestion.findMany({
+        where,
         select: user
-          ? suggestionWithViewerUpvoteSelect(user.id)
+          ? suggestionWithUpvoteSelect(user.id)
           : suggestionBaseSelect,
         take: pageSize,
-        where,
         skip: (page - 1) * pageSize,
       }),
     ])
@@ -281,8 +280,8 @@ usersRouter.get(
     return jsonSuccess(
       c,
       {
+        data: suggestions.map(withUpvoteStatus),
         meta: { pagination: buildPagination({ page, pageSize, totalItems }) },
-        data: suggestions.map(mapSuggestionWithUpvoteStatus),
       },
       { status: 200 }
     )
@@ -298,7 +297,7 @@ usersRouter.get(
     description: "Returns a paginated list of comments made by a user.",
     responses: {
       200: jsonResponse(
-        paginatedSuccessSchema(commentResponseSchema),
+        jsonPaginatedSuccessSchema(commentResponseSchema),
         "Successfully retrieved comments."
       ),
       400: jsonResponse(
@@ -310,14 +309,14 @@ usersRouter.get(
   zodValidator("query", paginationSchema),
   async (c) => {
     const username = c.req.param("username")
-    const { pageSize, page } = c.req.valid("query")
+    const { page, pageSize } = c.req.valid("query")
 
     const [totalItems, comments] = await Promise.all([
       prisma.comment.count({ where: { user: { username } } }),
       prisma.comment.findMany({
+        where: { user: { username } },
         select: commentSelect,
         take: pageSize,
-        where: { user: { username } },
         skip: (page - 1) * pageSize,
       }),
     ])
@@ -325,8 +324,8 @@ usersRouter.get(
     return jsonSuccess(
       c,
       {
-        meta: { pagination: buildPagination({ page, pageSize, totalItems }) },
         data: comments,
+        meta: { pagination: buildPagination({ page, pageSize, totalItems }) },
       },
       { status: 200 }
     )

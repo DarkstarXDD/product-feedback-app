@@ -1,8 +1,9 @@
 import { describeRoute } from "hono-openapi"
 import { Hono } from "hono"
+import * as z from "zod"
 
 import {
-  paginatedSuccessSchema,
+  jsonPaginatedSuccessSchema,
   jsonSuccessSchema,
   jsonErrorSchema,
 } from "@/schemas/response.schema"
@@ -31,7 +32,7 @@ commentsRouter.get(
     description: "Returns a paginated list of all comments. Admin only.",
     responses: {
       200: jsonResponse(
-        paginatedSuccessSchema(commentResponseSchema),
+        jsonPaginatedSuccessSchema(z.array(commentResponseSchema)),
         "Successfully retrieved comments."
       ),
       400: jsonResponse(
@@ -52,7 +53,7 @@ commentsRouter.get(
   requireRole("ADMIN"),
   zodValidator("query", paginationSchema),
   async (c) => {
-    const { pageSize, page } = c.req.valid("query")
+    const { page, pageSize } = c.req.valid("query")
     const skip = (page - 1) * pageSize
 
     const [totalItems, comments] = await Promise.all([
@@ -67,8 +68,8 @@ commentsRouter.get(
     return jsonSuccess(
       c,
       {
-        meta: { pagination: buildPagination({ page, pageSize, totalItems }) },
         data: comments,
+        meta: { pagination: buildPagination({ page, pageSize, totalItems }) },
       },
       { status: 200 }
     )
@@ -139,11 +140,11 @@ commentsRouter.patch(
   async (c) => {
     const commentId = c.req.param("id")
     const { id, role } = c.get("user")
-    const parsedData = c.req.valid("json")
+    const parsed = c.req.valid("json")
 
     const existing = await prisma.comment.findUnique({
-      select: { id: true },
       where: { id: commentId },
+      select: { id: true },
     })
 
     if (!existing) {
@@ -152,10 +153,10 @@ commentsRouter.patch(
 
     try {
       const comment = await prisma.comment.update({
-        data: { content: parsedData.content },
-        select: commentSelect,
+        data: { content: parsed.content },
         where:
-          role === "ADMIN" ? { id: commentId } : { userId: id, id: commentId },
+          role === "ADMIN" ? { id: commentId } : { id: commentId, userId: id },
+        select: commentSelect,
       })
 
       return jsonSuccess(c, { data: comment }, { status: 200 })
@@ -164,7 +165,7 @@ commentsRouter.patch(
         e instanceof Prisma.PrismaClientKnownRequestError &&
         e.code === "P2025"
       ) {
-        return forbidden(c, "Not allowed or forbidden")
+        return forbidden(c)
       }
       throw e
     }
@@ -217,7 +218,7 @@ commentsRouter.delete(
         e instanceof Prisma.PrismaClientKnownRequestError &&
         e.code === "P2025"
       ) {
-        return forbidden(c, "Not allowed or forbidden")
+        return forbidden(c)
       }
       throw e
     }

@@ -11,10 +11,6 @@ export type HonoInstanceVariables = {
   targetUser: { id: string; username: string }
 } & JwtVariables<JWTPayload | undefined>
 
-export type AppContext = {
-  Variables: HonoInstanceVariables
-}
-
 /**
  * Recursively replaces `Date` with `string` to model JSON serialization.
  * Prisma returns `Date` objects, but they serialize to ISO strings over HTTP.

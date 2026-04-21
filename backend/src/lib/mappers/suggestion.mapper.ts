@@ -1,5 +1,9 @@
-/** Adds `viewerHasUpvoted` and removes the temporary `upvotes` field. */
-export function mapSuggestionWithUpvoteStatus<T extends object>(
+/** This mapper is the single path for all suggestion responses.
+ * This either derives viewerHasUpvoted from the upvotes array (when authenticated)
+ * or defaults to false (when unauthenticated or on create).
+ * Every suggestion response shape includes it.
+ */
+export function withUpvoteStatus<T extends object>(
   suggestion: { upvotes?: Array<{ id: string }> } & T
 ): { viewerHasUpvoted: boolean } & Omit<T, "upvotes"> {
   const viewerHasUpvoted =

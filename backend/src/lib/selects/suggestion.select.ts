@@ -6,7 +6,7 @@ interface ViewerHasUpvoted {
 }
 
 // ------------------------------- Base Suggestion Response --------------------------------
-/** Base fields for a Suggestion. Excludes the comments list and viewerHasUpvoted. */
+/** Base fields for a Suggestion. Excludes the comments list. */
 export const suggestionBaseSelect = {
   id: true,
   slug: true,
@@ -21,14 +21,13 @@ export const suggestionBaseSelect = {
 } as const satisfies Prisma.SuggestionSelect
 
 export type SuggestionBaseResponse = Serialize<
-  Prisma.SuggestionGetPayload<{
-    select: typeof suggestionBaseSelect
-  }>
->
+  Prisma.SuggestionGetPayload<{ select: typeof suggestionBaseSelect }>
+> &
+  ViewerHasUpvoted
 
 // --------------------------- Get Suggestion with Upvotes Response ---------------------------
 /** Extends `suggestionBaseSelect` to include `upvotes` field. */
-export const suggestionWithViewerUpvoteSelect = (userId: string) =>
+export const suggestionWithUpvoteSelect = (userId: string) =>
   ({
     ...suggestionBaseSelect,
     upvotes: {
@@ -36,9 +35,6 @@ export const suggestionWithViewerUpvoteSelect = (userId: string) =>
       select: { id: true },
     },
   }) as const satisfies Prisma.SuggestionSelect
-
-export type SuggestionWithViewerUpvoteResponse = SuggestionBaseResponse &
-  ViewerHasUpvoted
 
 // ------------------------- Get Suggestion with Comments Response --------------------------
 /** Extends `suggestionBaseSelect` to include `comments` field. */
@@ -66,7 +62,7 @@ export type SuggestionWithCommentsResponse = Serialize<
 
 // --------------------- Get Suggestion with Comments and Upvotes Response ---------------------
 /** Extends `suggestionWithCommentsSelect` to include `upvotes` field. */
-export const suggestionWithCommentsAndViewerUpvoteSelect = (userId: string) =>
+export const suggestionWithCommentsAndUpvoteSelect = (userId: string) =>
   ({
     ...suggestionWithCommentsSelect,
     upvotes: {
@@ -74,11 +70,3 @@ export const suggestionWithCommentsAndViewerUpvoteSelect = (userId: string) =>
       select: { id: true },
     },
   }) as const satisfies Prisma.SuggestionSelect
-
-// ------------------------------- Create Suggestion Response --------------------------------
-/** Fields that are included in the response when a suggestion is created. */
-export const suggestionCreateSelect = suggestionBaseSelect
-
-// ------------------------------- Update Suggestion Response --------------------------------
-/** Fields that are included in the response when a suggestion is updated. */
-export const suggestionUpdateSelect = suggestionBaseSelect
