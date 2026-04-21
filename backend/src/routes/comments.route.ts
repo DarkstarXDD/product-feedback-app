@@ -140,11 +140,11 @@ commentsRouter.patch(
   async (c) => {
     const commentId = c.req.param("id")
     const { id, role } = c.get("user")
-    const parsedData = c.req.valid("json")
+    const parsed = c.req.valid("json")
 
     const existing = await prisma.comment.findUnique({
-      select: { id: true },
       where: { id: commentId },
+      select: { id: true },
     })
 
     if (!existing) {
@@ -153,10 +153,10 @@ commentsRouter.patch(
 
     try {
       const comment = await prisma.comment.update({
-        data: { content: parsedData.content },
-        select: commentSelect,
+        data: { content: parsed.content },
         where:
           role === "ADMIN" ? { id: commentId } : { userId: id, id: commentId },
+        select: commentSelect,
       })
 
       return jsonSuccess(c, { data: comment }, { status: 200 })

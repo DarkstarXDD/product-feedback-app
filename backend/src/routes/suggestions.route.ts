@@ -167,13 +167,13 @@ suggestionsRouter.post(
   zodValidator("json", suggestionCreateSchema),
   async (c) => {
     const user = c.get("user")
-    const parsedData = c.req.valid("json")
+    const parsed = c.req.valid("json")
 
     try {
       const suggestion = await prisma.suggestion.create({
         data: {
-          ...parsedData,
-          slug: generateSlug(parsedData.title),
+          ...parsed,
+          slug: generateSlug(parsed.title),
           userId: user.id,
         },
         select: suggestionBaseSelect,
@@ -240,11 +240,11 @@ suggestionsRouter.patch(
   async (c) => {
     const user = c.get("user")
     const slug = c.req.param("slug")
-    const parsedData = c.req.valid("json")
+    const parsed = c.req.valid("json")
 
     const existing = await prisma.suggestion.findUnique({
-      select: { id: true },
       where: { slug },
+      select: { id: true },
     })
 
     if (!existing) {
@@ -253,7 +253,7 @@ suggestionsRouter.patch(
 
     try {
       const suggestion = await prisma.suggestion.update({
-        data: { ...parsedData },
+        data: { ...parsed },
         where: user.role === "ADMIN" ? { slug } : { userId: user.id, slug },
         select: suggestionWithUpvoteSelect(user.id),
       })
@@ -318,7 +318,7 @@ suggestionsRouter.post(
   async (c) => {
     const slug = c.req.param("slug")
     const user = c.get("user")
-    const parsedData = c.req.valid("json")
+    const parsed = c.req.valid("json")
 
     /** Can't use foreign key approach if one connect is used.
      *  So both suggestion and user needs to use the `connect` appraoch.
@@ -329,7 +329,7 @@ suggestionsRouter.post(
         data: {
           user: { connect: { id: user.id } },
           suggestion: { connect: { slug } },
-          content: parsedData.content,
+          content: parsed.content,
         },
         select: commentSelect,
       })
@@ -373,10 +373,10 @@ suggestionsRouter.get(
     const [totalItems, comments] = await Promise.all([
       prisma.comment.count({ where: { suggestion: { slug } } }),
       prisma.comment.findMany({
+        where: { suggestion: { slug } },
         orderBy: { createdAt: "asc" },
         skip: (page - 1) * pageSize,
         take: pageSize,
-        where: { suggestion: { slug } },
         select: commentSelect,
       }),
     ])
