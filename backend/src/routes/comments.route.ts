@@ -2,7 +2,7 @@ import { describeRoute } from "hono-openapi"
 import { Hono } from "hono"
 
 import {
-  paginatedSuccessSchema,
+  jsonPaginatedSuccessSchema,
   jsonSuccessSchema,
   jsonErrorSchema,
 } from "@/schemas/response.schema"
@@ -31,7 +31,7 @@ commentsRouter.get(
     description: "Returns a paginated list of all comments. Admin only.",
     responses: {
       200: jsonResponse(
-        paginatedSuccessSchema(commentResponseSchema),
+        jsonPaginatedSuccessSchema(commentResponseSchema),
         "Successfully retrieved comments."
       ),
       400: jsonResponse(

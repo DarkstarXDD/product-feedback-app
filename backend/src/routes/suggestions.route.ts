@@ -19,7 +19,7 @@ import {
   suggestionBaseSelect,
 } from "@/lib/selects/suggestion.select"
 import {
-  paginatedSuccessSchema,
+  jsonPaginatedSuccessSchema,
   jsonSuccessSchema,
   jsonErrorSchema,
 } from "@/schemas/response.schema"
@@ -59,7 +59,7 @@ suggestionsRouter.get(
     description: "Returns a paginated list of suggestions.",
     responses: {
       200: jsonResponse(
-        paginatedSuccessSchema(
+        jsonPaginatedSuccessSchema(
           z.array(suggestionWithViewerUpvoteResponseSchema)
         ),
         "Successfully retrieved suggestions."
@@ -354,7 +354,7 @@ suggestionsRouter.get(
     description: "Returns a paginated list of comments for a suggestion.",
     responses: {
       200: jsonResponse(
-        paginatedSuccessSchema(z.array(commentResponseSchema)),
+        jsonPaginatedSuccessSchema(z.array(commentResponseSchema)),
         "Successfully retrieved comments."
       ),
       400: jsonResponse(

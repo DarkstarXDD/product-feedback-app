@@ -3,14 +3,14 @@ import { Hono } from "hono"
 import * as z from "zod"
 
 import {
-  suggestionWithViewerUpvoteSelect,
-  suggestionBaseSelect,
-} from "@/lib/selects/suggestion.select"
-import {
-  paginatedSuccessSchema,
+  jsonPaginatedSuccessSchema,
   jsonSuccessSchema,
   jsonErrorSchema,
 } from "@/schemas/response.schema"
+import {
+  suggestionWithViewerUpvoteSelect,
+  suggestionBaseSelect,
+} from "@/lib/selects/suggestion.select"
 import { suggestionWithViewerUpvoteResponseSchema } from "@/schemas/suggestion.schema"
 import { privateUserSelect, publicUserSelect } from "@/lib/selects/user.select"
 import { mapSuggestionWithUpvoteStatus } from "@/lib/mappers/suggestion.mapper"
@@ -39,7 +39,7 @@ usersRouter.get(
     description: "Returns a paginated list of all users. Admin only.",
     responses: {
       200: jsonResponse(
-        paginatedSuccessSchema(z.array(privateUserResponseSchema)),
+        jsonPaginatedSuccessSchema(z.array(privateUserResponseSchema)),
         "Successfully retrieved users."
       ),
       400: jsonResponse(
@@ -194,7 +194,7 @@ usersRouter.get(
     description: "Returns a paginated list of suggestions created by a user.",
     responses: {
       200: jsonResponse(
-        paginatedSuccessSchema(
+        jsonPaginatedSuccessSchema(
           z.array(suggestionWithViewerUpvoteResponseSchema)
         ),
         "Successfully retrieved suggestions."
@@ -246,7 +246,7 @@ usersRouter.get(
     description: "Returns a paginated list of suggestions upvoted by a user.",
     responses: {
       200: jsonResponse(
-        paginatedSuccessSchema(
+        jsonPaginatedSuccessSchema(
           z.array(suggestionWithViewerUpvoteResponseSchema)
         ),
         "Successfully retrieved upvoted suggestions."
@@ -298,7 +298,7 @@ usersRouter.get(
     description: "Returns a paginated list of comments made by a user.",
     responses: {
       200: jsonResponse(
-        paginatedSuccessSchema(commentResponseSchema),
+        jsonPaginatedSuccessSchema(commentResponseSchema),
         "Successfully retrieved comments."
       ),
       400: jsonResponse(

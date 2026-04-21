@@ -7,7 +7,7 @@ import {
   suggestionCreateResponseSchema,
 } from "@/schemas/suggestion.schema"
 import {
-  paginatedSuccessSchema,
+  jsonPaginatedSuccessSchema,
   jsonSuccessSchema,
   jsonErrorSchema,
 } from "@/schemas/response.schema"
@@ -35,7 +35,7 @@ describe("GET /api/v1/suggestions", () => {
     const suggestion = await createSuggestionScenario()
 
     const res = await app.request("/api/v1/suggestions")
-    const resBody = paginatedSuccessSchema(
+    const resBody = jsonPaginatedSuccessSchema(
       z.array(suggestionWithViewerUpvoteResponseSchema)
     ).parse(await res.json())
 
@@ -52,7 +52,7 @@ describe("GET /api/v1/suggestions", () => {
     }
 
     const res = await app.request("/api/v1/suggestions?page=2&pageSize=10")
-    const resBody = paginatedSuccessSchema(
+    const resBody = jsonPaginatedSuccessSchema(
       z.array(suggestionWithViewerUpvoteResponseSchema)
     ).parse(await res.json())
 
@@ -396,7 +396,7 @@ describe("GET /api/v1/suggestions/:slug/comments", () => {
     const res = await app.request(
       `/api/v1/suggestions/${suggestion.slug}/comments`
     )
-    const resBody = paginatedSuccessSchema(
+    const resBody = jsonPaginatedSuccessSchema(
       z.array(commentResponseSchema)
     ).parse(await res.json())
 
@@ -416,7 +416,7 @@ describe("GET /api/v1/suggestions/:slug/comments", () => {
     const res = await app.request(
       `/api/v1/suggestions/${suggestion.slug}/comments?page=2&pageSize=10`
     )
-    const resBody = paginatedSuccessSchema(
+    const resBody = jsonPaginatedSuccessSchema(
       z.array(commentResponseSchema)
     ).parse(await res.json())
 
