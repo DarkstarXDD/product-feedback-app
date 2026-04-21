@@ -5,6 +5,8 @@ import type {
   PublicUserResponse,
 } from "@/lib/selects/user.select"
 
+import { Role } from "@/db/client"
+
 /** Base schema for user. */
 export const userSchema = z.object({
   name: z
@@ -67,7 +69,7 @@ export const privateUserResponseSchema: z.ZodType<PrivateUserResponse> =
     email: z
       .email()
       .meta({ pattern: undefined, example: "johndoe@email.com", "x-order": 4 }),
-    role: z.enum(["USER", "ADMIN"]).meta({ example: "USER", "x-order": 5 }),
+    role: z.enum(Role).meta({ example: "USER", "x-order": 5 }),
     createdAt: z.iso.datetime().meta({
       pattern: undefined,
       example: "2026-01-01T00:00:00.000Z",
