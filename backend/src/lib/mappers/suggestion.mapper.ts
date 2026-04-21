@@ -1,5 +1,5 @@
 /** Adds `viewerHasUpvoted` and removes the temporary `upvotes` field. */
-export function mapSuggestionWithUpvoteStatus<T extends object>(
+export function withUpvoteStatus<T extends object>(
   suggestion: { upvotes?: Array<{ id: string }> } & T
 ): { viewerHasUpvoted: boolean } & Omit<T, "upvotes"> {
   const viewerHasUpvoted =

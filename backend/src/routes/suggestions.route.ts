@@ -31,7 +31,7 @@ import {
   commentResponseSchema,
   commentCreateSchema,
 } from "@/schemas/comment.schema"
-import { mapSuggestionWithUpvoteStatus } from "@/lib/mappers/suggestion.mapper"
+import { withUpvoteStatus } from "@/lib/mappers/suggestion.mapper"
 import { resolveAuthUser } from "@/middleware/resolve-auth-user"
 import { upvoteResponseSchema } from "@/schemas/upvote.schema"
 import { paginationSchema } from "@/schemas/pagination.schema"
@@ -86,7 +86,7 @@ suggestionsRouter.get(
     return jsonSuccess(
       c,
       {
-        data: suggestions.map(mapSuggestionWithUpvoteStatus),
+        data: suggestions.map(withUpvoteStatus),
         meta: { pagination: buildPagination({ page, pageSize, totalItems }) },
       },
       { status: 200 }
@@ -131,7 +131,7 @@ suggestionsRouter.get(
 
     return jsonSuccess(
       c,
-      { data: mapSuggestionWithUpvoteStatus(suggestion) },
+      { data: withUpvoteStatus(suggestion) },
       { status: 200 }
     )
   }

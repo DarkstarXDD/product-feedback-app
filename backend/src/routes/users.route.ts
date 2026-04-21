@@ -13,7 +13,7 @@ import {
 } from "@/lib/selects/suggestion.select"
 import { suggestionWithUpvoteResponseSchema } from "@/schemas/suggestion.schema"
 import { privateUserSelect, publicUserSelect } from "@/lib/selects/user.select"
-import { mapSuggestionWithUpvoteStatus } from "@/lib/mappers/suggestion.mapper"
+import { withUpvoteStatus } from "@/lib/mappers/suggestion.mapper"
 import { withTargetAccess } from "@/middleware/with-target-access"
 import { privateUserResponseSchema } from "@/schemas/user.schema"
 import { jsonSuccess, conflict, notFound } from "@/lib/responses"
@@ -230,7 +230,7 @@ usersRouter.get(
     return jsonSuccess(
       c,
       {
-        data: suggestions.map(mapSuggestionWithUpvoteStatus),
+        data: suggestions.map(withUpvoteStatus),
         meta: { pagination: buildPagination({ page, pageSize, totalItems }) },
       },
       { status: 200 }
@@ -280,7 +280,7 @@ usersRouter.get(
     return jsonSuccess(
       c,
       {
-        data: suggestions.map(mapSuggestionWithUpvoteStatus),
+        data: suggestions.map(withUpvoteStatus),
         meta: { pagination: buildPagination({ page, pageSize, totalItems }) },
       },
       { status: 200 }
