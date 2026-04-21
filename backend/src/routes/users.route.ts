@@ -11,8 +11,8 @@ import {
   suggestionWithUpvoteSelect,
   suggestionBaseSelect,
 } from "@/lib/selects/suggestion.select"
-import { suggestionWithUpvoteResponseSchema } from "@/schemas/suggestion.schema"
 import { privateUserSelect, publicUserSelect } from "@/lib/selects/user.select"
+import { suggestionBaseResponseSchema } from "@/schemas/suggestion.schema"
 import { withUpvoteStatus } from "@/lib/mappers/suggestion.mapper"
 import { withTargetAccess } from "@/middleware/with-target-access"
 import { privateUserResponseSchema } from "@/schemas/user.schema"
@@ -197,7 +197,7 @@ usersRouter.get(
     description: "Returns a paginated list of suggestions created by a user.",
     responses: {
       200: jsonResponse(
-        jsonPaginatedSuccessSchema(z.array(suggestionWithUpvoteResponseSchema)),
+        jsonPaginatedSuccessSchema(z.array(suggestionBaseResponseSchema)),
         "Successfully retrieved suggestions."
       ),
       400: jsonResponse(
@@ -247,7 +247,7 @@ usersRouter.get(
     description: "Returns a paginated list of suggestions upvoted by a user.",
     responses: {
       200: jsonResponse(
-        jsonPaginatedSuccessSchema(z.array(suggestionWithUpvoteResponseSchema)),
+        jsonPaginatedSuccessSchema(z.array(suggestionBaseResponseSchema)),
         "Successfully retrieved upvoted suggestions."
       ),
       400: jsonResponse(

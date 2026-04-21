@@ -2,7 +2,6 @@ import * as z from "zod"
 
 import type {
   SuggestionWithCommentsResponse,
-  SuggestionWithUpvoteResponse,
   SuggestionBaseResponse,
 } from "@/lib/selects/suggestion.select"
 
@@ -90,18 +89,12 @@ export const suggestionBaseResponseSchema = z.object({
       name: z.string().meta({ example: "John Doe" }),
     })
     .meta({ "x-order": 10 }),
+  viewerHasUpvoted: z.boolean().meta({ "x-order": 11 }),
 }) satisfies z.ZodType<SuggestionBaseResponse>
-
-// --------------------- Suggestion With Viewer Upvote Response Schema -----------------------
-export const suggestionWithUpvoteResponseSchema: z.ZodType<SuggestionWithUpvoteResponse> =
-  suggestionBaseResponseSchema.extend({
-    viewerHasUpvoted: z.boolean().meta({ "x-order": 11 }),
-  })
 
 // --------------------- Suggestion With Comments Response Schema -----------------------
 export const suggestionWithCommentsResponseSchema: z.ZodType<SuggestionWithCommentsResponse> =
   suggestionBaseResponseSchema.extend({
-    viewerHasUpvoted: z.boolean().meta({ "x-order": 11 }),
     comments: z
       .array(
         z.object({

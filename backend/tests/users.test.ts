@@ -10,7 +10,7 @@ import {
   privateUserResponseSchema,
   publicUserResponseSchema,
 } from "@/schemas/user.schema"
-import { suggestionWithUpvoteResponseSchema } from "@/schemas/suggestion.schema"
+import { suggestionBaseResponseSchema } from "@/schemas/suggestion.schema"
 import { commentResponseSchema } from "@/schemas/comment.schema"
 import app from "@/app"
 
@@ -393,7 +393,7 @@ describe("GET /api/v1/users/:username/suggestions", () => {
 
     const res = await app.request(`/api/v1/users/${user.username}/suggestions`)
     const resBody = jsonPaginatedSuccessSchema(
-      z.array(suggestionWithUpvoteResponseSchema)
+      z.array(suggestionBaseResponseSchema)
     ).parse(await res.json())
 
     expect(res.status).toBe(200)
@@ -420,7 +420,7 @@ describe("GET /api/v1/users/:username/suggestions", () => {
       `/api/v1/users/${user.username}/suggestions?page=2&pageSize=10`
     )
     const resBody = jsonPaginatedSuccessSchema(
-      z.array(suggestionWithUpvoteResponseSchema)
+      z.array(suggestionBaseResponseSchema)
     ).parse(await res.json())
 
     expect(res.status).toBe(200)
@@ -445,7 +445,7 @@ describe("GET /api/v1/users/:username/upvotes", () => {
 
     const res = await app.request(`/api/v1/users/${user.username}/upvotes`)
     const resBody = jsonPaginatedSuccessSchema(
-      z.array(suggestionWithUpvoteResponseSchema)
+      z.array(suggestionBaseResponseSchema)
     ).parse(await res.json())
 
     expect(res.status).toBe(200)
@@ -474,7 +474,7 @@ describe("GET /api/v1/users/:username/upvotes", () => {
       `/api/v1/users/${user.username}/upvotes?page=2&pageSize=10`
     )
     const resBody = jsonPaginatedSuccessSchema(
-      z.array(suggestionWithUpvoteResponseSchema)
+      z.array(suggestionBaseResponseSchema)
     ).parse(await res.json())
 
     expect(res.status).toBe(200)

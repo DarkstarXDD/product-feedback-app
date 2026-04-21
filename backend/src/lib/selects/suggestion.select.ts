@@ -6,7 +6,7 @@ interface ViewerHasUpvoted {
 }
 
 // ------------------------------- Base Suggestion Response --------------------------------
-/** Base fields for a Suggestion. Excludes the comments list and viewerHasUpvoted. */
+/** Base fields for a Suggestion. Excludes the comments list. */
 export const suggestionBaseSelect = {
   id: true,
   slug: true,
@@ -21,10 +21,9 @@ export const suggestionBaseSelect = {
 } as const satisfies Prisma.SuggestionSelect
 
 export type SuggestionBaseResponse = Serialize<
-  Prisma.SuggestionGetPayload<{
-    select: typeof suggestionBaseSelect
-  }>
->
+  Prisma.SuggestionGetPayload<{ select: typeof suggestionBaseSelect }>
+> &
+  ViewerHasUpvoted
 
 // --------------------------- Get Suggestion with Upvotes Response ---------------------------
 /** Extends `suggestionBaseSelect` to include `upvotes` field. */
@@ -36,9 +35,6 @@ export const suggestionWithUpvoteSelect = (userId: string) =>
       select: { id: true },
     },
   }) as const satisfies Prisma.SuggestionSelect
-
-export type SuggestionWithUpvoteResponse = SuggestionBaseResponse &
-  ViewerHasUpvoted
 
 // ------------------------- Get Suggestion with Comments Response --------------------------
 /** Extends `suggestionBaseSelect` to include `comments` field. */

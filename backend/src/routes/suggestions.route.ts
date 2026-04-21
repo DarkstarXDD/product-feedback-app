@@ -3,18 +3,17 @@ import { Hono } from "hono"
 import * as z from "zod"
 
 import {
-  suggestionWithCommentsResponseSchema,
-  suggestionWithUpvoteResponseSchema,
-  suggestionBaseResponseSchema,
-  suggestionCreateSchema,
-  suggestionUpdateSchema,
-} from "@/schemas/suggestion.schema"
-import {
   suggestionWithCommentsAndUpvoteSelect,
   suggestionWithCommentsSelect,
   suggestionWithUpvoteSelect,
   suggestionBaseSelect,
 } from "@/lib/selects/suggestion.select"
+import {
+  suggestionWithCommentsResponseSchema,
+  suggestionBaseResponseSchema,
+  suggestionCreateSchema,
+  suggestionUpdateSchema,
+} from "@/schemas/suggestion.schema"
 import {
   jsonPaginatedSuccessSchema,
   jsonSuccessSchema,
@@ -56,7 +55,7 @@ suggestionsRouter.get(
     description: "Returns a paginated list of suggestions.",
     responses: {
       200: jsonResponse(
-        jsonPaginatedSuccessSchema(z.array(suggestionWithUpvoteResponseSchema)),
+        jsonPaginatedSuccessSchema(z.array(suggestionBaseResponseSchema)),
         "Successfully retrieved suggestions."
       ),
       400: jsonResponse(
@@ -180,7 +179,11 @@ suggestionsRouter.post(
         select: suggestionBaseSelect,
       })
 
-      return jsonSuccess(c, { data: suggestion }, { status: 201 })
+      return jsonSuccess(
+        c,
+        { data: withUpvoteStatus(suggestion) },
+        { status: 201 }
+      )
     } catch (e) {
       if (
         e instanceof Prisma.PrismaClientKnownRequestError &&
@@ -252,9 +255,13 @@ suggestionsRouter.patch(
       const suggestion = await prisma.suggestion.update({
         data: { ...parsedData },
         where: user.role === "ADMIN" ? { slug } : { userId: user.id, slug },
-        select: suggestionBaseSelect,
+        select: suggestionWithUpvoteSelect(user.id),
       })
-      return jsonSuccess(c, { data: suggestion }, { status: 200 })
+      return jsonSuccess(
+        c,
+        { data: withUpvoteStatus(suggestion) },
+        { status: 200 }
+      )
     } catch (e) {
       if (e instanceof Prisma.PrismaClientKnownRequestError) {
         if (e.code === "P2025") return forbidden(c, "Not allowed or forbidden")
