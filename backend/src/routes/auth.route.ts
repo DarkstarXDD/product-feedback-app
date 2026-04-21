@@ -25,7 +25,7 @@ authRouter.post(
   describeRoute({
     tags: ["Auth"],
     summary: "Sign Up",
-    description: "Create a new User.",
+    description: "Creates a new user.",
     responses: {
       201: jsonResponse(
         jsonSuccessSchema(privateUserResponseSchema),
@@ -43,7 +43,7 @@ authRouter.post(
   }),
   zodValidator("json", signUpSchema),
   async (c) => {
-    const { username, email, name, password } = c.req.valid("json")
+    const { name, username, email, password } = c.req.valid("json")
     const hashedPassword = await hashPassword(password)
 
     /**
@@ -64,7 +64,7 @@ authRouter.post(
           "Username taken. Please pick a different username",
         ]
       }
-      return conflict(c, "Unique constraint violation", { fieldErrors })
+      return conflict(c, "Conflict", { fieldErrors })
     }
 
     const user = await prisma.user.create({
@@ -85,7 +85,7 @@ authRouter.post(
   describeRoute({
     tags: ["Auth"],
     summary: "Sign In",
-    description: "Sign in to your account.",
+    description: "Signs in to an account.",
     responses: {
       200: jsonResponse(
         jsonSuccessSchema(privateUserResponseSchema),
@@ -106,19 +106,19 @@ authRouter.post(
     const { email, password } = c.req.valid("json")
 
     const user = await prisma.user.findUnique({
-      select: { ...privateUserSelect, password: true },
       where: { email },
+      select: { ...privateUserSelect, password: true },
     })
 
     if (!user)
-      return unauthorized(c, "Invalid email or password", {
+      return unauthorized(c, "Unauthorized", {
         formErrors: ["Invalid email or password"],
       })
 
     const isPasswordValid = await verifyPassword(password, user.password)
 
     if (!isPasswordValid)
-      return unauthorized(c, "Invalid email or password", {
+      return unauthorized(c, "Unauthorized", {
         formErrors: ["Invalid email or password"],
       })
 
@@ -136,16 +136,13 @@ authRouter.post(
   describeRoute({
     tags: ["Auth"],
     summary: "Sign Out",
-    description: "Sign out of your account.",
+    description: "Signs out of an account.",
     responses: {
-      204: {
-        description: "Successfully signed out.",
-      },
+      204: { description: "Successfully signed out." },
     },
   }),
   (c) => {
     deleteCookie(c, "token", { httpOnly: true, secure: true, path: "/" })
-    // Abstract into a helper function called `jsonNoContent` if used in one more place.
     return c.body(null, 204)
   }
 )
