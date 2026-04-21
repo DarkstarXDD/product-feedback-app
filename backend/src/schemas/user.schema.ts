@@ -28,7 +28,7 @@ export const userSchema = z.object({
     .meta({
       example: "johndoe",
       description:
-        "Unique username. 1-30 characters. No whitespaces allowed. Lowercase letters, numbers, underscores, and hyphens only.",
+        "Unique username. No whitespaces allowed. Lowercase letters, numbers, underscores, and hyphens only. Leading and trailing whitespaces will be automatically trimmed. Uppercase letters will be automatically converted to lowercase letters.",
       "x-order": 2,
     }),
   email: z.email("Invalid email").toLowerCase().meta({
