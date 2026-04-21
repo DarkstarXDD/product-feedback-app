@@ -74,11 +74,3 @@ export const suggestionWithCommentsAndViewerUpvoteSelect = (userId: string) =>
       select: { id: true },
     },
   }) as const satisfies Prisma.SuggestionSelect
-
-// ------------------------------- Create Suggestion Response --------------------------------
-/** Fields that are included in the response when a suggestion is created. */
-export const suggestionCreateSelect = suggestionBaseSelect
-
-// ------------------------------- Update Suggestion Response --------------------------------
-/** Fields that are included in the response when a suggestion is updated. */
-export const suggestionUpdateSelect = suggestionBaseSelect

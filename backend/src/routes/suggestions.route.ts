@@ -14,8 +14,6 @@ import {
   suggestionWithCommentsAndViewerUpvoteSelect,
   suggestionWithViewerUpvoteSelect,
   suggestionWithCommentsSelect,
-  suggestionCreateSelect,
-  suggestionUpdateSelect,
   suggestionBaseSelect,
 } from "@/lib/selects/suggestion.select"
 import {
@@ -182,7 +180,7 @@ suggestionsRouter.post(
           slug: generateSlug(parsedData.title),
           userId: user.id,
         },
-        select: suggestionCreateSelect,
+        select: suggestionBaseSelect,
       })
 
       return jsonSuccess(c, { data: suggestion }, { status: 201 })
@@ -257,7 +255,7 @@ suggestionsRouter.patch(
       const suggestion = await prisma.suggestion.update({
         data: { ...parsedData },
         where: user.role === "ADMIN" ? { slug } : { userId: user.id, slug },
-        select: suggestionUpdateSelect,
+        select: suggestionBaseSelect,
       })
       return jsonSuccess(c, { data: suggestion }, { status: 200 })
     } catch (e) {

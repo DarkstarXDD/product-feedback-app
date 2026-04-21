@@ -267,7 +267,7 @@ usersRouter.get(
     const user = c.get("user")
     const { pageSize, page } = c.req.valid("query")
 
-    const where = { upvotes: { some: { user: { username } } } } as const
+    const where = { upvotes: { some: { user: { username } } } }
 
     const [totalItems, suggestions] = await Promise.all([
       prisma.suggestion.count({ where }),
