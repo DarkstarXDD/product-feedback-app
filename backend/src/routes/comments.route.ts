@@ -155,7 +155,7 @@ commentsRouter.patch(
       const comment = await prisma.comment.update({
         data: { content: parsed.content },
         where:
-          role === "ADMIN" ? { id: commentId } : { userId: id, id: commentId },
+          role === "ADMIN" ? { id: commentId } : { id: commentId, userId: id },
         select: commentSelect,
       })
 
@@ -165,7 +165,7 @@ commentsRouter.patch(
         e instanceof Prisma.PrismaClientKnownRequestError &&
         e.code === "P2025"
       ) {
-        return forbidden(c, "Not allowed or forbidden")
+        return forbidden(c)
       }
       throw e
     }
@@ -218,7 +218,7 @@ commentsRouter.delete(
         e instanceof Prisma.PrismaClientKnownRequestError &&
         e.code === "P2025"
       ) {
-        return forbidden(c, "Not allowed or forbidden")
+        return forbidden(c)
       }
       throw e
     }
