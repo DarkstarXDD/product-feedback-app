@@ -1,5 +1,6 @@
 import { describeRoute } from "hono-openapi"
 import { Hono } from "hono"
+import * as z from "zod"
 
 import {
   jsonPaginatedSuccessSchema,
@@ -31,7 +32,7 @@ commentsRouter.get(
     description: "Returns a paginated list of all comments. Admin only.",
     responses: {
       200: jsonResponse(
-        jsonPaginatedSuccessSchema(commentResponseSchema),
+        jsonPaginatedSuccessSchema(z.array(commentResponseSchema)),
         "Successfully retrieved comments."
       ),
       400: jsonResponse(
@@ -52,7 +53,7 @@ commentsRouter.get(
   requireRole("ADMIN"),
   zodValidator("query", paginationSchema),
   async (c) => {
-    const { pageSize, page } = c.req.valid("query")
+    const { page, pageSize } = c.req.valid("query")
     const skip = (page - 1) * pageSize
 
     const [totalItems, comments] = await Promise.all([
@@ -67,8 +68,8 @@ commentsRouter.get(
     return jsonSuccess(
       c,
       {
-        meta: { pagination: buildPagination({ page, pageSize, totalItems }) },
         data: comments,
+        meta: { pagination: buildPagination({ page, pageSize, totalItems }) },
       },
       { status: 200 }
     )

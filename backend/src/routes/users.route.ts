@@ -211,7 +211,7 @@ usersRouter.get(
   async (c) => {
     const username = c.req.param("username")
     const user = c.get("user")
-    const { pageSize, page } = c.req.valid("query")
+    const { page, pageSize } = c.req.valid("query")
 
     const [totalItems, suggestions] = await Promise.all([
       prisma.suggestion.count({
@@ -309,7 +309,7 @@ usersRouter.get(
   zodValidator("query", paginationSchema),
   async (c) => {
     const username = c.req.param("username")
-    const { pageSize, page } = c.req.valid("query")
+    const { page, pageSize } = c.req.valid("query")
 
     const [totalItems, comments] = await Promise.all([
       prisma.comment.count({ where: { user: { username } } }),
