@@ -60,7 +60,7 @@ usersRouter.get(
   requireRole("ADMIN"),
   zodValidator("query", paginationSchema),
   async (c) => {
-    const { pageSize, page } = c.req.valid("query")
+    const { page, pageSize } = c.req.valid("query")
 
     const [totalItems, users] = await Promise.all([
       prisma.user.count(),
@@ -71,10 +71,14 @@ usersRouter.get(
       }),
     ])
 
-    return jsonSuccess(c, {
-      data: users,
-      meta: { pagination: buildPagination({ page, pageSize, totalItems }) },
-    })
+    return jsonSuccess(
+      c,
+      {
+        data: users,
+        meta: { pagination: buildPagination({ page, pageSize, totalItems }) },
+      },
+      { status: 200 }
+    )
   }
 )
 
@@ -149,26 +153,25 @@ usersRouter.patch(
   zodValidator("json", userUpdateSchema),
   async (c) => {
     const targetUser = c.get("targetUser")
-    const parsedData = c.req.valid("json")
+    const parsed = c.req.valid("json")
 
-    // Check conflicts only for fields being updated, excluding target user
     const existing = await prisma.user.findFirst({
       where: {
-        OR: [
-          ...(parsedData.email ? [{ email: parsedData.email }] : []),
-          ...(parsedData.username ? [{ username: parsedData.username }] : []),
-        ],
         id: { not: targetUser.id },
+        OR: [
+          ...(parsed.email ? [{ email: parsed.email }] : []),
+          ...(parsed.username ? [{ username: parsed.username }] : []),
+        ],
       },
       select: { username: true, email: true },
     })
 
     if (existing) {
       const fieldErrors: Record<string, string[]> = {}
-      if (parsedData.email && existing.email === parsedData.email) {
+      if (parsed.email && existing.email === parsed.email) {
         fieldErrors.email = ["Email already exists"]
       }
-      if (parsedData.username && existing.username === parsedData.username) {
+      if (parsed.username && existing.username === parsed.username) {
         fieldErrors.username = [
           "Username taken. Please pick a different username",
         ]
@@ -177,11 +180,11 @@ usersRouter.patch(
     }
 
     const user = await prisma.user.update({
+      data: parsed,
       where: { id: targetUser.id },
       select: privateUserSelect,
-      data: parsedData,
     })
-    return jsonSuccess(c, { data: user })
+    return jsonSuccess(c, { data: user }, { status: 200 })
   }
 )
 
@@ -217,10 +220,10 @@ usersRouter.get(
         where: { user: { username } },
       }),
       prisma.suggestion.findMany({
+        where: { user: { username } },
         select: user
           ? suggestionWithViewerUpvoteSelect(user.id)
           : suggestionBaseSelect,
-        where: { user: { username } },
         take: pageSize,
         skip: (page - 1) * pageSize,
       }),
@@ -229,8 +232,8 @@ usersRouter.get(
     return jsonSuccess(
       c,
       {
-        meta: { pagination: buildPagination({ page, pageSize, totalItems }) },
         data: suggestions.map(mapSuggestionWithUpvoteStatus),
+        meta: { pagination: buildPagination({ page, pageSize, totalItems }) },
       },
       { status: 200 }
     )
@@ -269,11 +272,11 @@ usersRouter.get(
     const [totalItems, suggestions] = await Promise.all([
       prisma.suggestion.count({ where }),
       prisma.suggestion.findMany({
+        where,
         select: user
           ? suggestionWithViewerUpvoteSelect(user.id)
           : suggestionBaseSelect,
         take: pageSize,
-        where,
         skip: (page - 1) * pageSize,
       }),
     ])
@@ -281,8 +284,8 @@ usersRouter.get(
     return jsonSuccess(
       c,
       {
-        meta: { pagination: buildPagination({ page, pageSize, totalItems }) },
         data: suggestions.map(mapSuggestionWithUpvoteStatus),
+        meta: { pagination: buildPagination({ page, pageSize, totalItems }) },
       },
       { status: 200 }
     )
@@ -315,9 +318,9 @@ usersRouter.get(
     const [totalItems, comments] = await Promise.all([
       prisma.comment.count({ where: { user: { username } } }),
       prisma.comment.findMany({
+        where: { user: { username } },
         select: commentSelect,
         take: pageSize,
-        where: { user: { username } },
         skip: (page - 1) * pageSize,
       }),
     ])
@@ -325,8 +328,8 @@ usersRouter.get(
     return jsonSuccess(
       c,
       {
-        meta: { pagination: buildPagination({ page, pageSize, totalItems }) },
         data: comments,
+        meta: { pagination: buildPagination({ page, pageSize, totalItems }) },
       },
       { status: 200 }
     )
