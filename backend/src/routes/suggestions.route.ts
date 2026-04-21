@@ -5,8 +5,7 @@ import * as z from "zod"
 import {
   suggestionWithViewerUpvoteResponseSchema,
   suggestionWithCommentsResponseSchema,
-  suggestionCreateResponseSchema,
-  suggestionUpdateResponseSchema,
+  suggestionBaseResponseSchema,
   suggestionCreateSchema,
   suggestionUpdateSchema,
 } from "@/schemas/suggestion.schema"
@@ -149,7 +148,7 @@ suggestionsRouter.post(
     description: "Creates a new suggestion.",
     responses: {
       201: jsonResponse(
-        jsonSuccessSchema(suggestionCreateResponseSchema),
+        jsonSuccessSchema(suggestionBaseResponseSchema),
         "Successfully created suggestion."
       ),
       400: jsonResponse(
@@ -213,7 +212,7 @@ suggestionsRouter.patch(
     description: "Updates an existing suggestion by slug.",
     responses: {
       200: jsonResponse(
-        jsonSuccessSchema(suggestionUpdateResponseSchema),
+        jsonSuccessSchema(suggestionBaseResponseSchema),
         "Successfully updated suggestion."
       ),
       400: jsonResponse(

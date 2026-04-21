@@ -39,7 +39,7 @@ export const suggestionCreateSchema = z.object({
 export const suggestionUpdateSchema = suggestionCreateSchema
 
 // --------------------- Suggestion Response Schema -----------------------
-export const suggestionResponseSchema = z.object({
+export const suggestionBaseResponseSchema = z.object({
   id: z.cuid().meta({
     pattern: undefined,
     example: "cmlubyi3l000094r6fw9v8djs",
@@ -92,19 +92,15 @@ export const suggestionResponseSchema = z.object({
     .meta({ "x-order": 10 }),
 }) satisfies z.ZodType<SuggestionBaseResponse>
 
-// --------------------- Create/Update Suggestion Response Schemas -----------------------
-export const suggestionCreateResponseSchema = suggestionResponseSchema
-export const suggestionUpdateResponseSchema = suggestionResponseSchema
-
 // --------------------- Suggestion With Viewer Upvote Response Schema -----------------------
 export const suggestionWithViewerUpvoteResponseSchema: z.ZodType<SuggestionWithViewerUpvoteResponse> =
-  suggestionResponseSchema.extend({
+  suggestionBaseResponseSchema.extend({
     viewerHasUpvoted: z.boolean().meta({ "x-order": 11 }),
   })
 
 // --------------------- Suggestion With Comments Response Schema -----------------------
 export const suggestionWithCommentsResponseSchema: z.ZodType<SuggestionWithCommentsResponse> =
-  suggestionResponseSchema.extend({
+  suggestionBaseResponseSchema.extend({
     viewerHasUpvoted: z.boolean().meta({ "x-order": 11 }),
     comments: z
       .array(

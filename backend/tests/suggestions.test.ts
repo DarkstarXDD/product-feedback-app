@@ -4,7 +4,7 @@ import * as z from "zod"
 import {
   suggestionWithViewerUpvoteResponseSchema,
   suggestionWithCommentsResponseSchema,
-  suggestionCreateResponseSchema,
+  suggestionBaseResponseSchema,
 } from "@/schemas/suggestion.schema"
 import {
   jsonPaginatedSuccessSchema,
@@ -163,7 +163,7 @@ describe("POST /api/v1/suggestions", () => {
       method: "POST",
     })
 
-    const resBody = jsonSuccessSchema(suggestionCreateResponseSchema).parse(
+    const resBody = jsonSuccessSchema(suggestionBaseResponseSchema).parse(
       await res.json()
     )
 
@@ -282,7 +282,7 @@ describe("PATCH /api/v1/suggestions/:slug", () => {
       method: "PATCH",
     })
 
-    const resBody = jsonSuccessSchema(suggestionCreateResponseSchema).parse(
+    const resBody = jsonSuccessSchema(suggestionBaseResponseSchema).parse(
       await res.json()
     )
 
@@ -314,7 +314,7 @@ describe("PATCH /api/v1/suggestions/:slug", () => {
       method: "PATCH",
     })
 
-    const resBody = jsonSuccessSchema(suggestionCreateResponseSchema).parse(
+    const resBody = jsonSuccessSchema(suggestionBaseResponseSchema).parse(
       await res.json()
     )
 
