@@ -257,7 +257,7 @@ describe("PATCH /api/v1/suggestions/:slug", () => {
     expect(res.status).toBe(403)
     expect(resBody).toMatchObject({
       code: "FORBIDDEN",
-      message: "Not allowed or forbidden",
+      message: "Forbidden",
     })
   })
 
@@ -709,7 +709,7 @@ describe("DELETE /api/v1/suggestions/:slug", () => {
     expect(res.status).toBe(403)
     expect(resBody).toMatchObject({
       code: "FORBIDDEN",
-      message: "Not allowed or forbidden",
+      message: "Forbidden",
     })
   })
 

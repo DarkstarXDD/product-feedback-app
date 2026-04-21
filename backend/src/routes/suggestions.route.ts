@@ -254,7 +254,7 @@ suggestionsRouter.patch(
     try {
       const suggestion = await prisma.suggestion.update({
         data: { ...parsed },
-        where: user.role === "ADMIN" ? { slug } : { userId: user.id, slug },
+        where: user.role === "ADMIN" ? { slug } : { slug, userId: user.id },
         select: suggestionWithUpvoteSelect(user.id),
       })
       return jsonSuccess(
@@ -264,7 +264,7 @@ suggestionsRouter.patch(
       )
     } catch (e) {
       if (e instanceof Prisma.PrismaClientKnownRequestError) {
-        if (e.code === "P2025") return forbidden(c, "Not allowed or forbidden")
+        if (e.code === "P2025") return forbidden(c)
         if (e.code === "P2003") {
           return jsonError(
             c,
@@ -541,7 +541,7 @@ suggestionsRouter.delete(
         e instanceof Prisma.PrismaClientKnownRequestError &&
         e.code === "P2025"
       ) {
-        return forbidden(c, "Not allowed or forbidden")
+        return forbidden(c)
       }
       throw e
     }
