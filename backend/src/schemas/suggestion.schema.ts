@@ -36,6 +36,10 @@ export const suggestionCreateSchema = z.object({
 
 // --------------------- Update Suggestion Schema -----------------------
 export const suggestionUpdateSchema = suggestionCreateSchema
+  .partial()
+  .refine((data) => Object.keys(data).length > 0, {
+    error: "At least one field is required",
+  })
 
 // --------------------- Suggestion Response Schema -----------------------
 export const suggestionBaseResponseSchema = z.object({
