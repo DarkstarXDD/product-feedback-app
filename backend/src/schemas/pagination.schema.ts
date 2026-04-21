@@ -30,8 +30,6 @@ export const paginationSchema = z.object({
     }),
 })
 
-export type PaginationQuery = z.infer<typeof paginationSchema>
-
 // --------------------- Pagination Response Schema -----------------------
 export const paginationResponseSchema: z.ZodType<Pagination> = z.object({
   page: z.number().meta({ example: 1, "x-order": 1 }),
