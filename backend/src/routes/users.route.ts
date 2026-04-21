@@ -8,10 +8,10 @@ import {
   jsonErrorSchema,
 } from "@/schemas/response.schema"
 import {
-  suggestionWithViewerUpvoteSelect,
+  suggestionWithUpvoteSelect,
   suggestionBaseSelect,
 } from "@/lib/selects/suggestion.select"
-import { suggestionWithViewerUpvoteResponseSchema } from "@/schemas/suggestion.schema"
+import { suggestionWithUpvoteResponseSchema } from "@/schemas/suggestion.schema"
 import { privateUserSelect, publicUserSelect } from "@/lib/selects/user.select"
 import { mapSuggestionWithUpvoteStatus } from "@/lib/mappers/suggestion.mapper"
 import { withTargetAccess } from "@/middleware/with-target-access"
@@ -197,9 +197,7 @@ usersRouter.get(
     description: "Returns a paginated list of suggestions created by a user.",
     responses: {
       200: jsonResponse(
-        jsonPaginatedSuccessSchema(
-          z.array(suggestionWithViewerUpvoteResponseSchema)
-        ),
+        jsonPaginatedSuccessSchema(z.array(suggestionWithUpvoteResponseSchema)),
         "Successfully retrieved suggestions."
       ),
       400: jsonResponse(
@@ -222,7 +220,7 @@ usersRouter.get(
       prisma.suggestion.findMany({
         where: { user: { username } },
         select: user
-          ? suggestionWithViewerUpvoteSelect(user.id)
+          ? suggestionWithUpvoteSelect(user.id)
           : suggestionBaseSelect,
         take: pageSize,
         skip: (page - 1) * pageSize,
@@ -249,9 +247,7 @@ usersRouter.get(
     description: "Returns a paginated list of suggestions upvoted by a user.",
     responses: {
       200: jsonResponse(
-        jsonPaginatedSuccessSchema(
-          z.array(suggestionWithViewerUpvoteResponseSchema)
-        ),
+        jsonPaginatedSuccessSchema(z.array(suggestionWithUpvoteResponseSchema)),
         "Successfully retrieved upvoted suggestions."
       ),
       400: jsonResponse(
@@ -274,7 +270,7 @@ usersRouter.get(
       prisma.suggestion.findMany({
         where,
         select: user
-          ? suggestionWithViewerUpvoteSelect(user.id)
+          ? suggestionWithUpvoteSelect(user.id)
           : suggestionBaseSelect,
         take: pageSize,
         skip: (page - 1) * pageSize,

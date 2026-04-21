@@ -3,16 +3,16 @@ import { Hono } from "hono"
 import * as z from "zod"
 
 import {
-  suggestionWithViewerUpvoteResponseSchema,
   suggestionWithCommentsResponseSchema,
+  suggestionWithUpvoteResponseSchema,
   suggestionBaseResponseSchema,
   suggestionCreateSchema,
   suggestionUpdateSchema,
 } from "@/schemas/suggestion.schema"
 import {
-  suggestionWithCommentsAndViewerUpvoteSelect,
-  suggestionWithViewerUpvoteSelect,
+  suggestionWithCommentsAndUpvoteSelect,
   suggestionWithCommentsSelect,
+  suggestionWithUpvoteSelect,
   suggestionBaseSelect,
 } from "@/lib/selects/suggestion.select"
 import {
@@ -56,9 +56,7 @@ suggestionsRouter.get(
     description: "Returns a paginated list of suggestions.",
     responses: {
       200: jsonResponse(
-        jsonPaginatedSuccessSchema(
-          z.array(suggestionWithViewerUpvoteResponseSchema)
-        ),
+        jsonPaginatedSuccessSchema(z.array(suggestionWithUpvoteResponseSchema)),
         "Successfully retrieved suggestions."
       ),
       400: jsonResponse(
@@ -80,7 +78,7 @@ suggestionsRouter.get(
         skip: (page - 1) * pageSize,
         take: pageSize,
         select: user
-          ? suggestionWithViewerUpvoteSelect(user.id)
+          ? suggestionWithUpvoteSelect(user.id)
           : suggestionBaseSelect,
       }),
     ])
@@ -123,7 +121,7 @@ suggestionsRouter.get(
     const suggestion = await prisma.suggestion.findUnique({
       where: { slug },
       select: user
-        ? suggestionWithCommentsAndViewerUpvoteSelect(user.id)
+        ? suggestionWithCommentsAndUpvoteSelect(user.id)
         : suggestionWithCommentsSelect,
     })
 

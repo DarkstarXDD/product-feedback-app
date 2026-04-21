@@ -28,7 +28,7 @@ export type SuggestionBaseResponse = Serialize<
 
 // --------------------------- Get Suggestion with Upvotes Response ---------------------------
 /** Extends `suggestionBaseSelect` to include `upvotes` field. */
-export const suggestionWithViewerUpvoteSelect = (userId: string) =>
+export const suggestionWithUpvoteSelect = (userId: string) =>
   ({
     ...suggestionBaseSelect,
     upvotes: {
@@ -37,7 +37,7 @@ export const suggestionWithViewerUpvoteSelect = (userId: string) =>
     },
   }) as const satisfies Prisma.SuggestionSelect
 
-export type SuggestionWithViewerUpvoteResponse = SuggestionBaseResponse &
+export type SuggestionWithUpvoteResponse = SuggestionBaseResponse &
   ViewerHasUpvoted
 
 // ------------------------- Get Suggestion with Comments Response --------------------------
@@ -66,7 +66,7 @@ export type SuggestionWithCommentsResponse = Serialize<
 
 // --------------------- Get Suggestion with Comments and Upvotes Response ---------------------
 /** Extends `suggestionWithCommentsSelect` to include `upvotes` field. */
-export const suggestionWithCommentsAndViewerUpvoteSelect = (userId: string) =>
+export const suggestionWithCommentsAndUpvoteSelect = (userId: string) =>
   ({
     ...suggestionWithCommentsSelect,
     upvotes: {

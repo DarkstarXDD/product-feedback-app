@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, test } from "vitest"
 import * as z from "zod"
 
 import {
-  suggestionWithViewerUpvoteResponseSchema,
   suggestionWithCommentsResponseSchema,
+  suggestionWithUpvoteResponseSchema,
   suggestionBaseResponseSchema,
 } from "@/schemas/suggestion.schema"
 import {
@@ -36,7 +36,7 @@ describe("GET /api/v1/suggestions", () => {
 
     const res = await app.request("/api/v1/suggestions")
     const resBody = jsonPaginatedSuccessSchema(
-      z.array(suggestionWithViewerUpvoteResponseSchema)
+      z.array(suggestionWithUpvoteResponseSchema)
     ).parse(await res.json())
 
     expect(res.status).toBe(200)
@@ -53,7 +53,7 @@ describe("GET /api/v1/suggestions", () => {
 
     const res = await app.request("/api/v1/suggestions?page=2&pageSize=10")
     const resBody = jsonPaginatedSuccessSchema(
-      z.array(suggestionWithViewerUpvoteResponseSchema)
+      z.array(suggestionWithUpvoteResponseSchema)
     ).parse(await res.json())
 
     expect(res.status).toBe(200)
